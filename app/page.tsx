@@ -74,6 +74,7 @@ export default function Home() {
   const [videoExportOpen, setVideoExportOpen] = useState(false)
   const [isVideoMode, setIsVideoMode] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [isRecordingMode, setIsRecordingMode] = useState(false) // True before recording starts for clean first frame
   const [videoSettings, setVideoSettings] = useState<VideoExportSettings>({
     typingDuration: 1500,
     messageDelay: 800,
@@ -172,10 +173,13 @@ export default function Home() {
 
   // Video Export Handlers
   const handleStartVideoRecording = useCallback(async () => {
+    // First, set recording mode to update UI (remove phone frame)
+    setIsRecordingMode(true)
     setIsVideoMode(true)
     setIsPreviewMode(false)
     
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Wait for DOM to update with clean frame (no phone frame)
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
       await startRecording(videoPreviewContainerRef.current, {
@@ -192,12 +196,14 @@ export default function Home() {
     animatedPreviewRef.current?.stopAnimation()
     stopRecording()
     setIsVideoMode(false)
+    setIsRecordingMode(false)
   }, [stopRecording])
 
   const handleResetVideoAnimation = useCallback(() => {
     animatedPreviewRef.current?.resetAnimation()
     resetVideo()
     setIsVideoMode(false)
+    setIsRecordingMode(false)
   }, [resetVideo])
 
   const handleAnimationComplete = useCallback(() => {
@@ -209,6 +215,7 @@ export default function Home() {
     setTimeout(() => {
       stopRecording()
       setIsVideoMode(false)
+      setIsRecordingMode(false)
     }, videoSettings.endPauseDuration)
   }, [stopRecording, videoSettings.endPauseDuration, isPreviewMode, handlePreviewComplete])
 
@@ -282,7 +289,7 @@ export default function Home() {
         {/* Phone Preview - Scaled for mobile */}
         <div className="transform scale-[0.55] sm:scale-[0.65] md:scale-[0.8] lg:scale-100 origin-center">
           {isVideoMode ? (
-            <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecording ? 0 : '44px' }}>
+            <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : '44px' }}>
               <AnimatedChatPreview
                 ref={animatedPreviewRef}
                 sender={sender}
@@ -294,7 +301,7 @@ export default function Home() {
                 typingDuration={videoSettings.typingDuration}
                 messageDelay={videoSettings.messageDelay}
                 onAnimationComplete={handleAnimationComplete}
-                forVideoExport={isRecording}
+                forVideoExport={isRecordingMode}
               />
             </div>
           ) : (
