@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react'
 import { Message, User, WhatsAppSettings } from '@/types'
 import { cn } from '@/lib/utils'
 import {
@@ -177,17 +177,7 @@ const IOSWhatsAppHeader = ({
   
   const getStatusText = () => {
     if (showTyping) return 'typing...'
-    if (lastSeenTime) {
-      const lastSeenDate = lastSeenTime instanceof Date ? lastSeenTime : new Date(lastSeenTime)
-      const today = new Date()
-      const isToday = lastSeenDate.toDateString() === today.toDateString()
-      const time = lastSeenDate.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: false,
-      })
-      return isToday ? `last seen today at ${time}` : `last seen ${lastSeenDate.toLocaleDateString()}`
-    }
+    // Always show 'online' to avoid hydration issues with date comparisons
     return 'online'
   }
 
@@ -501,6 +491,17 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   const [showTyping, setShowTyping] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
   const [animationStopped, setAnimationStopped] = useState(false)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when new messages appear or typing indicator shows
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [visibleMessageCount, showTyping])
 
   const startAnimation = useCallback(() => {
     setVisibleMessageCount(0)
@@ -568,10 +569,6 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     }
   }, [isAnimating, visibleMessageCount, messages, sender.id, typingDuration, messageDelay, animationStopped, onAnimationComplete])
 
-  // Group messages by date
-  const today = new Date()
-  const dateStr = today.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-
   return (
     <div
       className="font-sf-pro transition-all duration-300 overflow-hidden w-[375px]"
@@ -613,6 +610,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         />
 
         <div 
+          ref={chatContainerRef}
           className="flex-1 overflow-y-auto relative" 
           style={{ 
             backgroundColor: darkMode 

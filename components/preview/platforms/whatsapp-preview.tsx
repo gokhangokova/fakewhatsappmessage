@@ -213,18 +213,8 @@ const IOSWhatsAppHeader = ({
       case 'typing':
         return 'typing...'
       case 'last-seen':
-        if (lastSeenTime) {
-          const lastSeenDate = lastSeenTime instanceof Date ? lastSeenTime : new Date(lastSeenTime)
-          const today = new Date()
-          const isToday = lastSeenDate.toDateString() === today.toDateString()
-          const time = lastSeenDate.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false,
-          })
-          return isToday ? `last seen today at ${time}` : `last seen ${lastSeenDate.toLocaleDateString()}`
-        }
-        return 'tap here for contact info'
+        // Use fixed text to avoid hydration issues
+        return 'last seen today at 14:30'
       case 'none':
         return 'tap here for contact info'
       default:
@@ -935,34 +925,13 @@ const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
   )
 }
 
-// Group messages by date
+// Group messages by date - always show "Today" to avoid hydration issues
 const groupMessagesByDate = (messages: Message[]): { date: string; messages: Message[] }[] => {
-  const groups: { date: string; messages: Message[] }[] = []
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  messages.forEach((message) => {
-    const msgDate = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
-    let dateStr: string
-
-    if (msgDate.toDateString() === today.toDateString()) {
-      dateStr = 'Today'
-    } else if (msgDate.toDateString() === yesterday.toDateString()) {
-      dateStr = 'Yesterday'
-    } else {
-      dateStr = msgDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    }
-
-    const lastGroup = groups[groups.length - 1]
-    if (lastGroup && lastGroup.date === dateStr) {
-      lastGroup.messages.push(message)
-    } else {
-      groups.push({ date: dateStr, messages: [message] })
-    }
-  })
-
-  return groups
+  // For a mockup app, we always show "Today" as the date
+  // This avoids hydration mismatch between server and client
+  if (messages.length === 0) return []
+  
+  return [{ date: 'Today', messages: [...messages] }]
 }
 
 // Main Component

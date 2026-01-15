@@ -28,10 +28,10 @@ interface UseVideoExportReturn {
   currentFormat: VideoFormat
 }
 
-const QUALITY_SETTINGS: Record<VideoQuality, { bitrate: number; gifColors: number }> = {
-  low: { bitrate: 1_000_000, gifColors: 64 },
-  medium: { bitrate: 2_500_000, gifColors: 128 },
-  high: { bitrate: 5_000_000, gifColors: 256 },
+const QUALITY_SETTINGS: Record<VideoQuality, { bitrate: number; pixelRatio: number; gifColors: number }> = {
+  low: { bitrate: 2_000_000, pixelRatio: 1, gifColors: 64 },
+  medium: { bitrate: 5_000_000, pixelRatio: 1.5, gifColors: 128 },
+  high: { bitrate: 10_000_000, pixelRatio: 2, gifColors: 256 },
 }
 
 export function useVideoExport(): UseVideoExportReturn {
@@ -53,13 +53,15 @@ export function useVideoExport(): UseVideoExportReturn {
   const elementRef = useRef<HTMLElement | null>(null)
   const lastFrameTimeRef = useRef<number>(0)
   const isStoppedRef = useRef(false)
+  const dimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 })
 
-  // Capture element to data URL
-  const captureFrame = useCallback(async (element: HTMLElement): Promise<string | null> => {
+  // Capture element to data URL with quality-based pixelRatio
+  const captureFrame = useCallback(async (element: HTMLElement, pixelRatio: number): Promise<string | null> => {
     try {
       const dataUrl = await toPng(element, {
-        pixelRatio: 1,
+        pixelRatio: pixelRatio,
         cacheBust: true,
+        quality: 1,
       })
       return dataUrl
     } catch (err) {
@@ -94,6 +96,8 @@ export function useVideoExport(): UseVideoExportReturn {
 
     const quality = settingsRef.current.quality
     const bitrate = QUALITY_SETTINGS[quality].bitrate
+
+    console.log('Creating MP4 with dimensions:', evenWidth, 'x', evenHeight, 'bitrate:', bitrate)
 
     // Check if WebCodecs is supported
     if (typeof VideoEncoder === 'undefined') {
@@ -132,8 +136,11 @@ export function useVideoExport(): UseVideoExportReturn {
       },
     })
 
+    // Use higher profile for better quality
+    const codecProfile = quality === 'high' ? 'avc1.640028' : 'avc1.4d0028' // High profile for high quality
+
     encoder.configure({
-      codec: 'avc1.42001f', // H.264 Baseline Profile Level 3.1
+      codec: codecProfile,
       width: evenWidth,
       height: evenHeight,
       bitrate: bitrate,
@@ -146,7 +153,7 @@ export function useVideoExport(): UseVideoExportReturn {
     for (let i = 0; i < frames.length; i++) {
       const img = await loadImage(frames[i])
       
-      // Draw image to canvas (with potential scaling for even dimensions)
+      // Draw image to canvas
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, evenWidth, evenHeight)
       ctx.drawImage(img, 0, 0, evenWidth, evenHeight)
@@ -157,7 +164,7 @@ export function useVideoExport(): UseVideoExportReturn {
         duration: 1_000_000 / frameRate,
       })
 
-      // Encode frame (keyframe every 30 frames)
+      // Encode frame (keyframe every 30 frames for better seeking)
       const keyFrame = i % 30 === 0
       encoder.encode(videoFrame, { keyFrame })
       videoFrame.close()
@@ -277,7 +284,9 @@ export function useVideoExport(): UseVideoExportReturn {
       frameRate = 30,
     } = options
 
-    console.log('Starting recording with format:', format, 'quality:', quality)
+    const pixelRatio = QUALITY_SETTINGS[quality].pixelRatio
+
+    console.log('Starting recording with format:', format, 'quality:', quality, 'pixelRatio:', pixelRatio)
     
     setError(null)
     setVideoBlob(null)
@@ -296,11 +305,19 @@ export function useVideoExport(): UseVideoExportReturn {
     try {
       const rect = element.getBoundingClientRect()
       
+      // Apply pixelRatio to dimensions for higher resolution
+      const scaledWidth = Math.round(rect.width * pixelRatio)
+      const scaledHeight = Math.round(rect.height * pixelRatio)
+      
+      dimensionsRef.current = { width: scaledWidth, height: scaledHeight }
+      
       // Create canvas for dimensions
       const canvas = document.createElement('canvas')
-      canvas.width = Math.round(rect.width)
-      canvas.height = Math.round(rect.height)
+      canvas.width = scaledWidth
+      canvas.height = scaledHeight
       canvasRef.current = canvas
+
+      console.log('Recording dimensions:', scaledWidth, 'x', scaledHeight)
 
       setProgressText('Capturing frames...')
       
@@ -311,7 +328,7 @@ export function useVideoExport(): UseVideoExportReturn {
         const frameInterval = 1000 / frameRate
         
         if (now - lastFrameTimeRef.current >= frameInterval) {
-          const frame = await captureFrame(elementRef.current)
+          const frame = await captureFrame(elementRef.current, pixelRatio)
           if (frame) {
             framesRef.current.push(frame)
             lastFrameTimeRef.current = now
@@ -347,20 +364,20 @@ export function useVideoExport(): UseVideoExportReturn {
     setIsProcessing(true)
     
     try {
-      if (framesRef.current.length > 0 && canvasRef.current) {
-        console.log('Creating video from', framesRef.current.length, 'frames')
+      if (framesRef.current.length > 0 && dimensionsRef.current.width > 0) {
+        console.log('Creating video from', framesRef.current.length, 'frames at', dimensionsRef.current.width, 'x', dimensionsRef.current.height)
         
         const blob = formatRef.current === 'gif'
           ? await createGIF(
               framesRef.current,
-              canvasRef.current.width,
-              canvasRef.current.height,
+              dimensionsRef.current.width,
+              dimensionsRef.current.height,
               settingsRef.current.frameRate
             )
           : await createMP4(
               framesRef.current,
-              canvasRef.current.width,
-              canvasRef.current.height,
+              dimensionsRef.current.width,
+              dimensionsRef.current.height,
               settingsRef.current.frameRate
             )
         

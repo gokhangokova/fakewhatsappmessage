@@ -132,12 +132,8 @@ export function PhonePreview({
 }
 
 function StatusBar({ darkMode, platform }: { darkMode: boolean; platform: Platform }) {
-  const now = new Date()
-  const timeStr = now.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
+  // Use fixed time to avoid hydration mismatch
+  const timeStr = '9:41'
 
   const getBgColor = () => {
     if (platform === 'instagram' && !darkMode) return 'bg-white'
