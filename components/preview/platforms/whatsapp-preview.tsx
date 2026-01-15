@@ -999,9 +999,117 @@ export function WhatsAppPreview({
     return settings.backgroundColor || themes.light.chatBg
   }
 
+  // Desktop view - wider chat window without phone frame
+  if (!mobileView) {
+    return (
+      <div
+        className="font-sf-pro transition-all duration-300 overflow-hidden"
+        style={{
+          width: '420px',
+          height: '680px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+          backgroundColor: darkMode ? '#000000' : '#FFFFFF',
+        }}
+      >
+        <div className="flex flex-col h-full overflow-hidden antialiased">
+          <IOSWhatsAppHeader
+            receiver={receiver}
+            lastSeen={settings.lastSeen || 'online'}
+            lastSeenTime={settings.lastSeenTime}
+            darkMode={darkMode}
+            isGroupChat={isGroupChat}
+            groupName={settings.groupName}
+            participantCount={settings.groupParticipants?.length}
+          />
+
+          <div className="flex-1 overflow-y-auto relative" style={{ backgroundColor: getBgColor() }}>
+            {/* Background Image */}
+            {!transparentBg && settings.backgroundType === 'image' && settings.backgroundImage && (
+              <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${settings.backgroundImage})` }}
+              />
+            )}
+            
+            {/* Doodle Background */}
+            {!transparentBg && settings.backgroundType === 'doodle' && settings.showDoodle && (
+              <WhatsAppDoodle 
+                opacity={settings.doodleOpacity || 0.06} 
+                color={darkMode ? theme.doodleColor : '#C8C4BA'}
+              />
+            )}
+            
+            <div className="relative z-10 py-[4px]">
+              {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} />}
+
+              {messageGroups.map((group) => (
+                <div key={group.date}>
+                  <DateSeparator date={group.date} darkMode={darkMode} />
+                  {group.messages.map((message, index) => {
+                    const prevMessage = index > 0 ? group.messages[index - 1] : null
+                    const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
+
+                    return (
+                      <IOSMessageBubble
+                        key={message.id}
+                        message={message}
+                        sender={sender}
+                        receiver={receiver}
+                        timeFormat={timeFormat}
+                        isFirstInGroup={isFirstInGroup}
+                        darkMode={darkMode}
+                        isGroupChat={isGroupChat}
+                        participants={settings.groupParticipants}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+              
+              {/* Typing Indicator */}
+              {showTyping && <TypingIndicator darkMode={darkMode} />}
+            </div>
+          </div>
+
+          {/* Simple footer for desktop */}
+          <div className="border-t" style={{ backgroundColor: theme.footer, borderColor: theme.footerBorder }}>
+            <div className="flex items-center gap-[8px] px-[12px] py-[10px]">
+              <button className="w-[32px] h-[32px] flex items-center justify-center">
+                <Plus className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+              </button>
+              
+              <div 
+                className="flex-1 flex items-center rounded-full border px-[12px] py-[8px]"
+                style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder }}
+              >
+                <input
+                  type="text"
+                  placeholder="Message"
+                  className="flex-1 text-[15px] bg-transparent outline-none"
+                  style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
+                  disabled
+                />
+              </div>
+              
+              <button className="w-[32px] h-[32px] flex items-center justify-center">
+                <Camera className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+              </button>
+              
+              <button className="w-[32px] h-[32px] flex items-center justify-center">
+                <Mic className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile view - phone frame with status bar
   return (
     <div
-      className={cn("font-sf-pro transition-all duration-300 overflow-hidden", mobileView ? "w-[375px]" : "w-[375px]")}
+      className="font-sf-pro transition-all duration-300 overflow-hidden w-[375px]"
       style={{
         borderRadius: '44px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
@@ -1012,7 +1120,7 @@ export function WhatsAppPreview({
       <div
         className="flex flex-col overflow-hidden antialiased"
         style={{ 
-          height: mobileView ? '812px' : '700px',
+          height: '812px',
           borderRadius: '42px',
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
         }}
