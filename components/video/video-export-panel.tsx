@@ -56,7 +56,7 @@ interface VideoExportPanelProps {
 }
 
 const FORMAT_INFO: Record<VideoFormat, { label: string; desc: string; icon: string; ext: string }> = {
-  mp4: { label: 'WebM Video', desc: 'High quality, works in VLC', icon: '🎬', ext: '.webm' },
+  mp4: { label: 'MP4 Video', desc: 'Universal format, works everywhere', icon: '🎬', ext: '.mp4' },
   gif: { label: 'Animated GIF', desc: 'Easy to share everywhere', icon: '🎞️', ext: '.gif' },
 }
 
@@ -104,9 +104,12 @@ export function VideoExportPanel({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="lg" className="rounded-full shadow-lg h-14 px-6 gap-2">
+        <Button 
+          size="lg" 
+          className="rounded-full shadow-lg h-14 px-6 gap-2 bg-violet-500 hover:bg-violet-600 text-white border-0"
+        >
           <Film className="w-5 h-5" />
-          <span className="font-medium">Video</span>
+          <span className="font-medium">Video Export</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[480px]">
@@ -143,13 +146,13 @@ export function VideoExportPanel({
           {/* Processing Status */}
           {isWorking && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-xl border border-blue-200 dark:border-blue-800">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600 flex-shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-violet-50 dark:bg-violet-950 rounded-xl border border-violet-200 dark:border-violet-800">
+                <Loader2 className="w-5 h-5 animate-spin text-violet-600 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                  <p className="text-sm font-semibold text-violet-800 dark:text-violet-200">
                     {progressText || 'Creating video...'}
                   </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                  <p className="text-xs text-violet-600 dark:text-violet-400">
                     Please wait while we generate your video
                   </p>
                 </div>
@@ -158,7 +161,7 @@ export function VideoExportPanel({
               <div className="space-y-1.5">
                 <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                   <div 
-                    className="bg-primary h-full transition-all duration-300 ease-out"
+                    className="bg-violet-500 h-full transition-all duration-300 ease-out"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -179,7 +182,7 @@ export function VideoExportPanel({
                     className={cn(
                       'flex flex-col items-center p-4 rounded-xl border-2 transition-all',
                       settings.format === format
-                        ? 'border-primary bg-primary/5 shadow-sm'
+                        ? 'border-violet-500 bg-violet-50 dark:bg-violet-950 shadow-sm'
                         : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/50'
                     )}
                   >
@@ -206,7 +209,7 @@ export function VideoExportPanel({
                     className={cn(
                       'px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
                       settings.quality === q
-                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        ? 'bg-violet-500 text-white shadow-sm'
                         : 'bg-muted hover:bg-muted/80'
                     )}
                   >
@@ -308,6 +311,7 @@ export function VideoExportPanel({
                       variant={settings.typingDuration === 2000 ? "default" : "outline"}
                       size="sm"
                       onClick={() => onSettingsChange({ typingDuration: 2000, messageDelay: 1200 })}
+                      className={settings.typingDuration === 2000 ? "bg-violet-500 hover:bg-violet-600" : ""}
                     >
                       🐢 Slow
                     </Button>
@@ -315,6 +319,7 @@ export function VideoExportPanel({
                       variant={settings.typingDuration === 1500 ? "default" : "outline"}
                       size="sm"
                       onClick={() => onSettingsChange({ typingDuration: 1500, messageDelay: 800 })}
+                      className={settings.typingDuration === 1500 ? "bg-violet-500 hover:bg-violet-600" : ""}
                     >
                       ⚡ Normal
                     </Button>
@@ -322,6 +327,7 @@ export function VideoExportPanel({
                       variant={settings.typingDuration === 800 ? "default" : "outline"}
                       size="sm"
                       onClick={() => onSettingsChange({ typingDuration: 800, messageDelay: 400 })}
+                      className={settings.typingDuration === 800 ? "bg-violet-500 hover:bg-violet-600" : ""}
                     >
                       🚀 Fast
                     </Button>
@@ -352,7 +358,7 @@ export function VideoExportPanel({
                 <RotateCcw className="w-4 h-4" />
                 Create Another
               </Button>
-              <Button onClick={onDownload} className="gap-2">
+              <Button onClick={onDownload} className="gap-2 bg-violet-500 hover:bg-violet-600">
                 <Download className="w-4 h-4" />
                 Download {FORMAT_INFO[currentFormat].ext}
               </Button>
@@ -360,7 +366,7 @@ export function VideoExportPanel({
           ) : (
             <Button
               onClick={onStartAnimation}
-              className="gap-2 w-full sm:w-auto"
+              className="gap-2 w-full sm:w-auto bg-violet-500 hover:bg-violet-600"
             >
               <Sparkles className="w-4 h-4" />
               Create {FORMAT_INFO[settings.format].label}

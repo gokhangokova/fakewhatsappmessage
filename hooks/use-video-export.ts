@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { toPng } from 'html-to-image'
+import { Muxer, ArrayBufferTarget } from 'mp4-muxer'
 
 export type VideoFormat = 'mp4' | 'gif'
 export type VideoQuality = 'low' | 'medium' | 'high'
@@ -43,12 +44,9 @@ export function useVideoExport(): UseVideoExportReturn {
   const [videoDuration, setVideoDuration] = useState(0)
   const [currentFormat, setCurrentFormat] = useState<VideoFormat>('mp4')
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
   const framesRef = useRef<string[]>([])
   const startTimeRef = useRef<number>(0)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const formatRef = useRef<VideoFormat>('mp4')
   const settingsRef = useRef<{ quality: VideoQuality; frameRate: number }>({ quality: 'medium', frameRate: 30 })
@@ -70,22 +68,125 @@ export function useVideoExport(): UseVideoExportReturn {
     }
   }, [])
 
-  // Draw frame to canvas
-  const drawToCanvas = useCallback((dataUrl: string, canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): Promise<void> => {
-    return new Promise((resolve) => {
+  // Load image from data URL
+  const loadImage = useCallback((dataUrl: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
       const img = new Image()
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve()
-      }
-      img.onerror = () => resolve()
+      img.onload = () => resolve(img)
+      img.onerror = reject
       img.src = dataUrl
     })
   }, [])
 
-  // Create GIF from frames using worker
-  const createGif = useCallback(async (frames: string[], width: number, height: number, frameDelay: number): Promise<Blob> => {
+  // Create MP4 using WebCodecs API and mp4-muxer
+  const createMP4 = useCallback(async (
+    frames: string[], 
+    width: number, 
+    height: number, 
+    frameRate: number
+  ): Promise<Blob> => {
+    setProgressText('Initializing encoder...')
+    setProgress(10)
+
+    // Ensure dimensions are even (required for H.264)
+    const evenWidth = width % 2 === 0 ? width : width + 1
+    const evenHeight = height % 2 === 0 ? height : height + 1
+
+    const quality = settingsRef.current.quality
+    const bitrate = QUALITY_SETTINGS[quality].bitrate
+
+    // Check if WebCodecs is supported
+    if (typeof VideoEncoder === 'undefined') {
+      throw new Error('WebCodecs API is not supported in this browser. Please use Chrome 94+ or Edge 94+.')
+    }
+
+    // Create muxer
+    const target = new ArrayBufferTarget()
+    const muxer = new Muxer({
+      target,
+      video: {
+        codec: 'avc',
+        width: evenWidth,
+        height: evenHeight,
+      },
+      fastStart: 'in-memory',
+    })
+
+    // Create canvas for frame processing
+    const canvas = document.createElement('canvas')
+    canvas.width = evenWidth
+    canvas.height = evenHeight
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) throw new Error('Could not get canvas context')
+
+    // Create video encoder
+    let encodedFrames = 0
+    const totalFrames = frames.length
+
+    const encoder = new VideoEncoder({
+      output: (chunk, meta) => {
+        muxer.addVideoChunk(chunk, meta)
+      },
+      error: (err) => {
+        console.error('Encoder error:', err)
+      },
+    })
+
+    encoder.configure({
+      codec: 'avc1.42001f', // H.264 Baseline Profile Level 3.1
+      width: evenWidth,
+      height: evenHeight,
+      bitrate: bitrate,
+      framerate: frameRate,
+    })
+
+    setProgressText('Encoding frames...')
+
+    // Process each frame
+    for (let i = 0; i < frames.length; i++) {
+      const img = await loadImage(frames[i])
+      
+      // Draw image to canvas (with potential scaling for even dimensions)
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(0, 0, evenWidth, evenHeight)
+      ctx.drawImage(img, 0, 0, evenWidth, evenHeight)
+
+      // Create video frame
+      const videoFrame = new VideoFrame(canvas, {
+        timestamp: (i * 1_000_000) / frameRate, // microseconds
+        duration: 1_000_000 / frameRate,
+      })
+
+      // Encode frame (keyframe every 30 frames)
+      const keyFrame = i % 30 === 0
+      encoder.encode(videoFrame, { keyFrame })
+      videoFrame.close()
+
+      encodedFrames++
+      setProgress(10 + Math.round((encodedFrames / totalFrames) * 80))
+    }
+
+    setProgressText('Finalizing video...')
+    
+    // Flush encoder and finalize
+    await encoder.flush()
+    encoder.close()
+    muxer.finalize()
+
+    setProgress(100)
+
+    // Get the final MP4 buffer
+    const buffer = target.buffer
+    return new Blob([buffer], { type: 'video/mp4' })
+  }, [loadImage])
+
+  // Create GIF from frames
+  const createGIF = useCallback(async (
+    frames: string[], 
+    width: number, 
+    height: number, 
+    frameRate: number
+  ): Promise<Blob> => {
     setProgressText('Creating GIF...')
     setProgress(50)
     
@@ -100,6 +201,7 @@ export function useVideoExport(): UseVideoExportReturn {
       }
 
       const worker = new Worker('/gif.worker.js')
+      const frameDelay = Math.round(1000 / Math.min(frameRate, 15))
       
       worker.postMessage({
         type: 'start',
@@ -183,7 +285,6 @@ export function useVideoExport(): UseVideoExportReturn {
     setProgressText('Preparing...')
     setIsRecording(true)
     setCurrentFormat(format)
-    chunksRef.current = []
     framesRef.current = []
     startTimeRef.current = Date.now()
     formatRef.current = format
@@ -193,149 +294,46 @@ export function useVideoExport(): UseVideoExportReturn {
     isStoppedRef.current = false
 
     try {
-      const settings = QUALITY_SETTINGS[quality]
       const rect = element.getBoundingClientRect()
       
-      // Create canvas
+      // Create canvas for dimensions
       const canvas = document.createElement('canvas')
       canvas.width = Math.round(rect.width)
       canvas.height = Math.round(rect.height)
       canvasRef.current = canvas
-      
-      const ctx = canvas.getContext('2d', { alpha: false })
-      if (!ctx) throw new Error('Could not get canvas context')
 
-      if (format === 'gif') {
-        // For GIF: capture frames as data URLs
-        setProgressText('Capturing frames...')
+      setProgressText('Capturing frames...')
+      
+      const captureVideoFrame = async () => {
+        if (isStoppedRef.current || !elementRef.current) return
         
-        const captureGifFrame = async () => {
-          if (isStoppedRef.current || !elementRef.current) return
-          
-          const now = Date.now()
-          const frameInterval = 1000 / frameRate
-          
-          if (now - lastFrameTimeRef.current >= frameInterval) {
-            const frame = await captureFrame(elementRef.current)
-            if (frame) {
-              framesRef.current.push(frame)
-              lastFrameTimeRef.current = now
-            }
-          }
-          
-          const elapsed = (now - startTimeRef.current) / 1000
-          setProgress(Math.min(45, elapsed * 3))
-          
-          if (!isStoppedRef.current) {
-            animationFrameRef.current = requestAnimationFrame(captureGifFrame)
+        const now = Date.now()
+        const frameInterval = 1000 / frameRate
+        
+        if (now - lastFrameTimeRef.current >= frameInterval) {
+          const frame = await captureFrame(elementRef.current)
+          if (frame) {
+            framesRef.current.push(frame)
+            lastFrameTimeRef.current = now
           }
         }
         
-        animationFrameRef.current = requestAnimationFrame(captureGifFrame)
+        const elapsed = (now - startTimeRef.current) / 1000
+        setProgress(Math.min(8, elapsed * 0.8))
         
-      } else {
-        // For MP4: use MediaRecorder with WebM (compatible with VLC and most players)
-        setProgressText('Creating video...')
-        
-        const stream = canvas.captureStream(frameRate)
-        streamRef.current = stream
-        
-        // Try different codecs
-        let mimeType = 'video/webm;codecs=vp9'
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'video/webm;codecs=vp8'
+        if (!isStoppedRef.current) {
+          animationFrameRef.current = requestAnimationFrame(captureVideoFrame)
         }
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'video/webm'
-        }
-        
-        console.log('Using mimeType:', mimeType)
-        
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType,
-          videoBitsPerSecond: settings.bitrate,
-        })
-        
-        mediaRecorderRef.current = mediaRecorder
-        
-        mediaRecorder.ondataavailable = (event) => {
-          console.log('Data available:', event.data.size)
-          if (event.data.size > 0) {
-            chunksRef.current.push(event.data)
-          }
-        }
-        
-        mediaRecorder.onstop = async () => {
-          console.log('MediaRecorder stopped, chunks:', chunksRef.current.length)
-          setIsProcessing(true)
-          setProgressText('Finalizing video...')
-          setProgress(90)
-          
-          try {
-            if (chunksRef.current.length > 0) {
-              const blob = new Blob(chunksRef.current, { type: 'video/webm' })
-              console.log('Video blob created:', blob.size)
-              setVideoBlob(blob)
-              setVideoDuration((Date.now() - startTimeRef.current) / 1000)
-              setProgress(100)
-              setProgressText('Done!')
-            } else {
-              setError('No video data captured')
-            }
-          } catch (err) {
-            console.error('Video processing error:', err)
-            setError('Failed to process video')
-          }
-          
-          setIsProcessing(false)
-          setIsRecording(false)
-          
-          streamRef.current?.getTracks().forEach(track => track.stop())
-        }
-        
-        mediaRecorder.onerror = (event) => {
-          console.error('MediaRecorder error:', event)
-          setError('Video creation failed')
-          setIsRecording(false)
-        }
-        
-        mediaRecorder.start(100)
-        console.log('MediaRecorder started')
-        
-        // Capture frames to canvas continuously
-        const captureVideoFrame = async () => {
-          if (isStoppedRef.current) return
-          if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') {
-            return
-          }
-          
-          const frame = await captureFrame(element)
-          if (frame && canvasRef.current && ctx) {
-            await drawToCanvas(frame, canvasRef.current, ctx)
-          }
-          
-          const elapsed = (Date.now() - startTimeRef.current) / 1000
-          setProgress(Math.min(80, elapsed * 5))
-          
-          if (!isStoppedRef.current) {
-            animationFrameRef.current = requestAnimationFrame(captureVideoFrame)
-          }
-        }
-        
-        // Capture initial frame
-        const initialFrame = await captureFrame(element)
-        if (initialFrame) {
-          await drawToCanvas(initialFrame, canvas, ctx)
-        }
-        animationFrameRef.current = requestAnimationFrame(captureVideoFrame)
       }
+      
+      animationFrameRef.current = requestAnimationFrame(captureVideoFrame)
       
     } catch (err) {
       console.error('Start recording error:', err)
       setError(err instanceof Error ? err.message : 'Failed to start')
       setIsRecording(false)
     }
-  }, [captureFrame, drawToCanvas])
+  }, [captureFrame])
 
   const stopRecording = useCallback(async () => {
     console.log('Stopping recording...')
@@ -346,46 +344,41 @@ export function useVideoExport(): UseVideoExportReturn {
       animationFrameRef.current = null
     }
     
-    if (formatRef.current === 'gif') {
-      // Process GIF
-      setIsProcessing(true)
-      setProgressText('Creating GIF...')
-      
-      try {
-        if (framesRef.current.length > 0 && canvasRef.current) {
-          console.log('Creating GIF from', framesRef.current.length, 'frames')
-          const frameDelay = Math.round(1000 / settingsRef.current.frameRate)
-          const blob = await createGif(
-            framesRef.current,
-            canvasRef.current.width,
-            canvasRef.current.height,
-            frameDelay
-          )
-          setVideoBlob(blob)
-          setVideoDuration((Date.now() - startTimeRef.current) / 1000)
-          setProgress(100)
-          setProgressText('Done!')
-        } else {
-          setError('No frames captured')
-        }
-      } catch (err) {
-        console.error('GIF error:', err)
-        setError('Failed to create GIF')
-      }
-      
-      setIsProcessing(false)
-      setIsRecording(false)
-    } else {
-      // Stop MediaRecorder
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        console.log('Stopping MediaRecorder...')
-        mediaRecorderRef.current.stop()
+    setIsProcessing(true)
+    
+    try {
+      if (framesRef.current.length > 0 && canvasRef.current) {
+        console.log('Creating video from', framesRef.current.length, 'frames')
+        
+        const blob = formatRef.current === 'gif'
+          ? await createGIF(
+              framesRef.current,
+              canvasRef.current.width,
+              canvasRef.current.height,
+              settingsRef.current.frameRate
+            )
+          : await createMP4(
+              framesRef.current,
+              canvasRef.current.width,
+              canvasRef.current.height,
+              settingsRef.current.frameRate
+            )
+        
+        setVideoBlob(blob)
+        setVideoDuration((Date.now() - startTimeRef.current) / 1000)
+        setProgress(100)
+        setProgressText('Done!')
       } else {
-        console.log('MediaRecorder not recording:', mediaRecorderRef.current?.state)
-        setIsRecording(false)
+        setError('No frames captured')
       }
+    } catch (err) {
+      console.error('Video creation error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create video')
     }
-  }, [createGif])
+    
+    setIsProcessing(false)
+    setIsRecording(false)
+  }, [createMP4, createGIF])
 
   const downloadVideo = useCallback((filename?: string) => {
     if (!videoBlob) {
@@ -393,8 +386,7 @@ export function useVideoExport(): UseVideoExportReturn {
       return
     }
     
-    // MP4 format uses WebM internally but with .mp4 extension for compatibility
-    const extension = currentFormat === 'gif' ? 'gif' : 'webm'
+    const extension = currentFormat === 'gif' ? 'gif' : 'mp4'
     const defaultName = `whatsapp-chat-${Date.now()}.${extension}`
     
     console.log('Downloading video:', defaultName, videoBlob.size)
@@ -418,7 +410,6 @@ export function useVideoExport(): UseVideoExportReturn {
     setError(null)
     setIsRecording(false)
     setIsProcessing(false)
-    chunksRef.current = []
     framesRef.current = []
   }, [])
 
