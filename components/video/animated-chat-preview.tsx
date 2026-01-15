@@ -499,12 +499,19 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   // Auto-scroll to bottom when new messages appear or typing indicator shows
   useEffect(() => {
     if (chatContainerRef.current) {
-      // Use requestAnimationFrame to ensure DOM is updated before scrolling
-      requestAnimationFrame(() => {
+      // Use smooth scroll behavior for better UX
+      const scrollToBottom = () => {
         if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+          chatContainerRef.current.scrollTo({
+            top: chatContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          })
         }
-      })
+      }
+      
+      // Small delay to ensure DOM is fully updated
+      const timer = setTimeout(scrollToBottom, 50)
+      return () => clearTimeout(timer)
     }
   }, [visibleMessageCount, showTyping])
 
@@ -620,7 +627,9 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
           ref={chatContainerRef}
           className={cn(
             "flex-1 overflow-y-auto overflow-x-hidden relative",
-            darkMode ? "chat-scrollbar-dark" : "chat-scrollbar"
+            forVideoExport 
+              ? "scrollbar-hide" 
+              : (darkMode ? "chat-scrollbar-dark" : "chat-scrollbar")
           )} 
           style={{ 
             backgroundColor: darkMode 

@@ -144,6 +144,16 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Hide scrollbar completely (for video export) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Phone frame styles */
 .phone-frame {
   background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
