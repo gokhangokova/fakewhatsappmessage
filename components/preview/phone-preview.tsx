@@ -66,6 +66,8 @@ export function PhonePreview({
           wallpaperColor: darkMode ? '#0B141A' : '#E5DDD5',
           showEncryptionNotice: true,
           lastSeen: 'online',
+          backgroundType: 'doodle',
+          backgroundColor: darkMode ? '#0B141A' : '#E5DDD5',
         }}
         visibleMessageCount={visibleMessageCount}
         showTypingIndicator={showTypingIndicator}
