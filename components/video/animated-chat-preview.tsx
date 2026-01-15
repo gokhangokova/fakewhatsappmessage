@@ -27,6 +27,8 @@ interface AnimatedChatPreviewProps {
   messageDelay?: number // ms - mesajlar arası bekleme
   onAnimationComplete?: () => void
   onAnimationStart?: () => void
+  // Video export mode - no phone frame, sharp corners
+  forVideoExport?: boolean
 }
 
 export interface AnimatedChatPreviewRef {
@@ -485,6 +487,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   messageDelay = 800,
   onAnimationComplete,
   onAnimationStart,
+  forVideoExport = false,
 }, ref) => {
   const theme = darkMode ? themes.dark : themes.light
   const [visibleMessageCount, setVisibleMessageCount] = useState(0)
@@ -575,10 +578,10 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     <div
       className="font-sf-pro transition-all duration-300 w-[375px]"
       style={{
-        borderRadius: '44px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-        background: '#000',
-        padding: '2px',
+        borderRadius: forVideoExport ? 0 : '44px',
+        boxShadow: forVideoExport ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+        background: forVideoExport ? 'transparent' : '#000',
+        padding: forVideoExport ? 0 : '2px',
         overflow: 'hidden',
       }}
     >
@@ -599,7 +602,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         className="flex flex-col antialiased"
         style={{ 
           height: '812px',
-          borderRadius: '42px',
+          borderRadius: forVideoExport ? 0 : '42px',
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
           overflow: 'hidden',
         }}
