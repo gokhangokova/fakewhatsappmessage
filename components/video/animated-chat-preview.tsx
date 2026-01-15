@@ -573,12 +573,13 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
 
   return (
     <div
-      className="font-sf-pro transition-all duration-300 overflow-hidden w-[375px]"
+      className="font-sf-pro transition-all duration-300 w-[375px]"
       style={{
         borderRadius: '44px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
         background: '#000',
         padding: '2px',
+        overflow: 'hidden',
       }}
     >
       <style jsx global>{`
@@ -595,11 +596,12 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
       `}</style>
       
       <div
-        className="flex flex-col overflow-hidden antialiased"
+        className="flex flex-col antialiased"
         style={{ 
           height: '812px',
           borderRadius: '42px',
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
+          overflow: 'hidden',
         }}
       >
         <IOSStatusBar darkMode={darkMode} />
@@ -613,7 +615,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
 
         <div 
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto relative" 
+          className="flex-1 overflow-y-auto overflow-x-hidden relative" 
           style={{ 
             backgroundColor: darkMode 
               ? theme.chatBg 
@@ -628,7 +630,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             />
           )}
           
-          <div className="relative z-10 py-[4px]">
+          <div className="relative z-10 py-[4px] overflow-hidden">
             {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} />}
             
             <DateSeparator date="Today" darkMode={darkMode} />
