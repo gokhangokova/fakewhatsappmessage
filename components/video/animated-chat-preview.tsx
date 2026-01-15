@@ -499,18 +499,15 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   // Auto-scroll to bottom when new messages appear or typing indicator shows
   useEffect(() => {
     if (chatContainerRef.current) {
-      // Use smooth scroll behavior for better UX
       const scrollToBottom = () => {
         if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTo({
-            top: chatContainerRef.current.scrollHeight,
-            behavior: 'smooth'
-          })
+          // Always use instant scroll for reliable positioning
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
         }
       }
       
       // Small delay to ensure DOM is fully updated
-      const timer = setTimeout(scrollToBottom, 50)
+      const timer = setTimeout(scrollToBottom, 20)
       return () => clearTimeout(timer)
     }
   }, [visibleMessageCount, showTyping])
@@ -530,10 +527,10 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   }, [])
 
   const resetAnimation = useCallback(() => {
-    setVisibleMessageCount(0)
     setShowTyping(false)
     setIsAnimating(false)
     setAnimationStopped(false)
+    setVisibleMessageCount(0)
   }, [])
 
   useImperativeHandle(ref, () => ({
@@ -548,9 +545,9 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     if (!isAnimating || animationStopped) return
 
     if (visibleMessageCount >= messages.length) {
-      // Animation complete
+      // Animation complete - don't reset isAnimating here to preserve scroll position
+      // Parent component will call stopAnimation when ready
       setTimeout(() => {
-        setIsAnimating(false)
         onAnimationComplete?.()
       }, 1000) // Wait 1 second at the end
       return
