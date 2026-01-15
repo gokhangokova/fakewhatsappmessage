@@ -615,7 +615,10 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
 
         <div 
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden relative" 
+          className={cn(
+            "flex-1 overflow-y-auto overflow-x-hidden relative",
+            darkMode ? "chat-scrollbar-dark" : "chat-scrollbar"
+          )} 
           style={{ 
             backgroundColor: darkMode 
               ? theme.chatBg 

@@ -992,7 +992,10 @@ export function WhatsAppPreview({
             participantCount={settings.groupParticipants?.length}
           />
 
-          <div className="flex-1 overflow-y-auto relative" style={{ backgroundColor: getBgColor() }}>
+          <div className={cn(
+            "flex-1 overflow-y-auto relative",
+            darkMode ? "chat-scrollbar-dark" : "chat-scrollbar"
+          )} style={{ backgroundColor: getBgColor() }}>
             {/* Background Image */}
             {!transparentBg && settings.backgroundType === 'image' && settings.backgroundImage && (
               <div 
@@ -1106,7 +1109,10 @@ export function WhatsAppPreview({
           participantCount={settings.groupParticipants?.length}
         />
 
-        <div className="flex-1 overflow-y-auto relative" style={{ backgroundColor: getBgColor() }}>
+        <div className={cn(
+          "flex-1 overflow-y-auto relative",
+          darkMode ? "chat-scrollbar-dark" : "chat-scrollbar"
+        )} style={{ backgroundColor: getBgColor() }}>
           {/* Background Image */}
           {!transparentBg && settings.backgroundType === 'image' && settings.backgroundImage && (
             <div 
