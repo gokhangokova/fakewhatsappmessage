@@ -1,0 +1,308 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SF Pro Font - Apple System Font Stack */
+@layer base {
+  :root {
+    --font-sf-pro: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* SF Pro Font Class for iOS-like interfaces */
+.font-sf-pro {
+  font-family: var(--font-sf-pro);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* iOS WhatsApp specific font weights */
+.sf-pro-regular {
+  font-family: var(--font-sf-pro);
+  font-weight: 400;
+}
+
+.sf-pro-medium {
+  font-family: var(--font-sf-pro);
+  font-weight: 500;
+}
+
+.sf-pro-semibold {
+  font-family: var(--font-sf-pro);
+  font-weight: 600;
+}
+
+.sf-pro-bold {
+  font-family: var(--font-sf-pro);
+  font-weight: 700;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Phone frame styles */
+.phone-frame {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.phone-screen {
+  border-radius: 32px;
+  overflow: hidden;
+}
+
+/* Message bubble animations */
+.message-bubble {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Platform specific styles */
+.whatsapp-gradient {
+  background: linear-gradient(180deg, #075E54 0%, #128C7E 100%);
+}
+
+.instagram-gradient {
+  background: linear-gradient(45deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%);
+}
+
+.imessage-bubble-sent {
+  background: #007AFF;
+  color: white;
+}
+
+.imessage-bubble-received {
+  background: #E9E9EB;
+  color: black;
+}
+
+.whatsapp-bubble-sent {
+  background: #DCF8C6;
+  color: #111;
+}
+
+.whatsapp-bubble-received {
+  background: white;
+  color: #111;
+}
+
+/* Toast Animations */
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Export loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Hover effects */
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Button loading state */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  border-radius: inherit;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Export preview overlay */
+.export-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.export-overlay.visible {
+  opacity: 1;
+}
+
+/* Watermark styles */
+.watermark {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  pointer-events: none;
+  user-select: none;
+}
+
+.watermark-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.03;
+  background-image: 
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 100px,
+      rgba(0, 0, 0, 0.1) 100px,
+      rgba(0, 0, 0, 0.1) 200px
+    );
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .phone-frame {
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+}
+
+@media (max-width: 640px) {
+  .phone-frame {
+    transform: scale(0.75);
+  }
+}

@@ -1,0 +1,1085 @@
+'use client'
+
+import { Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, VoiceMessageData, DocumentData, VideoData, LocationData, ContactData } from '@/types'
+import { formatTime, cn } from '@/lib/utils'
+import {
+  ChevronLeft,
+  Phone,
+  Video,
+  Camera,
+  Mic,
+  Plus,
+  Check,
+  CheckCheck,
+  Clock,
+  Lock,
+  Forward,
+  FileText,
+  Play,
+  Pause,
+  MapPin,
+  User as UserIcon,
+  MessageCircle,
+} from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
+interface WhatsAppPreviewProps {
+  sender: User
+  receiver: User
+  messages: Message[]
+  darkMode: boolean
+  mobileView: boolean
+  timeFormat: '12h' | '24h'
+  transparentBg: boolean
+  settings: WhatsAppSettings
+  // Animation props for video export
+  visibleMessageCount?: number // If set, only shows this many messages
+  showTypingIndicator?: boolean // If true, shows typing indicator at the end
+}
+
+// Theme colors
+const themes = {
+  light: {
+    statusBar: '#F6F6F6',
+    statusBarText: '#000000',
+    header: '#F6F6F6',
+    headerBorder: '#E5E5E5',
+    headerText: '#000000',
+    headerSubtext: '#8E8E93',
+    headerIcon: '#007AFF',
+    chatBg: '#EFEFE4',
+    sentBubble: '#E7FFDB',
+    receivedBubble: '#FFFFFF',
+    sentText: '#000000',
+    receivedText: '#000000',
+    timeText: '#667781',
+    sentTimeText: '#53BDEB',
+    dateSeparator: '#8E8E93',
+    encryptionBg: '#FCF4CB',
+    encryptionText: '#54656F',
+    encryptionIcon: '#B49A54',
+    footer: '#F6F6F6',
+    footerBorder: '#E5E5E5',
+    inputBg: '#FFFFFF',
+    inputBorder: '#E5E5E5',
+    inputPlaceholder: '#8E8E93',
+    doodleColor: '#C8C4BA',
+    homeIndicator: '#000000',
+    voiceBg: '#E7FFDB',
+    voiceWave: '#50C878',
+    documentIcon: '#007AFF',
+  },
+  dark: {
+    statusBar: '#1F2C34',
+    statusBarText: '#FFFFFF',
+    header: '#1F2C34',
+    headerBorder: '#2A3942',
+    headerText: '#FFFFFF',
+    headerSubtext: '#8696A0',
+    headerIcon: '#00A884',
+    chatBg: '#0B141A',
+    sentBubble: '#005C4B',
+    receivedBubble: '#1F2C34',
+    sentText: '#FFFFFF',
+    receivedText: '#FFFFFF',
+    timeText: '#8696A0',
+    sentTimeText: '#7FCBAB',
+    dateSeparator: '#8696A0',
+    encryptionBg: '#1D282F',
+    encryptionText: '#8696A0',
+    encryptionIcon: '#8696A0',
+    footer: '#1F2C34',
+    footerBorder: '#2A3942',
+    inputBg: '#2A3942',
+    inputBorder: '#2A3942',
+    inputPlaceholder: '#8696A0',
+    doodleColor: '#182229',
+    homeIndicator: '#FFFFFF',
+    voiceBg: '#005C4B',
+    voiceWave: '#7FCBAB',
+    documentIcon: '#00A884',
+  },
+}
+
+const defaultSettings: WhatsAppSettings = {
+  backgroundType: 'doodle',
+  backgroundColor: '#EFEFE4',
+  backgroundImage: undefined,
+  showDoodle: true,
+  doodleOpacity: 0.06,
+  wallpaperColor: '#EFEFE4',
+  showEncryptionNotice: true,
+  lastSeen: 'online',
+}
+
+// iOS WhatsApp Doodle Pattern
+const WhatsAppDoodle = ({ opacity, color }: { opacity: number; color: string }) => (
+  <svg
+    className="absolute inset-0 w-full h-full pointer-events-none"
+    style={{ opacity }}
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <defs>
+      <pattern id="wa-doodle" x="0" y="0" width="240" height="240" patternUnits="userSpaceOnUse">
+        <g fill={color}>
+          <rect x="20" y="15" width="14" height="22" rx="2" />
+          <path d="M60 20 Q60 14 66 14 L82 14 Q88 14 88 20 L88 28 Q88 34 82 34 L70 34 L66 40 L66 34 Q60 34 60 28 Z" />
+          <path d="M120 22 Q120 15 126 15 Q132 15 132 22 Q132 15 138 15 Q144 15 144 22 Q144 30 132 38 Q120 30 120 22 Z" />
+          <rect x="170" y="18" width="24" height="18" rx="3" />
+          <circle cx="182" cy="27" r="6" fill="currentColor" fillOpacity="0" stroke={color} strokeWidth="2"/>
+          <rect x="25" y="80" width="18" height="14" rx="2" />
+          <ellipse cx="80" cy="98" rx="6" ry="5" />
+          <path d="M145 70 L148 82 L162 82 L151 90 L154 104 L145 96 L136 104 L139 90 L128 82 L142 82 Z" />
+          <path d="M200 102 Q188 85 200 72 Q212 85 200 102 Z" />
+          <rect x="230" y="70" width="20" height="28" rx="2" />
+          <circle cx="40" cy="150" r="14" fill="none" stroke={color} strokeWidth="2.5"/>
+          <rect x="155" y="140" width="28" height="22" rx="2" />
+          <rect x="20" y="200" width="22" height="16" rx="2" />
+          <path d="M42 204 L54 198 L54 220 L42 214 Z" />
+          <rect x="180" y="205" width="22" height="20" rx="2" />
+          <rect x="225" y="200" width="20" height="24" rx="3" />
+        </g>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#wa-doodle)" />
+  </svg>
+)
+
+// iOS Status Bar
+const IOSStatusBar = ({ darkMode }: { darkMode: boolean }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  const iconColor = theme.statusBarText
+  
+  return (
+    <div 
+      className="flex items-center justify-between px-[21px] pt-[12px] pb-[10px]"
+      style={{ backgroundColor: theme.statusBar }}
+    >
+      <span className="text-[15px] font-semibold tracking-[-0.3px]" style={{ color: theme.statusBarText }}>
+        9:41
+      </span>
+      <div className="flex items-center gap-[5px]">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+          <rect x="0" y="7" width="3" height="5" rx="0.5" fill={iconColor}/>
+          <rect x="4" y="5" width="3" height="7" rx="0.5" fill={iconColor}/>
+          <rect x="8" y="3" width="3" height="9" rx="0.5" fill={iconColor}/>
+          <rect x="12" y="0" width="3" height="12" rx="0.5" fill={iconColor}/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 2.4C10.9 2.4 13.5 3.5 15.4 5.3L14.1 6.6C12.5 5.1 10.4 4.2 8 4.2C5.6 4.2 3.5 5.1 1.9 6.6L0.6 5.3C2.5 3.5 5.1 2.4 8 2.4Z" fill={iconColor}/>
+          <path d="M8 5.8C9.9 5.8 11.6 6.5 12.9 7.7L11.6 9C10.6 8.1 9.4 7.6 8 7.6C6.6 7.6 5.4 8.1 4.4 9L3.1 7.7C4.4 6.5 6.1 5.8 8 5.8Z" fill={iconColor}/>
+          <circle cx="8" cy="10.5" r="1.5" fill={iconColor}/>
+        </svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+          <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={iconColor} strokeOpacity="0.35"/>
+          <rect x="2" y="2" width="18" height="8" rx="1.5" fill={iconColor}/>
+          <path d="M23 4V8C24.1 7.5 24.1 4.5 23 4Z" fill={iconColor} fillOpacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// iOS WhatsApp Header
+const IOSWhatsAppHeader = ({
+  receiver,
+  lastSeen,
+  lastSeenTime,
+  darkMode,
+  isGroupChat,
+  groupName,
+  participantCount,
+}: {
+  receiver: User
+  lastSeen: WhatsAppSettings['lastSeen']
+  lastSeenTime?: Date
+  darkMode: boolean
+  isGroupChat?: boolean
+  groupName?: string
+  participantCount?: number
+}) => {
+  const theme = darkMode ? themes.dark : themes.light
+  
+  const getStatusText = () => {
+    if (isGroupChat && participantCount) {
+      if (lastSeen === 'typing') return 'Sarah is typing...'
+      return `${participantCount} participants`
+    }
+    
+    switch (lastSeen) {
+      case 'online':
+        return 'online'
+      case 'typing':
+        return 'typing...'
+      case 'last-seen':
+        if (lastSeenTime) {
+          const lastSeenDate = lastSeenTime instanceof Date ? lastSeenTime : new Date(lastSeenTime)
+          const today = new Date()
+          const isToday = lastSeenDate.toDateString() === today.toDateString()
+          const time = lastSeenDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: false,
+          })
+          return isToday ? `last seen today at ${time}` : `last seen ${lastSeenDate.toLocaleDateString()}`
+        }
+        return 'tap here for contact info'
+      case 'none':
+        return 'tap here for contact info'
+      default:
+        return 'tap here for contact info'
+    }
+  }
+
+  return (
+    <div 
+      className="flex items-center gap-[10px] px-[8px] py-[6px] border-b"
+      style={{ 
+        backgroundColor: theme.header,
+        borderColor: theme.headerBorder,
+      }}
+    >
+      <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
+      
+      <Avatar className="w-[36px] h-[36px]">
+        {receiver.avatar ? (
+          <AvatarImage src={receiver.avatar} />
+        ) : (
+          <AvatarFallback 
+            className="text-[14px] font-medium"
+            style={{ 
+              backgroundColor: darkMode ? '#2A3942' : '#DFE5E7',
+              color: darkMode ? '#8696A0' : '#54656F',
+            }}
+          >
+            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-[16px] truncate leading-[20px]" style={{ color: theme.headerText }}>
+          {isGroupChat ? groupName : receiver.name}
+        </p>
+        <p className="text-[12px] truncate leading-[16px]" style={{ color: theme.headerSubtext }}>
+          {getStatusText()}
+        </p>
+      </div>
+      
+      <div className="flex items-center gap-[20px] pr-[4px]">
+        <Video className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+        <Phone className="w-[22px] h-[22px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+      </div>
+    </div>
+  )
+}
+
+// Date Separator
+const DateSeparator = ({ date, darkMode }: { date: string; darkMode: boolean }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  return (
+    <div className="flex justify-center my-[8px]">
+      <span 
+        className="text-[12px] font-medium px-[12px] py-[4px] rounded-[8px]"
+        style={{ 
+          color: theme.dateSeparator,
+          backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+        }}
+      >
+        {date}
+      </span>
+    </div>
+  )
+}
+
+// Encryption Notice
+const EncryptionNotice = ({ darkMode }: { darkMode: boolean }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  return (
+    <div className="flex justify-center my-[6px] px-[16px]">
+      <div 
+        className="flex items-center gap-[6px] px-[12px] py-[8px] rounded-[8px] max-w-[340px]"
+        style={{ backgroundColor: theme.encryptionBg }}
+      >
+        <Lock className="w-[12px] h-[12px] flex-shrink-0" style={{ color: theme.encryptionIcon }} />
+        <span className="text-[11px] text-center leading-[14px]" style={{ color: theme.encryptionText }}>
+          Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// Forwarded Label
+const ForwardedLabel = ({ darkMode }: { darkMode: boolean }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  return (
+    <div className="flex items-center gap-[4px] text-[12px] italic mb-[2px]" style={{ color: theme.timeText }}>
+      <Forward className="w-[12px] h-[12px]" />
+      <span>Forwarded</span>
+    </div>
+  )
+}
+
+// Reply Preview
+const ReplyPreview = ({ 
+  replyTo, 
+  sender, 
+  receiver,
+  isSent,
+  darkMode,
+}: { 
+  replyTo: ReplyTo
+  sender: User
+  receiver: User
+  isSent: boolean
+  darkMode: boolean
+}) => {
+  const isReplyFromSender = replyTo.userId === sender.id
+  const replyUserName = isReplyFromSender ? 'You' : replyTo.userName || receiver.name
+  
+  return (
+    <div className={cn(
+      "rounded-[6px] px-[10px] py-[6px] mb-[4px] border-l-[3px]",
+    )} style={{
+      backgroundColor: darkMode 
+        ? (isSent ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)')
+        : (isSent ? '#C9E9B4' : '#F0F0F0'),
+      borderLeftColor: isReplyFromSender ? '#53BDEB' : '#25D366',
+    }}>
+      <p className="text-[12px] font-semibold" style={{ color: isReplyFromSender ? '#53BDEB' : '#25D366' }}>
+        {replyUserName}
+      </p>
+      <p className="text-[12px] truncate max-w-[200px]" style={{ color: darkMode ? '#8696A0' : '#667781' }}>
+        {replyTo.content}
+      </p>
+    </div>
+  )
+}
+
+// Reactions Display
+const ReactionsDisplay = ({ reactions, darkMode }: { reactions: MessageReaction[]; darkMode: boolean }) => {
+  if (!reactions || reactions.length === 0) return null
+  
+  return (
+    <div 
+      className="absolute -bottom-[12px] left-[8px] flex items-center gap-[2px] px-[6px] py-[3px] rounded-full"
+      style={{ 
+        backgroundColor: darkMode ? '#1F2C34' : '#FFFFFF',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+      }}
+    >
+      {reactions.map((reaction, idx) => (
+        <span key={idx} className="text-[13px]">{reaction.emoji}</span>
+      ))}
+    </div>
+  )
+}
+
+// Voice Message
+const VoiceMessage = ({ 
+  voiceData, 
+  isSent, 
+  darkMode,
+  avatar,
+}: { 
+  voiceData: VoiceMessageData
+  isSent: boolean
+  darkMode: boolean
+  avatar?: string | null
+}) => {
+  const theme = darkMode ? themes.dark : themes.light
+  const minutes = Math.floor(voiceData.duration / 60)
+  const seconds = voiceData.duration % 60
+  const durationText = `${minutes}:${seconds.toString().padStart(2, '0')}`
+  
+  // Generate random waveform if not provided
+  const waveform = voiceData.waveform || Array.from({ length: 25 }, () => Math.random() * 0.8 + 0.2)
+  
+  return (
+    <div className="flex items-center gap-[8px] min-w-[200px]">
+      {/* Avatar */}
+      <div className="relative">
+        <Avatar className="w-[40px] h-[40px]">
+          {avatar ? (
+            <AvatarImage src={avatar} />
+          ) : (
+            <AvatarFallback 
+              style={{ 
+                backgroundColor: isSent ? (darkMode ? '#00A884' : '#25D366') : (darkMode ? '#8696A0' : '#DFE5E7'),
+                color: isSent ? '#FFFFFF' : (darkMode ? '#1F2C34' : '#54656F'),
+              }}
+            >
+              <Mic className="w-[20px] h-[20px]" />
+            </AvatarFallback>
+          )}
+        </Avatar>
+        {/* Play button overlay */}
+        <div 
+          className="absolute inset-0 flex items-center justify-center rounded-full"
+          style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+        >
+          <Play className="w-[16px] h-[16px] text-white ml-[2px]" fill="white" />
+        </div>
+      </div>
+      
+      {/* Waveform */}
+      <div className="flex-1 flex flex-col gap-[4px]">
+        <div className="flex items-center gap-[1px] h-[20px]">
+          {waveform.map((amp, i) => (
+            <div
+              key={i}
+              className="w-[3px] rounded-full"
+              style={{
+                height: `${amp * 100}%`,
+                backgroundColor: voiceData.isPlayed 
+                  ? (darkMode ? '#8696A0' : '#667781')
+                  : theme.voiceWave,
+              }}
+            />
+          ))}
+        </div>
+        <span className="text-[11px]" style={{ color: darkMode ? '#8696A0' : '#667781' }}>
+          {durationText}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// Document Message
+const DocumentMessage = ({ 
+  documentData, 
+  darkMode,
+}: { 
+  documentData: DocumentData
+  darkMode: boolean
+}) => {
+  const theme = darkMode ? themes.dark : themes.light
+  
+  const getFileIcon = (type: string) => {
+    const colors: Record<string, string> = {
+      pdf: '#FF5722',
+      doc: '#2196F3',
+      docx: '#2196F3',
+      xls: '#4CAF50',
+      xlsx: '#4CAF50',
+      ppt: '#FF9800',
+      pptx: '#FF9800',
+      default: theme.documentIcon,
+    }
+    return colors[type.toLowerCase()] || colors.default
+  }
+  
+  return (
+    <div className="flex items-center gap-[10px] min-w-[200px] p-[8px] rounded-[8px]" style={{
+      backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    }}>
+      <div 
+        className="w-[40px] h-[48px] rounded-[4px] flex items-center justify-center"
+        style={{ backgroundColor: getFileIcon(documentData.fileType) }}
+      >
+        <FileText className="w-[20px] h-[20px] text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-medium truncate" style={{ color: darkMode ? '#FFFFFF' : '#000000' }}>
+          {documentData.fileName}
+        </p>
+        <p className="text-[12px]" style={{ color: darkMode ? '#8696A0' : '#667781' }}>
+          {documentData.fileSize} · {documentData.fileType.toUpperCase()}
+          {documentData.pageCount && ` · ${documentData.pageCount} pages`}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Video Message
+const VideoMessage = ({ 
+  videoData,
+  imageUrl,
+}: { 
+  videoData: VideoData
+  imageUrl?: string
+}) => {
+  const minutes = Math.floor(videoData.duration / 60)
+  const seconds = videoData.duration % 60
+  const durationText = `${minutes}:${seconds.toString().padStart(2, '0')}`
+  
+  return (
+    <div className="relative rounded-[8px] overflow-hidden max-w-[220px]">
+      <img 
+        src={videoData.thumbnail || imageUrl || 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300&h=200&fit=crop'} 
+        alt="Video thumbnail" 
+        className="w-full h-auto object-cover"
+        style={{ maxHeight: '200px' }}
+      />
+      {/* Play button */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+        <div className="w-[50px] h-[50px] rounded-full bg-black/50 flex items-center justify-center">
+          <Play className="w-[24px] h-[24px] text-white ml-[2px]" fill="white" />
+        </div>
+      </div>
+      {/* Duration */}
+      <div className="absolute bottom-[8px] left-[8px] bg-black/60 px-[6px] py-[2px] rounded text-white text-[11px]">
+        {durationText}
+      </div>
+    </div>
+  )
+}
+
+// Image Message
+const ImageMessage = ({ imageUrl }: { imageUrl: string }) => (
+  <div className="rounded-[8px] overflow-hidden max-w-[220px]">
+    <img 
+      src={imageUrl} 
+      alt="Shared image" 
+      className="w-full h-auto object-cover"
+      style={{ maxHeight: '260px' }}
+    />
+  </div>
+)
+
+// Location Message
+const LocationMessage = ({ 
+  locationData, 
+  darkMode,
+}: { 
+  locationData: LocationData
+  darkMode: boolean
+}) => {
+  // Generate static map URL (using OpenStreetMap static image service)
+  const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${locationData.latitude},${locationData.longitude}&zoom=15&size=220x120&maptype=osmarenderer&markers=${locationData.latitude},${locationData.longitude},red-pushpin`
+  
+  return (
+    <div className="rounded-[8px] overflow-hidden max-w-[220px]">
+      {/* Map Image */}
+      <div className="relative h-[120px] bg-gray-200">
+        <img 
+          src={mapUrl}
+          alt="Location map" 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to a gradient background if map fails to load
+            (e.target as HTMLImageElement).style.display = 'none'
+          }}
+        />
+        {/* Fallback gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+          <MapPin className="w-8 h-8 text-white" />
+        </div>
+        {/* Pin overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-8 h-8 bg-red-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-white" />
+          </div>
+        </div>
+        {/* Live indicator */}
+        {locationData.isLive && (
+          <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            Live
+          </div>
+        )}
+      </div>
+      {/* Location Info */}
+      <div className="p-[10px]" style={{ backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}>
+        {locationData.name && (
+          <p className="text-[14px] font-medium truncate" style={{ color: darkMode ? '#FFFFFF' : '#000000' }}>
+            {locationData.name}
+          </p>
+        )}
+        {locationData.address && (
+          <p className="text-[12px] truncate" style={{ color: darkMode ? '#8696A0' : '#667781' }}>
+            {locationData.address}
+          </p>
+        )}
+        {locationData.isLive && locationData.duration && (
+          <p className="text-[11px] mt-1" style={{ color: '#25D366' }}>
+            Sharing for {locationData.duration} min
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Contact Message
+const ContactMessage = ({ 
+  contactData, 
+  darkMode,
+}: { 
+  contactData: ContactData
+  darkMode: boolean
+}) => {
+  return (
+    <div className="min-w-[200px] max-w-[250px]">
+      {/* Contact Card */}
+      <div 
+        className="flex items-center gap-[12px] p-[12px] rounded-t-[8px]"
+        style={{ backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
+      >
+        {/* Avatar */}
+        <Avatar className="w-[44px] h-[44px]">
+          {contactData.avatar ? (
+            <AvatarImage src={contactData.avatar} />
+          ) : (
+            <AvatarFallback 
+              style={{ 
+                backgroundColor: darkMode ? '#00A884' : '#25D366',
+                color: '#FFFFFF',
+              }}
+            >
+              <UserIcon className="w-[22px] h-[22px]" />
+            </AvatarFallback>
+          )}
+        </Avatar>
+        
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-medium truncate" style={{ color: darkMode ? '#FFFFFF' : '#000000' }}>
+            {contactData.name}
+          </p>
+          {contactData.phone && (
+            <p className="text-[13px] truncate" style={{ color: darkMode ? '#8696A0' : '#667781' }}>
+              {contactData.phone}
+            </p>
+          )}
+          {contactData.organization && (
+            <p className="text-[12px] truncate" style={{ color: darkMode ? '#8696A0' : '#667781' }}>
+              {contactData.organization}
+            </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Action Button */}
+      <button 
+        className="w-full py-[10px] text-center border-t flex items-center justify-center gap-2"
+        style={{ 
+          borderColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          color: darkMode ? '#00A884' : '#25D366',
+        }}
+      >
+        <MessageCircle className="w-4 h-4" />
+        <span className="text-[14px] font-medium">Message</span>
+      </button>
+    </div>
+  )
+}
+
+// Group Chat Sender Name
+const GroupSenderName = ({ name, color }: { name: string; color?: string }) => (
+  <p className="text-[12px] font-semibold mb-[2px]" style={{ color: color || '#25D366' }}>
+    {name}
+  </p>
+)
+
+// iOS WhatsApp Message Bubble
+const IOSMessageBubble = ({
+  message,
+  sender,
+  receiver,
+  timeFormat,
+  isFirstInGroup,
+  darkMode,
+  isGroupChat,
+  participants,
+}: {
+  message: Message
+  sender: User
+  receiver: User
+  timeFormat: '12h' | '24h'
+  isFirstInGroup: boolean
+  darkMode: boolean
+  isGroupChat?: boolean
+  participants?: User[]
+}) => {
+  const theme = darkMode ? themes.dark : themes.light
+  const isSent = message.userId === sender.id
+  const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
+  const time = formatTime(timestamp, timeFormat)
+  const status = message.status || 'read'
+  const hasReactions = message.reactions && message.reactions.length > 0
+  const hasImage = message.type === 'image' && message.imageUrl
+  const hasVoice = message.type === 'voice' && message.voiceData
+  const hasDocument = message.type === 'document' && message.documentData
+  const hasVideo = message.type === 'video' && message.videoData
+  const hasLocation = message.type === 'location' && message.locationData
+  const hasContact = message.type === 'contact' && message.contactData
+  
+  // Get sender info for group chat
+  const messageSender = isGroupChat && !isSent 
+    ? participants?.find(p => p.id === message.userId) || receiver
+    : null
+
+  const bubbleBg = isSent ? theme.sentBubble : theme.receivedBubble
+  const textColor = isSent ? theme.sentText : theme.receivedText
+  const timeColor = isSent ? theme.sentTimeText : theme.timeText
+
+  return (
+    <div className={cn(
+      "flex px-[12px]",
+      isSent ? "justify-end" : "justify-start",
+      isFirstInGroup ? "mt-[8px]" : "mt-[2px]",
+      hasReactions ? "mb-[16px]" : ""
+    )}>
+      <div className="relative max-w-[75%]">
+        <div
+          className={cn(
+            "relative",
+            isFirstInGroup
+              ? isSent
+                ? "rounded-[18px] rounded-br-[4px]"
+                : "rounded-[18px] rounded-bl-[4px]"
+              : "rounded-[18px]"
+          )}
+          style={{
+            backgroundColor: bubbleBg,
+            boxShadow: darkMode ? 'none' : '0 1px 0.5px rgba(0, 0, 0, 0.13)',
+            padding: (hasImage || hasVideo || hasLocation) ? '3px' : undefined,
+          }}
+        >
+          {/* Tail */}
+          {isFirstInGroup && (
+            <svg
+              className={cn("absolute bottom-0", isSent ? "-right-[8px]" : "-left-[8px]")}
+              width="12" height="19" viewBox="0 0 12 19"
+            >
+              <path
+                fill={bubbleBg}
+                d={isSent ? "M0 0 L0 19 L12 19 Q2 15 0 0 Z" : "M12 0 L12 19 L0 19 Q10 15 12 0 Z"}
+              />
+            </svg>
+          )}
+          
+          {/* Group sender name */}
+          {isGroupChat && !isSent && isFirstInGroup && messageSender && (
+            <div className="px-[12px] pt-[6px]">
+              <GroupSenderName name={messageSender.name} color={messageSender.color} />
+            </div>
+          )}
+          
+          {/* Forwarded Label */}
+          {message.isForwarded && (
+            <div className="px-[12px] pt-[6px]">
+              <ForwardedLabel darkMode={darkMode} />
+            </div>
+          )}
+          
+          {/* Reply Preview */}
+          {message.replyTo && (
+            <div className="px-[6px] pt-[6px]">
+              <ReplyPreview 
+                replyTo={message.replyTo} 
+                sender={sender}
+                receiver={receiver}
+                isSent={isSent}
+                darkMode={darkMode}
+              />
+            </div>
+          )}
+          
+          {/* Image */}
+          {hasImage && <ImageMessage imageUrl={message.imageUrl!} />}
+          
+          {/* Video */}
+          {hasVideo && <VideoMessage videoData={message.videoData!} imageUrl={message.imageUrl} />}
+          
+          {/* Voice Message */}
+          {hasVoice && (
+            <div className="px-[12px] py-[8px]">
+              <VoiceMessage 
+                voiceData={message.voiceData!} 
+                isSent={isSent} 
+                darkMode={darkMode}
+                avatar={isSent ? sender.avatar : receiver.avatar}
+              />
+            </div>
+          )}
+          
+          {/* Document */}
+          {hasDocument && (
+            <div className="px-[6px] py-[6px]">
+              <DocumentMessage documentData={message.documentData!} darkMode={darkMode} />
+            </div>
+          )}
+          
+          {/* Location */}
+          {hasLocation && (
+            <LocationMessage locationData={message.locationData!} darkMode={darkMode} />
+          )}
+          
+          {/* Contact */}
+          {hasContact && (
+            <div className="px-[3px] py-[3px]">
+              <ContactMessage contactData={message.contactData!} darkMode={darkMode} />
+            </div>
+          )}
+          
+          {/* Message Content */}
+          <div className={cn(
+            "flex flex-wrap items-end",
+            (hasImage || hasVideo || hasLocation) ? "px-[8px] pb-[6px] pt-[4px]" : 
+            (hasVoice || hasDocument || hasContact) ? "px-[12px] pb-[8px]" : "px-[12px] py-[8px]"
+          )}>
+            {message.content && (
+              <span className="text-[17px] leading-[22px] whitespace-pre-wrap break-words" style={{ color: textColor }}>
+                {message.content}
+              </span>
+            )}
+            
+            {/* Time and Status */}
+            <span className={cn(
+              "flex items-center gap-[3px] ml-[8px] whitespace-nowrap text-[11px] italic",
+              (hasImage || hasVideo) && !message.content 
+                ? "absolute bottom-[8px] right-[10px] bg-black/40 px-[6px] py-[2px] rounded-full text-white/90" 
+                : ""
+            )} style={{ color: (hasImage || hasVideo) && !message.content ? undefined : timeColor }}>
+              {time}
+              {isSent && (
+                <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                  <path 
+                    d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z" 
+                    fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
+                  />
+                  <path 
+                    d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z" 
+                    fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
+                  />
+                </svg>
+              )}
+            </span>
+          </div>
+        </div>
+        
+        {/* Reactions */}
+        {hasReactions && <ReactionsDisplay reactions={message.reactions!} darkMode={darkMode} />}
+      </div>
+    </div>
+  )
+}
+
+// Typing Indicator
+const TypingIndicator = ({ darkMode, senderName }: { darkMode: boolean; senderName?: string }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  
+  return (
+    <div className="flex px-[12px] justify-start mt-[8px]">
+      <div 
+        className="relative rounded-[18px] rounded-bl-[4px] px-[16px] py-[12px]"
+        style={{ backgroundColor: theme.receivedBubble }}
+      >
+        {/* Tail */}
+        <svg className="absolute bottom-0 -left-[8px]" width="12" height="19" viewBox="0 0 12 19">
+          <path fill={theme.receivedBubble} d="M12 0 L12 19 L0 19 Q10 15 12 0 Z" />
+        </svg>
+        
+        {/* Typing dots */}
+        <div className="flex items-center gap-[4px]">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-[8px] h-[8px] rounded-full animate-bounce"
+              style={{
+                backgroundColor: darkMode ? '#8696A0' : '#667781',
+                animationDelay: `${i * 0.15}s`,
+                animationDuration: '0.6s',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// iOS WhatsApp Footer
+const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  
+  return (
+    <div className="border-t" style={{ backgroundColor: theme.footer, borderColor: theme.footerBorder }}>
+      <div className="flex items-center gap-[8px] px-[8px] py-[6px]">
+        <button className="w-[32px] h-[32px] flex items-center justify-center">
+          <Plus className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+        </button>
+        
+        <div 
+          className="flex-1 flex items-center rounded-full border px-[12px] py-[6px]"
+          style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder }}
+        >
+          <input
+            type="text"
+            placeholder="Message"
+            className="flex-1 text-[16px] bg-transparent outline-none"
+            style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
+            disabled
+          />
+        </div>
+        
+        <button className="w-[32px] h-[32px] flex items-center justify-center">
+          <Camera className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+        </button>
+        
+        <button className="w-[32px] h-[32px] flex items-center justify-center">
+          <Mic className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+        </button>
+      </div>
+      
+      <div className="flex justify-center pb-[8px] pt-[4px]">
+        <div className="w-[134px] h-[5px] rounded-full" style={{ backgroundColor: theme.homeIndicator }} />
+      </div>
+    </div>
+  )
+}
+
+// Group messages by date
+const groupMessagesByDate = (messages: Message[]): { date: string; messages: Message[] }[] => {
+  const groups: { date: string; messages: Message[] }[] = []
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  messages.forEach((message) => {
+    const msgDate = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
+    let dateStr: string
+
+    if (msgDate.toDateString() === today.toDateString()) {
+      dateStr = 'Today'
+    } else if (msgDate.toDateString() === yesterday.toDateString()) {
+      dateStr = 'Yesterday'
+    } else {
+      dateStr = msgDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    }
+
+    const lastGroup = groups[groups.length - 1]
+    if (lastGroup && lastGroup.date === dateStr) {
+      lastGroup.messages.push(message)
+    } else {
+      groups.push({ date: dateStr, messages: [message] })
+    }
+  })
+
+  return groups
+}
+
+// Main Component
+export function WhatsAppPreview({
+  sender,
+  receiver,
+  messages,
+  darkMode,
+  mobileView,
+  timeFormat,
+  transparentBg,
+  settings = defaultSettings,
+  visibleMessageCount,
+  showTypingIndicator,
+}: WhatsAppPreviewProps) {
+  const theme = darkMode ? themes.dark : themes.light
+  
+  // Filter messages based on visibleMessageCount for animation
+  const visibleMessages = visibleMessageCount !== undefined 
+    ? messages.slice(0, visibleMessageCount) 
+    : messages
+  
+  const messageGroups = groupMessagesByDate(visibleMessages)
+  const isGroupChat = settings.groupParticipants && settings.groupParticipants.length > 0
+  
+  // Show typing indicator either from settings or from animation prop
+  const showTyping = showTypingIndicator || settings.lastSeen === 'typing'
+
+  // Get background color based on dark mode
+  const getBgColor = () => {
+    if (transparentBg) return 'transparent'
+    if (settings.backgroundType === 'image' && settings.backgroundImage) return 'transparent'
+    if (darkMode) return themes.dark.chatBg
+    return settings.backgroundColor || themes.light.chatBg
+  }
+
+  return (
+    <div
+      className={cn("font-sf-pro transition-all duration-300 overflow-hidden", mobileView ? "w-[375px]" : "w-[375px]")}
+      style={{
+        borderRadius: '44px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+        background: '#000',
+        padding: '2px',
+      }}
+    >
+      <div
+        className="flex flex-col overflow-hidden antialiased"
+        style={{ 
+          height: mobileView ? '812px' : '700px',
+          borderRadius: '42px',
+          backgroundColor: darkMode ? '#000000' : '#FFFFFF',
+        }}
+      >
+        <IOSStatusBar darkMode={darkMode} />
+
+        <IOSWhatsAppHeader
+          receiver={receiver}
+          lastSeen={settings.lastSeen || 'online'}
+          lastSeenTime={settings.lastSeenTime}
+          darkMode={darkMode}
+          isGroupChat={isGroupChat}
+          groupName={settings.groupName}
+          participantCount={settings.groupParticipants?.length}
+        />
+
+        <div className="flex-1 overflow-y-auto relative" style={{ backgroundColor: getBgColor() }}>
+          {/* Background Image */}
+          {!transparentBg && settings.backgroundType === 'image' && settings.backgroundImage && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${settings.backgroundImage})` }}
+            />
+          )}
+          
+          {/* Doodle Background */}
+          {!transparentBg && settings.backgroundType === 'doodle' && settings.showDoodle && (
+            <WhatsAppDoodle 
+              opacity={settings.doodleOpacity || 0.06} 
+              color={darkMode ? theme.doodleColor : '#C8C4BA'}
+            />
+          )}
+          
+          <div className="relative z-10 py-[4px]">
+            {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} />}
+
+            {messageGroups.map((group) => (
+              <div key={group.date}>
+                <DateSeparator date={group.date} darkMode={darkMode} />
+                {group.messages.map((message, index) => {
+                  const prevMessage = index > 0 ? group.messages[index - 1] : null
+                  const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
+
+                  return (
+                    <IOSMessageBubble
+                      key={message.id}
+                      message={message}
+                      sender={sender}
+                      receiver={receiver}
+                      timeFormat={timeFormat}
+                      isFirstInGroup={isFirstInGroup}
+                      darkMode={darkMode}
+                      isGroupChat={isGroupChat}
+                      participants={settings.groupParticipants}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+            
+            {/* Typing Indicator */}
+            {showTyping && <TypingIndicator darkMode={darkMode} />}
+          </div>
+        </div>
+
+        <IOSWhatsAppFooter darkMode={darkMode} />
+      </div>
+    </div>
+  )
+}
