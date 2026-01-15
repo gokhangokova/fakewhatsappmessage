@@ -105,11 +105,11 @@ export function VideoExportPanel({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button 
-          size="lg" 
-          className="rounded-full shadow-lg h-14 px-6 gap-2 bg-violet-500 hover:bg-violet-600 text-white border-0"
+          size="default" 
+          className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 bg-violet-500 hover:bg-violet-600 text-white border-0 text-sm md:text-base"
         >
-          <Film className="w-5 h-5" />
-          <span className="font-medium">Video Export</span>
+          <Film className="w-4 h-4 md:w-5 md:h-5" />
+          <span className="font-medium hidden sm:inline">Video</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[480px]">

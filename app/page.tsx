@@ -8,13 +8,20 @@ import { useChatState } from '@/hooks/use-chat-state'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Download, Copy, Loader2, Check, Play, Square } from 'lucide-react'
+import { Download, Copy, Loader2, Check, Play, Square, Menu, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
@@ -51,6 +58,9 @@ export default function Home() {
 
   const { exportRef, isExporting, exportToFormat, exportToClipboard, error } = useExport()
   const { toast } = useToast()
+  
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   
   // Export options
   const [showWatermark, setShowWatermark] = useState(false)
@@ -139,7 +149,6 @@ export default function Home() {
     setIsPreviewMode(true)
     setIsVideoMode(true)
     
-    // Wait for the animated preview to render
     await new Promise(resolve => setTimeout(resolve, 100))
     
     if (animatedPreviewRef.current) {
@@ -155,7 +164,6 @@ export default function Home() {
   }, [])
 
   const handlePreviewComplete = useCallback(() => {
-    // Wait for end pause then reset
     setTimeout(() => {
       setIsPreviewMode(false)
       setIsVideoMode(false)
@@ -167,18 +175,15 @@ export default function Home() {
     setIsVideoMode(true)
     setIsPreviewMode(false)
     
-    // Wait for the animated preview to render
     await new Promise(resolve => setTimeout(resolve, 100))
     
     if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
-      // Start recording the container
       await startRecording(videoPreviewContainerRef.current, {
         format: videoSettings.format,
         quality: videoSettings.quality,
         frameRate: 30,
       })
       
-      // Start the animation
       animatedPreviewRef.current.startAnimation()
     }
   }, [startRecording, videoSettings.format, videoSettings.quality])
@@ -196,13 +201,11 @@ export default function Home() {
   }, [resetVideo])
 
   const handleAnimationComplete = useCallback(() => {
-    // If in preview mode, use preview complete handler
     if (isPreviewMode) {
       handlePreviewComplete()
       return
     }
     
-    // Wait for end pause then stop recording
     setTimeout(() => {
       stopRecording()
       setIsVideoMode(false)
@@ -221,33 +224,40 @@ export default function Home() {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
+  // Sidebar content component (reusable for desktop and mobile)
+  const SidebarContent = () => (
+    <EditorSidebar
+      platform={platform}
+      setPlatform={setPlatform}
+      sender={sender}
+      setSender={setSender}
+      receiver={receiver}
+      setReceiver={setReceiver}
+      messages={messages}
+      setMessages={setMessages}
+      darkMode={darkMode}
+      setDarkMode={setDarkMode}
+      mobileView={mobileView}
+      setMobileView={setMobileView}
+      timeFormat={timeFormat}
+      setTimeFormat={setTimeFormat}
+      transparentBg={transparentBg}
+      setTransparentBg={setTransparentBg}
+      whatsappSettings={whatsappSettings}
+      setWhatsAppSettings={setWhatsAppSettings}
+      onReset={resetToDefaults}
+    />
+  )
+
   return (
-    <div className="flex h-[calc(100vh-64px)]">
-      {/* Editor Sidebar */}
-      <EditorSidebar
-        platform={platform}
-        setPlatform={setPlatform}
-        sender={sender}
-        setSender={setSender}
-        receiver={receiver}
-        setReceiver={setReceiver}
-        messages={messages}
-        setMessages={setMessages}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-        mobileView={mobileView}
-        setMobileView={setMobileView}
-        timeFormat={timeFormat}
-        setTimeFormat={setTimeFormat}
-        transparentBg={transparentBg}
-        setTransparentBg={setTransparentBg}
-        whatsappSettings={whatsappSettings}
-        setWhatsAppSettings={setWhatsAppSettings}
-        onReset={resetToDefaults}
-      />
+    <div className="flex h-[calc(100vh-56px)] md:h-[calc(100vh-64px)]">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
+        <SidebarContent />
+      </div>
 
       {/* Preview Panel */}
-      <div className="flex-1 bg-gray-100 flex items-center justify-center p-8 overflow-auto relative">
+      <div className="flex-1 bg-gray-100 flex items-center justify-center p-4 md:p-8 overflow-auto relative">
         {/* Loading State */}
         {!isHydrated && (
           <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
@@ -255,66 +265,80 @@ export default function Home() {
           </div>
         )}
 
-        {/* Phone Preview */}
-        {isVideoMode ? (
-          // Animated Preview for Video Recording or Preview
-          <div ref={videoPreviewContainerRef}>
-            <AnimatedChatPreview
-              ref={animatedPreviewRef}
-              sender={sender}
-              receiver={receiver}
-              messages={messages}
-              darkMode={darkMode}
-              timeFormat={timeFormat}
-              settings={whatsappSettings}
-              typingDuration={videoSettings.typingDuration}
-              messageDelay={videoSettings.messageDelay}
-              onAnimationComplete={handleAnimationComplete}
-            />
-          </div>
-        ) : (
-          // Static Preview with Export Ref
-          <div ref={exportRef}>
-            <PhonePreview
-              platform={platform}
-              sender={sender}
-              receiver={receiver}
-              messages={messages}
-              darkMode={darkMode}
-              mobileView={mobileView}
-              timeFormat={timeFormat}
-              transparentBg={transparentBg}
-              whatsappSettings={whatsappSettings}
-            />
-          </div>
-        )}
+        {/* Mobile Menu Button */}
+        <div className="absolute top-4 left-4 lg:hidden z-20">
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="h-10 w-10 bg-white shadow-md">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[340px] p-0 overflow-y-auto">
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+        </div>
 
-        {/* Floating Export Panel */}
-        <div className="absolute bottom-8 right-8 flex flex-col items-end gap-3">
+        {/* Phone Preview - Scaled for mobile */}
+        <div className="transform scale-[0.55] sm:scale-[0.65] md:scale-[0.8] lg:scale-100 origin-center">
+          {isVideoMode ? (
+            <div ref={videoPreviewContainerRef}>
+              <AnimatedChatPreview
+                ref={animatedPreviewRef}
+                sender={sender}
+                receiver={receiver}
+                messages={messages}
+                darkMode={darkMode}
+                timeFormat={timeFormat}
+                settings={whatsappSettings}
+                typingDuration={videoSettings.typingDuration}
+                messageDelay={videoSettings.messageDelay}
+                onAnimationComplete={handleAnimationComplete}
+              />
+            </div>
+          ) : (
+            <div ref={exportRef}>
+              <PhonePreview
+                platform={platform}
+                sender={sender}
+                receiver={receiver}
+                messages={messages}
+                darkMode={darkMode}
+                mobileView={mobileView}
+                timeFormat={timeFormat}
+                transparentBg={transparentBg}
+                whatsappSettings={whatsappSettings}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Floating Export Panel - Responsive */}
+        <div className="absolute bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col items-end gap-2 md:gap-3">
           {/* Preview Animation Button */}
           {isPreviewMode ? (
             <Button
-              size="lg"
-              className="rounded-full shadow-lg h-14 px-6 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0"
+              size="default"
+              className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 text-sm md:text-base"
               onClick={handleStopPreview}
             >
-              <Square className="w-5 h-5" />
-              <span className="font-medium">Stop Preview</span>
+              <Square className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium hidden sm:inline">Stop</span>
             </Button>
           ) : (
             <Button
-              size="lg"
-              className="rounded-full shadow-lg h-14 px-6 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0"
+              size="default"
+              className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 text-sm md:text-base"
               onClick={handleStartPreview}
               disabled={isVideoMode || isExporting || messages.length === 0}
             >
-              <Play className="w-5 h-5" />
-              <span className="font-medium">Preview Animation</span>
+              <Play className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium hidden sm:inline">Preview</span>
             </Button>
           )}
 
           {/* Export Buttons Row */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             {/* Video Export Button */}
             <VideoExportPanel
               isOpen={videoExportOpen}
@@ -340,19 +364,19 @@ export default function Home() {
             <Popover open={showOptions} onOpenChange={setShowOptions}>
               <PopoverTrigger asChild>
                 <Button
-                  size="lg"
-                  className="rounded-full shadow-lg h-14 px-6 gap-2"
+                  size="default"
+                  className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 text-sm md:text-base"
                   disabled={isExporting || isVideoMode}
                 >
                   {isExporting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
                   ) : (
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4 md:w-5 md:h-5" />
                   )}
-                  <span className="font-medium">Export</span>
+                  <span className="font-medium hidden sm:inline">Export</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80" align="end" sideOffset={12}>
+              <PopoverContent className="w-72 md:w-80" align="end" sideOffset={12}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">Export Options</h3>
@@ -492,8 +516,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Info */}
-        <div className="absolute bottom-8 left-8">
+        {/* Quick Info - Hidden on mobile */}
+        <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 hidden md:block">
           <p className="text-xs text-muted-foreground">
             {darkMode ? '🌙 Dark Mode' : '☀️ Light Mode'} • {mobileView ? '📱 Mobile' : '🖥️ Desktop'}
             {isPreviewMode && ' • 👁️ Previewing'}
