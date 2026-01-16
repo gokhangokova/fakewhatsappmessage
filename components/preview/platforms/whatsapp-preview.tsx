@@ -1,6 +1,6 @@
 'use client'
 
-import { Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, VoiceMessageData, DocumentData, VideoData, LocationData, ContactData, FontFamily, SUPPORTED_FONTS } from '@/types'
+import { Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, VoiceMessageData, DocumentData, VideoData, LocationData, ContactData, FontFamily, SUPPORTED_FONTS, DeviceType } from '@/types'
 import { formatTime, cn } from '@/lib/utils'
 import {
   ChevronLeft,
@@ -20,6 +20,9 @@ import {
   MapPin,
   User as UserIcon,
   MessageCircle,
+  MoreVertical,
+  Paperclip,
+  Smile,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useTranslations } from '@/lib/i18n/translations'
@@ -55,6 +58,7 @@ interface WhatsAppPreviewProps {
   language?: Language
   fontFamily?: FontFamily
   batteryLevel?: number
+  deviceType?: DeviceType
   // Animation props for video export
   visibleMessageCount?: number // If set, only shows this many messages
   showTypingIndicator?: boolean // If true, shows typing indicator at the end
@@ -202,6 +206,162 @@ const IOSStatusBar = ({ darkMode, batteryLevel = 100 }: { darkMode: boolean; bat
           <rect x="2" y="2" width={batteryWidth} height="8" rx="1.5" fill={batteryFillColor}/>
           <path d="M23 4V8C24.1 7.5 24.1 4.5 23 4Z" fill={iconColor} fillOpacity="0.4"/>
         </svg>
+      </div>
+    </div>
+  )
+}
+
+// Android Status Bar
+const AndroidStatusBar = ({ darkMode, batteryLevel = 100 }: { darkMode: boolean; batteryLevel?: number }) => {
+  const theme = darkMode ? themes.dark : themes.light
+  const iconColor = theme.statusBarText
+  const isLowBattery = batteryLevel <= 20
+  const batteryFillColor = isLowBattery ? '#F44336' : '#4CAF50'
+  const batteryWidth = Math.max(0, Math.min(100, batteryLevel)) / 100 * 14 // 14 is max fill width for Android
+  
+  return (
+    <div 
+      className="flex items-center justify-between px-[16px] py-[8px]"
+      style={{ backgroundColor: darkMode ? '#075E54' : '#075E54' }}
+    >
+      {/* Left side - Time */}
+      <span 
+        className="text-[14px] font-normal"
+        style={{ color: '#FFFFFF', fontFamily: 'Roboto, sans-serif' }}
+      >
+        9:41
+      </span>
+      
+      {/* Right side - Icons */}
+      <div className="flex items-center gap-[6px]">
+        {/* Network type */}
+        <span className="text-[12px] font-medium" style={{ color: '#FFFFFF' }}>4G</span>
+        
+        {/* Signal strength - Android style triangular */}
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M0 14L14 0V14H0Z" fill="#FFFFFF" fillOpacity="0.3"/>
+          <path d="M4 14L14 4V14H4Z" fill="#FFFFFF"/>
+        </svg>
+        
+        {/* WiFi - Android style */}
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 3C10.2 3 12.2 3.8 13.7 5.1L12.3 6.7C11.1 5.6 9.6 5 8 5C6.4 5 4.9 5.6 3.7 6.7L2.3 5.1C3.8 3.8 5.8 3 8 3Z" fill="#FFFFFF"/>
+          <path d="M8 7C9.3 7 10.5 7.5 11.4 8.3L10 9.9C9.4 9.4 8.7 9 8 9C7.3 9 6.6 9.4 6 9.9L4.6 8.3C5.5 7.5 6.7 7 8 7Z" fill="#FFFFFF"/>
+          <circle cx="8" cy="11" r="1" fill="#FFFFFF"/>
+        </svg>
+        
+        {/* Battery percentage */}
+        <span className="text-[12px]" style={{ color: isLowBattery ? '#F44336' : '#FFFFFF' }}>
+          {batteryLevel}%
+        </span>
+        
+        {/* Battery icon - Android style */}
+        <svg width="20" height="10" viewBox="0 0 20 10" fill="none">
+          <rect x="0.5" y="0.5" width="16" height="9" rx="1" stroke="#FFFFFF" strokeOpacity="0.5"/>
+          <rect x="2" y="2" width={batteryWidth} height="6" rx="0.5" fill={batteryFillColor}/>
+          <rect x="17" y="3" width="2" height="4" rx="0.5" fill="#FFFFFF" fillOpacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// Android WhatsApp Header
+const AndroidWhatsAppHeader = ({
+  receiver,
+  lastSeen,
+  lastSeenTime,
+  darkMode,
+  isGroupChat,
+  groupName,
+  participantCount,
+  t,
+}: {
+  receiver: User
+  lastSeen: WhatsAppSettings['lastSeen']
+  lastSeenTime?: Date
+  darkMode: boolean
+  isGroupChat?: boolean
+  groupName?: string
+  participantCount?: number
+  t: ReturnType<typeof useTranslations>
+}) => {
+  const getStatusText = () => {
+    if (isGroupChat && participantCount) {
+      if (lastSeen === 'typing') return 'Sarah ' + t.preview.typing
+      return `${participantCount} ${t.preview.participants}`
+    }
+    
+    switch (lastSeen) {
+      case 'online':
+        return t.preview.online
+      case 'typing':
+        return t.preview.typing
+      case 'last-seen':
+        return `${t.preview.lastSeenToday} 14:30`
+      case 'none':
+        return t.preview.tapForContactInfo
+      default:
+        return t.preview.tapForContactInfo
+    }
+  }
+
+  return (
+    <div 
+      className="flex items-center gap-[6px] px-[4px] py-[8px]"
+      style={{ backgroundColor: darkMode ? '#075E54' : '#075E54' }}
+    >
+      {/* Back Arrow - Android style */}
+      <button className="p-[8px]">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="#FFFFFF"/>
+        </svg>
+      </button>
+      
+      {/* Avatar */}
+      <Avatar className="w-[40px] h-[40px]">
+        {isImageAvatar(receiver.avatar) ? (
+          <AvatarImage src={receiver.avatar!} />
+        ) : (
+          <AvatarFallback 
+            className="text-[16px] font-medium text-white"
+            style={{ 
+              backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
+              color: '#FFFFFF',
+            }}
+          >
+            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      
+      {/* Name and Status */}
+      <div className="flex-1 min-w-0 ml-[4px]">
+        <p 
+          className="font-medium text-[16px] truncate leading-[20px]" 
+          style={{ color: '#FFFFFF', fontFamily: 'Roboto, sans-serif' }}
+        >
+          {isGroupChat ? groupName : receiver.name}
+        </p>
+        <p 
+          className="text-[13px] truncate leading-[16px]" 
+          style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'Roboto, sans-serif' }}
+        >
+          {getStatusText()}
+        </p>
+      </div>
+      
+      {/* Action Icons */}
+      <div className="flex items-center">
+        <button className="p-[8px]">
+          <Video className="w-[22px] h-[22px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
+        </button>
+        <button className="p-[8px]">
+          <Phone className="w-[20px] h-[20px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
+        </button>
+        <button className="p-[8px]">
+          <MoreVertical className="w-[20px] h-[20px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
+        </button>
       </div>
     </div>
   )
@@ -960,6 +1120,60 @@ const IOSWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<t
   )
 }
 
+// Android WhatsApp Footer
+const AndroidWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
+  return (
+    <div 
+      className="flex items-center gap-[8px] px-[8px] py-[8px]"
+      style={{ backgroundColor: darkMode ? '#1F2C34' : '#F0F0F0' }}
+    >
+      {/* Emoji button */}
+      <button className="w-[40px] h-[40px] flex items-center justify-center">
+        <Smile className="w-[24px] h-[24px]" style={{ color: darkMode ? '#8696A0' : '#54656F' }} strokeWidth={1.5} />
+      </button>
+      
+      {/* Input field with camera and attachment inside */}
+      <div 
+        className="flex-1 flex items-center rounded-[24px] px-[4px] py-[4px]"
+        style={{ backgroundColor: darkMode ? '#2A3942' : '#FFFFFF' }}
+      >
+        <input
+          type="text"
+          placeholder={t.preview.message}
+          className="flex-1 text-[16px] bg-transparent outline-none px-[12px]"
+          style={{ 
+            color: darkMode ? '#FFFFFF' : '#000000',
+            fontFamily: 'Roboto, sans-serif',
+          }}
+          disabled
+        />
+        
+        {/* Paperclip / Attachment */}
+        <button className="w-[36px] h-[36px] flex items-center justify-center">
+          <Paperclip 
+            className="w-[22px] h-[22px] rotate-45" 
+            style={{ color: darkMode ? '#8696A0' : '#54656F' }} 
+            strokeWidth={1.5} 
+          />
+        </button>
+        
+        {/* Camera */}
+        <button className="w-[36px] h-[36px] flex items-center justify-center">
+          <Camera className="w-[22px] h-[22px]" style={{ color: darkMode ? '#8696A0' : '#54656F' }} strokeWidth={1.5} />
+        </button>
+      </div>
+      
+      {/* Mic button - green circle */}
+      <button 
+        className="w-[48px] h-[48px] rounded-full flex items-center justify-center"
+        style={{ backgroundColor: '#00A884' }}
+      >
+        <Mic className="w-[24px] h-[24px] text-white" strokeWidth={2} />
+      </button>
+    </div>
+  )
+}
+
 // Group messages by date - always show "Today" to avoid hydration issues
 const groupMessagesByDate = (messages: Message[]): { date: string; messages: Message[] }[] => {
   // For a mockup app, we always show "Today" as the date
@@ -982,6 +1196,7 @@ export function WhatsAppPreview({
   language = 'en',
   fontFamily = 'sf-pro',
   batteryLevel = 100,
+  deviceType = 'ios',
   visibleMessageCount,
   showTypingIndicator,
 }: WhatsAppPreviewProps) {
@@ -1123,12 +1338,15 @@ export function WhatsAppPreview({
     )
   }
 
+  // Check if Android
+  const isAndroid = deviceType === 'android'
+
   // Mobile view - phone frame with status bar
   return (
     <div
       className="transition-all duration-300 overflow-hidden w-[375px]"
       style={{
-        borderRadius: '44px',
+        borderRadius: isAndroid ? '24px' : '44px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
         background: '#000',
         padding: '2px',
@@ -1139,22 +1357,41 @@ export function WhatsAppPreview({
         className="flex flex-col overflow-hidden antialiased"
         style={{ 
           height: '812px',
-          borderRadius: '42px',
+          borderRadius: isAndroid ? '22px' : '42px',
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
         }}
       >
-        <IOSStatusBar darkMode={darkMode} batteryLevel={batteryLevel} />
+        {/* Status Bar - Conditional */}
+        {isAndroid ? (
+          <AndroidStatusBar darkMode={darkMode} batteryLevel={batteryLevel} />
+        ) : (
+          <IOSStatusBar darkMode={darkMode} batteryLevel={batteryLevel} />
+        )}
 
-        <IOSWhatsAppHeader
-          receiver={receiver}
-          lastSeen={settings.lastSeen || 'online'}
-          lastSeenTime={settings.lastSeenTime}
-          darkMode={darkMode}
-          isGroupChat={isGroupChat}
-          groupName={settings.groupName}
-          participantCount={settings.groupParticipants?.length}
-          t={t}
-        />
+        {/* Header - Conditional */}
+        {isAndroid ? (
+          <AndroidWhatsAppHeader
+            receiver={receiver}
+            lastSeen={settings.lastSeen || 'online'}
+            lastSeenTime={settings.lastSeenTime}
+            darkMode={darkMode}
+            isGroupChat={isGroupChat}
+            groupName={settings.groupName}
+            participantCount={settings.groupParticipants?.length}
+            t={t}
+          />
+        ) : (
+          <IOSWhatsAppHeader
+            receiver={receiver}
+            lastSeen={settings.lastSeen || 'online'}
+            lastSeenTime={settings.lastSeenTime}
+            darkMode={darkMode}
+            isGroupChat={isGroupChat}
+            groupName={settings.groupName}
+            participantCount={settings.groupParticipants?.length}
+            t={t}
+          />
+        )}
 
         <div className={cn(
           "flex-1 overflow-y-auto relative",
@@ -1209,7 +1446,12 @@ export function WhatsAppPreview({
           </div>
         </div>
 
-        <IOSWhatsAppFooter darkMode={darkMode} t={t} />
+        {/* Footer - Conditional */}
+        {isAndroid ? (
+          <AndroidWhatsAppFooter darkMode={darkMode} t={t} />
+        ) : (
+          <IOSWhatsAppFooter darkMode={darkMode} t={t} />
+        )}
       </div>
     </div>
   )

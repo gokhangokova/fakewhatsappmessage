@@ -1,6 +1,6 @@
 'use client'
 
-import { Platform, Message, User, WhatsAppSettings, Language, FontFamily } from '@/types'
+import { Platform, Message, User, WhatsAppSettings, Language, FontFamily, DeviceType } from '@/types'
 import { WhatsAppPreview } from './platforms/whatsapp-preview'
 import { platforms } from '@/lib/platforms'
 import { formatTime, cn } from '@/lib/utils'
@@ -34,6 +34,7 @@ interface PhonePreviewProps {
   language?: Language
   fontFamily?: FontFamily
   batteryLevel?: number
+  deviceType?: DeviceType
   // Animation props for video export
   visibleMessageCount?: number
   showTypingIndicator?: boolean
@@ -52,6 +53,7 @@ export function PhonePreview({
   language = 'en',
   fontFamily = 'sf-pro',
   batteryLevel = 100,
+  deviceType = 'ios',
   visibleMessageCount,
   showTypingIndicator,
 }: PhonePreviewProps) {
@@ -69,6 +71,7 @@ export function PhonePreview({
         language={language}
         fontFamily={fontFamily}
         batteryLevel={batteryLevel}
+        deviceType={deviceType}
         settings={whatsappSettings || {
           showDoodle: true,
           doodleOpacity: 0.4,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction, Language, FontFamily } from '@/types'
+import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction, Language, FontFamily, DeviceType } from '@/types'
 import { useLocalStorage } from './use-local-storage'
 import { generateId } from '@/lib/utils'
 
@@ -19,43 +19,46 @@ const defaultReceiver: User = {
   avatar: null,
 }
 
+// Fixed timestamps to avoid hydration mismatch (9:41 AM is iOS default time)
+const baseTime = new Date('2024-01-15T09:41:00')
+
 const defaultMessages: Message[] = [
   {
-    id: generateId(),
+    id: 'msg-default-1',
     userId: 'sender-1',
     content: 'Good morning!',
-    timestamp: new Date(),
+    timestamp: new Date(baseTime.getTime()),
     type: 'text',
     status: 'read',
   },
   {
-    id: generateId(),
+    id: 'msg-default-2',
     userId: 'sender-1',
     content: 'Japan looks amazing!',
-    timestamp: new Date(),
+    timestamp: new Date(baseTime.getTime() + 60000), // +1 min
     type: 'text',
     status: 'read',
   },
   {
-    id: generateId(),
+    id: 'msg-default-3',
     userId: 'receiver-1',
     content: 'Do you know what time is it?',
-    timestamp: new Date(),
+    timestamp: new Date(baseTime.getTime() + 120000), // +2 min
     type: 'text',
   },
   {
-    id: generateId(),
+    id: 'msg-default-4',
     userId: 'sender-1',
     content: "It's morning in Tokyo 😎",
-    timestamp: new Date(),
+    timestamp: new Date(baseTime.getTime() + 180000), // +3 min
     type: 'text',
     status: 'read',
   },
   {
-    id: generateId(),
+    id: 'msg-default-5',
     userId: 'receiver-1',
     content: 'What is the most popular meal in Japan?',
-    timestamp: new Date(),
+    timestamp: new Date(baseTime.getTime() + 240000), // +4 min
     type: 'text',
   },
 ]
@@ -72,7 +75,7 @@ const defaultWhatsAppSettings: WhatsAppSettings = {
   // Other
   showEncryptionNotice: true,
   lastSeen: 'online',
-  lastSeenTime: new Date(),
+  lastSeenTime: new Date(baseTime.getTime()), // Use fixed time to avoid hydration mismatch
 }
 
 interface ChatState {
@@ -88,6 +91,7 @@ interface ChatState {
   language: Language
   fontFamily: FontFamily
   batteryLevel: number
+  deviceType: DeviceType
 }
 
 const defaultState: ChatState = {
@@ -103,6 +107,7 @@ const defaultState: ChatState = {
   language: 'en',
   fontFamily: 'sf-pro',
   batteryLevel: 100,
+  deviceType: 'ios',
 }
 
 export function useChatState() {
@@ -278,6 +283,16 @@ export function useChatState() {
     setState((prev) => ({ ...prev, batteryLevel: Math.min(100, Math.max(0, batteryLevel)) }))
   }, [setState])
 
+  // Device Type - automatically sets appropriate font
+  const setDeviceType = useCallback((deviceType: DeviceType) => {
+    setState((prev) => ({
+      ...prev,
+      deviceType,
+      // Auto-set font based on device type
+      fontFamily: deviceType === 'android' ? 'roboto' : 'sf-pro',
+    }))
+  }, [setState])
+
   // Reset
   const resetToDefaults = useCallback(() => {
     setState(defaultState)
@@ -308,6 +323,7 @@ export function useChatState() {
       setLanguage,
       setFontFamily,
       setBatteryLevel,
+      setDeviceType,
       resetToDefaults,
       isHydrated: false,
     }
@@ -336,6 +352,7 @@ export function useChatState() {
     setLanguage,
     setFontFamily,
     setBatteryLevel,
+    setDeviceType,
     resetToDefaults,
     isHydrated: true,
   }

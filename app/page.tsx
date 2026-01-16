@@ -53,6 +53,8 @@ export default function Home() {
     setFontFamily,
     batteryLevel,
     setBatteryLevel,
+    deviceType,
+    setDeviceType,
     resetToDefaults,
     isHydrated,
   } = useChatState()
@@ -277,6 +279,8 @@ export default function Home() {
           setFontFamily={setFontFamily}
           batteryLevel={batteryLevel}
           setBatteryLevel={setBatteryLevel}
+          deviceType={deviceType}
+          setDeviceType={setDeviceType}
           onReset={resetToDefaults}
         />
 
@@ -316,6 +320,7 @@ export default function Home() {
                 language={language}
                 fontFamily={fontFamily}
                 batteryLevel={batteryLevel}
+                deviceType={deviceType}
               />
             </div>
           )}

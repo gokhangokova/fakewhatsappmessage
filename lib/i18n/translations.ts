@@ -32,6 +32,9 @@ export interface Translations {
     transparentBg: string
     fontFamily: string
     batteryLevel: string
+    device: string
+    ios: string
+    android: string
     // WhatsApp
     status: string
     online: string
@@ -235,6 +238,9 @@ export const en: Translations = {
     transparentBg: 'Transparent BG',
     fontFamily: 'Font',
     batteryLevel: 'Battery',
+    device: 'Device',
+    ios: 'iOS',
+    android: 'Android',
     status: 'Status',
     online: 'Online',
     typing: 'Typing',
@@ -415,6 +421,9 @@ export const tr: Translations = {
     transparentBg: 'Şeffaf Arka Plan',
     fontFamily: 'Yazı Tipi',
     batteryLevel: 'Şarj',
+    device: 'Cihaz',
+    ios: 'iOS',
+    android: 'Android',
     status: 'Durum',
     online: 'Çevrimiçi',
     typing: 'Yazıyor',

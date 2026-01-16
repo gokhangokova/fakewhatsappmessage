@@ -15,6 +15,14 @@ export type Platform =
 // Supported languages
 export type Language = 'en' | 'tr'
 
+// Supported device types
+export type DeviceType = 'ios' | 'android'
+
+export const SUPPORTED_DEVICES: { code: DeviceType; name: string; icon: string }[] = [
+  { code: 'ios', name: 'iOS', icon: '' },
+  { code: 'android', name: 'Android', icon: '🤖' },
+]
+
 // Supported font families
 export type FontFamily = 'sf-pro' | 'roboto' | 'inter' | 'open-sans' | 'system' | 'arial' | 'helvetica' | 'georgia' | 'times' | 'verdana' | 'tahoma' | 'trebuchet' | 'comic-sans'
 
