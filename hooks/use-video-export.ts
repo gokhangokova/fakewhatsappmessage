@@ -13,6 +13,11 @@ export interface VideoExportOptions {
   frameRate: number
 }
 
+interface FrameData {
+  dataUrl: string
+  timestamp: number // ms from start - real capture time
+}
+
 interface UseVideoExportReturn {
   isRecording: boolean
   isProcessing: boolean
@@ -44,16 +49,15 @@ export function useVideoExport(): UseVideoExportReturn {
   const [videoDuration, setVideoDuration] = useState(0)
   const [currentFormat, setCurrentFormat] = useState<VideoFormat>('mp4')
   
-  const framesRef = useRef<string[]>([])
+  const framesRef = useRef<FrameData[]>([])
   const startTimeRef = useRef<number>(0)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const animationFrameRef = useRef<number | null>(null)
   const formatRef = useRef<VideoFormat>('mp4')
   const settingsRef = useRef<{ quality: VideoQuality; frameRate: number }>({ quality: 'medium', frameRate: 30 })
   const elementRef = useRef<HTMLElement | null>(null)
-  const lastFrameTimeRef = useRef<number>(0)
   const isStoppedRef = useRef(false)
   const dimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 })
+  const captureLoopRef = useRef<number | null>(null)
 
   // Capture element to data URL with quality-based pixelRatio
   const captureFrame = useCallback(async (element: HTMLElement, pixelRatio: number): Promise<string | null> => {
@@ -80,12 +84,11 @@ export function useVideoExport(): UseVideoExportReturn {
     })
   }, [])
 
-  // Create MP4 using WebCodecs API and mp4-muxer
+  // Create MP4 using WebCodecs API and mp4-muxer with real timestamps
   const createMP4 = useCallback(async (
-    frames: string[], 
+    frames: FrameData[], 
     width: number, 
-    height: number, 
-    frameRate: number
+    height: number
   ): Promise<Blob> => {
     setProgressText('Initializing encoder...')
     setProgress(10)
@@ -97,7 +100,16 @@ export function useVideoExport(): UseVideoExportReturn {
     const quality = settingsRef.current.quality
     const bitrate = QUALITY_SETTINGS[quality].bitrate
 
-    console.log('Creating MP4 with dimensions:', evenWidth, 'x', evenHeight, 'bitrate:', bitrate)
+    // Get actual duration from last frame timestamp
+    const actualDuration = frames.length > 0 ? frames[frames.length - 1].timestamp : 0
+    
+    // Calculate effective frame rate from captured frames
+    const effectiveFps = frames.length > 1 ? (frames.length * 1000) / actualDuration : 30
+    
+    console.log('Creating MP4 with dimensions:', evenWidth, 'x', evenHeight, 
+      'frames:', frames.length, 
+      'duration:', actualDuration, 'ms',
+      'effective fps:', effectiveFps.toFixed(1))
 
     // Check if WebCodecs is supported
     if (typeof VideoEncoder === 'undefined') {
@@ -114,6 +126,7 @@ export function useVideoExport(): UseVideoExportReturn {
         height: evenHeight,
       },
       fastStart: 'in-memory',
+      firstTimestampBehavior: 'offset',
     })
 
     // Create canvas for frame processing
@@ -137,31 +150,36 @@ export function useVideoExport(): UseVideoExportReturn {
     })
 
     // Use higher profile for better quality
-    const codecProfile = quality === 'high' ? 'avc1.640028' : 'avc1.4d0028' // High profile for high quality
+    const codecProfile = quality === 'high' ? 'avc1.640028' : 'avc1.4d0028'
 
     encoder.configure({
       codec: codecProfile,
       width: evenWidth,
       height: evenHeight,
       bitrate: bitrate,
-      framerate: frameRate,
+      framerate: Math.round(effectiveFps),
     })
 
     setProgressText('Encoding frames...')
 
-    // Process each frame
+    // Process each frame with REAL timestamps for accurate timing
     for (let i = 0; i < frames.length; i++) {
-      const img = await loadImage(frames[i])
+      const frame = frames[i]
+      const img = await loadImage(frame.dataUrl)
       
       // Draw image to canvas
       ctx.fillStyle = '#000000'
       ctx.fillRect(0, 0, evenWidth, evenHeight)
       ctx.drawImage(img, 0, 0, evenWidth, evenHeight)
 
-      // Create video frame
+      // Calculate duration for this frame (time until next frame)
+      const nextTimestamp = i < frames.length - 1 ? frames[i + 1].timestamp : frame.timestamp + 33
+      const frameDuration = Math.max(1, nextTimestamp - frame.timestamp)
+
+      // Create video frame with REAL timestamp (convert ms to microseconds)
       const videoFrame = new VideoFrame(canvas, {
-        timestamp: (i * 1_000_000) / frameRate, // microseconds
-        duration: 1_000_000 / frameRate,
+        timestamp: frame.timestamp * 1000, // ms to microseconds
+        duration: frameDuration * 1000, // ms to microseconds
       })
 
       // Encode frame (keyframe every 30 frames for better seeking)
@@ -187,12 +205,11 @@ export function useVideoExport(): UseVideoExportReturn {
     return new Blob([buffer], { type: 'video/mp4' })
   }, [loadImage])
 
-  // Create GIF from frames
+  // Create GIF from frames with real timing
   const createGIF = useCallback(async (
-    frames: string[], 
+    frames: FrameData[], 
     width: number, 
-    height: number, 
-    frameRate: number
+    height: number
   ): Promise<Blob> => {
     setProgressText('Creating GIF...')
     setProgress(50)
@@ -208,7 +225,11 @@ export function useVideoExport(): UseVideoExportReturn {
       }
 
       const worker = new Worker('/gif.worker.js')
-      const frameDelay = Math.round(1000 / Math.min(frameRate, 15))
+      
+      // Calculate average delay for GIF
+      const actualDuration = frames.length > 0 ? frames[frames.length - 1].timestamp : 0
+      const avgDelay = frames.length > 1 ? Math.round(actualDuration / frames.length) : 100
+      const frameDelay = Math.max(20, Math.min(avgDelay, 200)) // GIF delay limits (20-200ms)
       
       worker.postMessage({
         type: 'start',
@@ -233,9 +254,16 @@ export function useVideoExport(): UseVideoExportReturn {
           ctx.drawImage(img, 0, 0, width, height)
           const imageData = ctx.getImageData(0, 0, width, height)
           
+          // Calculate actual delay for this frame
+          let delay = frameDelay
+          if (frameIndex < frames.length - 1) {
+            delay = Math.max(20, Math.min(frames[frameIndex + 1].timestamp - frames[frameIndex].timestamp, 200))
+          }
+          
           worker.postMessage({
             type: 'frame',
             data: imageData.data,
+            delay: Math.round(delay / 10) * 10, // GIF delays are in 10ms increments
             index: frameIndex,
             total: frames.length,
           })
@@ -249,7 +277,7 @@ export function useVideoExport(): UseVideoExportReturn {
           frameIndex++
           setTimeout(processNextFrame, 0)
         }
-        img.src = frames[frameIndex]
+        img.src = frames[frameIndex].dataUrl
       }
 
       worker.onmessage = (e) => {
@@ -286,7 +314,7 @@ export function useVideoExport(): UseVideoExportReturn {
 
     const pixelRatio = QUALITY_SETTINGS[quality].pixelRatio
 
-    console.log('Starting recording with format:', format, 'quality:', quality, 'pixelRatio:', pixelRatio)
+    console.log('Starting recording with format:', format, 'quality:', quality, 'frameRate:', frameRate, 'pixelRatio:', pixelRatio)
     
     setError(null)
     setVideoBlob(null)
@@ -299,7 +327,6 @@ export function useVideoExport(): UseVideoExportReturn {
     formatRef.current = format
     settingsRef.current = { quality, frameRate }
     elementRef.current = element
-    lastFrameTimeRef.current = 0
     isStoppedRef.current = false
 
     try {
@@ -321,29 +348,44 @@ export function useVideoExport(): UseVideoExportReturn {
 
       setProgressText('Capturing frames...')
       
+      // Continuous frame capture - capture as fast as possible
       const captureVideoFrame = async () => {
-        if (isStoppedRef.current || !elementRef.current) return
-        
-        const now = Date.now()
-        const frameInterval = 1000 / frameRate
-        
-        if (now - lastFrameTimeRef.current >= frameInterval) {
-          const frame = await captureFrame(elementRef.current, pixelRatio)
-          if (frame) {
-            framesRef.current.push(frame)
-            lastFrameTimeRef.current = now
-          }
+        if (isStoppedRef.current || !elementRef.current) {
+          return
         }
         
-        const elapsed = (now - startTimeRef.current) / 1000
-        setProgress(Math.min(8, elapsed * 0.8))
+        const captureStartTime = Date.now()
+        const timestamp = captureStartTime - startTimeRef.current
         
+        try {
+          const dataUrl = await captureFrame(elementRef.current, pixelRatio)
+          
+          if (dataUrl && !isStoppedRef.current) {
+            framesRef.current.push({
+              dataUrl,
+              timestamp
+            })
+          }
+        } catch (err) {
+          console.error('Frame capture error:', err)
+        }
+        
+        // Update progress
+        const elapsed = (Date.now() - startTimeRef.current) / 1000
+        setProgress(Math.min(8, elapsed * 0.3))
+        
+        // Continue capturing if not stopped
         if (!isStoppedRef.current) {
-          animationFrameRef.current = requestAnimationFrame(captureVideoFrame)
+          // Use requestAnimationFrame for next capture to allow UI updates
+          captureLoopRef.current = requestAnimationFrame(() => {
+            // Small delay to prevent overwhelming the system
+            setTimeout(captureVideoFrame, 0)
+          })
         }
       }
       
-      animationFrameRef.current = requestAnimationFrame(captureVideoFrame)
+      // Start capturing
+      captureVideoFrame()
       
     } catch (err) {
       console.error('Start recording error:', err)
@@ -356,33 +398,35 @@ export function useVideoExport(): UseVideoExportReturn {
     console.log('Stopping recording...')
     isStoppedRef.current = true
     
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-      animationFrameRef.current = null
+    // Cancel any pending capture
+    if (captureLoopRef.current) {
+      cancelAnimationFrame(captureLoopRef.current)
+      captureLoopRef.current = null
     }
     
     setIsProcessing(true)
     
     try {
-      if (framesRef.current.length > 0 && dimensionsRef.current.width > 0) {
-        console.log('Creating video from', framesRef.current.length, 'frames at', dimensionsRef.current.width, 'x', dimensionsRef.current.height)
+      const frames = framesRef.current
+      
+      if (frames.length > 0 && dimensionsRef.current.width > 0) {
+        const actualDuration = frames[frames.length - 1].timestamp / 1000 // Convert to seconds
+        console.log('Creating video from', frames.length, 'frames at', dimensionsRef.current.width, 'x', dimensionsRef.current.height, 'duration:', actualDuration.toFixed(1), 's')
         
         const blob = formatRef.current === 'gif'
           ? await createGIF(
-              framesRef.current,
+              frames,
               dimensionsRef.current.width,
-              dimensionsRef.current.height,
-              settingsRef.current.frameRate
+              dimensionsRef.current.height
             )
           : await createMP4(
-              framesRef.current,
+              frames,
               dimensionsRef.current.width,
-              dimensionsRef.current.height,
-              settingsRef.current.frameRate
+              dimensionsRef.current.height
             )
         
         setVideoBlob(blob)
-        setVideoDuration((Date.now() - startTimeRef.current) / 1000)
+        setVideoDuration(actualDuration)
         setProgress(100)
         setProgressText('Done!')
       } else {
@@ -420,6 +464,13 @@ export function useVideoExport(): UseVideoExportReturn {
 
   const reset = useCallback(() => {
     console.log('Resetting video export state')
+    
+    // Cancel any pending capture
+    if (captureLoopRef.current) {
+      cancelAnimationFrame(captureLoopRef.current)
+      captureLoopRef.current = null
+    }
+    
     setVideoBlob(null)
     setVideoDuration(0)
     setProgress(0)

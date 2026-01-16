@@ -8,23 +8,18 @@ import { useChatState } from '@/hooks/use-chat-state'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Download, Copy, Loader2, Check, Play, Square, Menu, Settings2 } from 'lucide-react'
+import { Download, Copy, Loader2, Check, Play, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { useTranslations } from '@/lib/i18n/translations'
+import { SettingsPanel } from '@/components/editor/settings-panel'
 
 const FORMAT_INFO = {
   png: { name: 'PNG', desc: 'Lossless, transparent' },
@@ -52,15 +47,19 @@ export default function Home() {
     setTransparentBg,
     whatsappSettings,
     setWhatsAppSettings,
+    language,
+    setLanguage,
+    fontFamily,
+    setFontFamily,
+    batteryLevel,
+    setBatteryLevel,
     resetToDefaults,
     isHydrated,
   } = useChatState()
 
   const { exportRef, isExporting, exportToFormat, exportToClipboard, error } = useExport()
   const { toast } = useToast()
-  
-  // Mobile sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const t = useTranslations(language)
   
   // Export options
   const [showWatermark, setShowWatermark] = useState(false)
@@ -76,8 +75,9 @@ export default function Home() {
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [isRecordingMode, setIsRecordingMode] = useState(false) // True before recording starts for clean first frame
   const [videoSettings, setVideoSettings] = useState<VideoExportSettings>({
-    typingDuration: 1500,
-    messageDelay: 800,
+    typingDuration: 2000,
+    messageDelay: 1200,
+    messageAppearDuration: 400,
     quality: 'medium',
     format: 'mp4',
     endPauseDuration: 2000,
@@ -231,60 +231,54 @@ export default function Home() {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
-  // Sidebar content component (reusable for desktop and mobile)
-  const SidebarContent = () => (
-    <EditorSidebar
-      platform={platform}
-      setPlatform={setPlatform}
-      sender={sender}
-      setSender={setSender}
-      receiver={receiver}
-      setReceiver={setReceiver}
-      messages={messages}
-      setMessages={setMessages}
-      darkMode={darkMode}
-      setDarkMode={setDarkMode}
-      mobileView={mobileView}
-      setMobileView={setMobileView}
-      timeFormat={timeFormat}
-      setTimeFormat={setTimeFormat}
-      transparentBg={transparentBg}
-      setTransparentBg={setTransparentBg}
-      whatsappSettings={whatsappSettings}
-      setWhatsAppSettings={setWhatsAppSettings}
-      onReset={resetToDefaults}
-    />
-  )
+  // Sidebar props - only People and Messages related
+  const sidebarProps = {
+    platform,
+    sender,
+    setSender,
+    receiver,
+    setReceiver,
+    messages,
+    setMessages,
+    language,
+  }
 
   return (
-    <div className="flex h-[calc(100vh-56px)] md:h-[calc(100vh-64px)]">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <SidebarContent />
-      </div>
+    <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] bg-gray-100 relative">
+      {/* Loading State */}
+      {!isHydrated && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+          <div className="animate-pulse text-muted-foreground">{t.common.loading}</div>
+        </div>
+      )}
+
+      {/* Floating Editor Panel - Left */}
+      <EditorSidebar {...sidebarProps} />
 
       {/* Preview Panel */}
-      <div className="flex-1 bg-gray-100 flex items-center justify-center p-4 md:p-8 overflow-auto relative">
-        {/* Loading State */}
-        {!isHydrated && (
-          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
-            <div className="animate-pulse text-muted-foreground">Loading...</div>
-          </div>
-        )}
+      <div className="w-full h-full flex items-center justify-center p-4 md:p-8 overflow-auto">
 
-        {/* Mobile Menu Button */}
-        <div className="absolute top-4 left-4 lg:hidden z-20">
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-10 w-10 bg-white shadow-md">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[340px] p-0 overflow-y-auto">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-        </div>
+        {/* Floating Settings Panel - Always visible */}
+        <SettingsPanel
+          platform={platform}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          mobileView={mobileView}
+          setMobileView={setMobileView}
+          timeFormat={timeFormat}
+          setTimeFormat={setTimeFormat}
+          transparentBg={transparentBg}
+          setTransparentBg={setTransparentBg}
+          whatsappSettings={whatsappSettings}
+          setWhatsAppSettings={setWhatsAppSettings}
+          language={language}
+          setLanguage={setLanguage}
+          fontFamily={fontFamily}
+          setFontFamily={setFontFamily}
+          batteryLevel={batteryLevel}
+          setBatteryLevel={setBatteryLevel}
+          onReset={resetToDefaults}
+        />
 
         {/* Phone Preview - Scaled for mobile */}
         <div className="transform scale-[0.55] sm:scale-[0.65] md:scale-[0.8] lg:scale-100 origin-center">
@@ -298,8 +292,11 @@ export default function Home() {
                 darkMode={darkMode}
                 timeFormat={timeFormat}
                 settings={whatsappSettings}
+                language={language}
+                fontFamily={fontFamily}
                 typingDuration={videoSettings.typingDuration}
                 messageDelay={videoSettings.messageDelay}
+                messageAppearDuration={videoSettings.messageAppearDuration}
                 onAnimationComplete={handleAnimationComplete}
                 forVideoExport={isRecordingMode}
               />
@@ -316,6 +313,9 @@ export default function Home() {
                 timeFormat={timeFormat}
                 transparentBg={transparentBg}
                 whatsappSettings={whatsappSettings}
+                language={language}
+                fontFamily={fontFamily}
+                batteryLevel={batteryLevel}
               />
             </div>
           )}
@@ -331,7 +331,7 @@ export default function Home() {
               onClick={handleStopPreview}
             >
               <Square className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="font-medium hidden sm:inline">Stop</span>
+              <span className="font-medium hidden sm:inline">{t.export.stop}</span>
             </Button>
           ) : (
             <Button
@@ -341,7 +341,7 @@ export default function Home() {
               disabled={isVideoMode || isExporting || messages.length === 0}
             >
               <Play className="w-4 h-4 md:w-5 md:h-5" />
-              <span className="font-medium hidden sm:inline">Preview</span>
+              <span className="font-medium hidden sm:inline">{t.export.preview}</span>
             </Button>
           )}
 
@@ -366,6 +366,7 @@ export default function Home() {
               onSettingsChange={handleVideoSettingsChange}
               messageCount={messages.length}
               currentFormat={currentFormat}
+              language={language}
             />
 
             {/* Image Export Button */}
@@ -380,14 +381,14 @@ export default function Home() {
                     <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
                   ) : (
                     <Download className="w-4 h-4 md:w-5 md:h-5" />
-                  )}
-                  <span className="font-medium hidden sm:inline">Export</span>
+                    )}
+                    <span className="font-medium hidden sm:inline">{t.export.export}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-72 md:w-80" align="end" sideOffset={12}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Export Options</h3>
+                    <h3 className="font-semibold">{t.export.exportOptions}</h3>
                     <span className="text-xs text-muted-foreground">
                       {FORMAT_INFO[exportFormat].name} • {exportScale}x
                     </span>
@@ -395,7 +396,7 @@ export default function Home() {
 
                   {/* Format Selection */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Format</Label>
+                    <Label className="text-sm font-medium">{t.export.format}</Label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['png', 'jpg', 'webp'] as ExportFormat[]).map((f) => (
                         <button
@@ -421,7 +422,7 @@ export default function Home() {
                   {(exportFormat === 'jpg' || exportFormat === 'webp') && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Quality</Label>
+                        <Label className="text-sm font-medium">{t.export.quality}</Label>
                         <span className="text-sm text-muted-foreground">
                           {Math.round(jpgQuality * 100)}%
                         </span>
@@ -441,7 +442,7 @@ export default function Home() {
                   {/* Scale Selection */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Scale</Label>
+                      <Label className="text-sm font-medium">{t.export.scale}</Label>
                       <span className="text-xs text-muted-foreground">
                         {exportScale === 1 && '375×812px'}
                         {exportScale === 2 && '750×1624px'}
@@ -469,8 +470,8 @@ export default function Home() {
                   {/* Watermark Toggle */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="text-sm font-medium">Watermark</Label>
-                      <p className="text-xs text-muted-foreground">Add subtle branding</p>
+                      <Label className="text-sm font-medium">{t.export.watermark}</Label>
+                      <p className="text-xs text-muted-foreground">{t.export.watermarkDesc}</p>
                     </div>
                     <Switch
                       checked={showWatermark}
@@ -488,12 +489,12 @@ export default function Home() {
                       {isExporting ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Exporting...
+                          {t.export.downloading}
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 mr-2" />
-                          Download {FORMAT_INFO[exportFormat].name}
+                          {t.export.download} {FORMAT_INFO[exportFormat].name}
                         </>
                       )}
                     </Button>
@@ -508,12 +509,12 @@ export default function Home() {
                       {copied ? (
                         <>
                           <Check className="w-4 h-4 mr-2 text-green-500" />
-                          Copied!
+                          {t.export.copied}
                         </>
                       ) : (
                         <>
                           <Copy className="w-4 h-4 mr-2" />
-                          Copy to Clipboard
+                          {t.export.copyToClipboard}
                         </>
                       )}
                     </Button>
@@ -527,9 +528,9 @@ export default function Home() {
         {/* Quick Info - Hidden on mobile */}
         <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 hidden md:block">
           <p className="text-xs text-muted-foreground">
-            {darkMode ? '🌙 Dark Mode' : '☀️ Light Mode'} • {mobileView ? '📱 Mobile' : '🖥️ Desktop'}
-            {isPreviewMode && ' • 👁️ Previewing'}
-            {isVideoMode && !isPreviewMode && ' • 🎬 Recording'}
+            {darkMode ? t.info.darkModeOn : t.info.lightModeOn} • {mobileView ? t.info.mobileView : t.info.desktopView}
+            {isPreviewMode && ` • ${t.info.previewing}`}
+            {isVideoMode && !isPreviewMode && ` • ${t.info.recordingVideo}`}
           </p>
         </div>
       </div>

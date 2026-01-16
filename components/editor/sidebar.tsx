@@ -1,18 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Platform, Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, WHATSAPP_REACTIONS, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, WhatsAppBackgroundType, MessageType, VoiceMessageData, DocumentData, VideoData } from '@/types'
-import { platforms } from '@/lib/platforms'
+import { useState, useRef, useEffect } from 'react'
+import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language } from '@/types'
+import { useTranslations } from '@/lib/i18n/translations'
+
 import { cn } from '@/lib/utils'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { AvatarUpload } from '@/components/ui/avatar-upload'
@@ -22,20 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
 import {
   DndContext,
   closestCenter,
@@ -56,64 +37,111 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   MessageSquare,
   Users,
-  Palette,
-  Info,
   Plus,
   Trash2,
   GripVertical,
   Image as ImageIcon,
-  RotateCcw,
   Check,
   CheckCheck,
   Clock,
-  Settings2,
   Forward,
   Reply,
   Smile,
   X,
   Upload,
-  Mic,
-  FileText,
-  Video,
-  Type,
+  ChevronRight,
+  Edit3,
 } from 'lucide-react'
 import { generateId } from '@/lib/utils'
 
+// Debounced Input Component to prevent scroll jumping
+function DebouncedInput({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+}) {
+  const [localValue, setLocalValue] = useState(value)
+  
+  useEffect(() => {
+    setLocalValue(value)
+  }, [value])
+  
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue)
+    }
+  }
+  
+  return (
+    <Input
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      placeholder={placeholder}
+      className={className}
+    />
+  )
+}
+
 interface EditorSidebarProps {
   platform: Platform
-  setPlatform: (platform: Platform) => void
   sender: User
   setSender: (user: User) => void
   receiver: User
   setReceiver: (user: User) => void
   messages: Message[]
   setMessages: (messages: Message[]) => void
-  darkMode: boolean
-  setDarkMode: (value: boolean) => void
-  mobileView: boolean
-  setMobileView: (value: boolean) => void
-  timeFormat: '12h' | '24h'
-  setTimeFormat: (value: '12h' | '24h') => void
-  transparentBg: boolean
-  setTransparentBg: (value: boolean) => void
-  whatsappSettings?: WhatsAppSettings
-  setWhatsAppSettings?: (settings: Partial<WhatsAppSettings>) => void
-  onReset?: () => void
+  language: Language
 }
 
-const platformIcons: Record<Platform, string> = {
-  whatsapp: '📱',
-  imessage: '💬',
-  instagram: '📸',
-  messenger: '💬',
-  telegram: '✈️',
-  discord: '🎮',
-  slack: '💼',
-  signal: '🔒',
-  snapchat: '👻',
-  tiktok: '🎵',
-  twitter: '🐦',
-  linkedin: '💼',
+// Collapsible Section Component
+function CollapsibleSection({
+  title,
+  icon: Icon,
+  children,
+  defaultOpen = false,
+  badge,
+}: {
+  title: string
+  icon: React.ElementType
+  children: React.ReactNode
+  defaultOpen?: boolean
+  badge?: React.ReactNode
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-gray-200">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          'w-full flex items-center gap-3 px-4 py-3.5 transition-all',
+          isOpen
+            ? 'bg-[#d4f5e2] text-gray-900'
+            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+        )}
+      >
+        <Icon className={cn("w-5 h-5", isOpen ? "text-[#128C7E]" : "text-gray-500")} />
+        <span className="font-medium flex-1 text-left">{title}</span>
+        {badge}
+        <ChevronRight className={cn(
+          "w-4 h-4 transition-transform duration-200",
+          isOpen && "rotate-90"
+        )} />
+      </button>
+      {isOpen && (
+        <div className="bg-white px-4 py-4 space-y-4 border-t border-gray-100">
+          {children}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // Message Status Selector for WhatsApp
@@ -451,6 +479,12 @@ function SortableMessageItem({
   onDelete: () => void
   onToggleUser: () => void
 }) {
+  const [localContent, setLocalContent] = useState(message.content)
+  
+  useEffect(() => {
+    setLocalContent(message.content)
+  }, [message.content])
+  
   const {
     attributes,
     listeners,
@@ -471,13 +505,19 @@ function SortableMessageItem({
 
   const isSent = message.userId === sender.id
   const isWhatsApp = platform === 'whatsapp'
+  
+  const handleBlur = () => {
+    if (localContent !== message.content) {
+      onUpdateContent(localContent)
+    }
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group relative bg-muted/50 rounded-lg p-3 space-y-2',
+        'group relative bg-gray-50 rounded-lg p-3 space-y-2',
         isDragging && 'opacity-50 shadow-lg'
       )}
     >
@@ -495,8 +535,8 @@ function SortableMessageItem({
           className={cn(
             'flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors',
             isSent
-              ? 'bg-primary/10 text-primary'
-              : 'bg-secondary text-secondary-foreground'
+              ? 'bg-[#d4f5e2] text-[#128C7E]'
+              : 'bg-gray-200 text-gray-700'
           )}
         >
           <span className="w-4 h-4 rounded-full bg-current opacity-20" />
@@ -514,7 +554,7 @@ function SortableMessageItem({
         </button>
       </div>
 
-      {/* Message Type Indicator */}
+      {/* Message Type Indicators */}
       {message.imageUrl && (
         <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
           <ImageIcon className="w-3 h-3" />
@@ -522,7 +562,6 @@ function SortableMessageItem({
         </div>
       )}
       
-      {/* Reply Indicator */}
       {message.replyTo && (
         <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
           <Reply className="w-3 h-3" />
@@ -530,7 +569,6 @@ function SortableMessageItem({
         </div>
       )}
 
-      {/* Forwarded Indicator */}
       {message.isForwarded && (
         <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
           <Forward className="w-3 h-3" />
@@ -538,7 +576,6 @@ function SortableMessageItem({
         </div>
       )}
 
-      {/* Reactions Indicator */}
       {message.reactions && message.reactions.length > 0 && (
         <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
           <Smile className="w-3 h-3" />
@@ -548,8 +585,9 @@ function SortableMessageItem({
 
       {/* Content Textarea */}
       <Textarea
-        value={message.content}
-        onChange={(e) => onUpdateContent(e.target.value)}
+        value={localContent}
+        onChange={(e) => setLocalContent(e.target.value)}
+        onBlur={handleBlur}
         placeholder="Type your message..."
         className="min-h-[60px] resize-none"
       />
@@ -557,7 +595,6 @@ function SortableMessageItem({
       {/* Action Row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          {/* Image Upload */}
           {isWhatsApp && onUpdateImage && (
             <ImageUploader
               imageUrl={message.imageUrl}
@@ -565,7 +602,6 @@ function SortableMessageItem({
             />
           )}
           
-          {/* Reply Selector */}
           {isWhatsApp && onUpdateReplyTo && (
             <ReplySelector
               messages={messages}
@@ -577,7 +613,6 @@ function SortableMessageItem({
             />
           )}
           
-          {/* Forwarded Toggle */}
           {isWhatsApp && onUpdateForwarded && (
             <button
               onClick={() => onUpdateForwarded(!message.isForwarded)}
@@ -593,7 +628,6 @@ function SortableMessageItem({
             </button>
           )}
           
-          {/* Reactions Selector */}
           {isWhatsApp && onUpdateReactions && (
             <ReactionSelector
               reactions={message.reactions || []}
@@ -602,7 +636,6 @@ function SortableMessageItem({
           )}
         </div>
 
-        {/* Message Status for WhatsApp (only for sent messages) */}
         {isWhatsApp && isSent && onUpdateStatus && (
           <MessageStatusSelector
             status={message.status || 'read'}
@@ -614,259 +647,40 @@ function SortableMessageItem({
   )
 }
 
-// Background Image Uploader for WhatsApp
-const BackgroundImageUploader = ({
-  imageUrl,
-  onChange,
-}: {
-  imageUrl?: string
-  onChange: (url?: string) => void
-}) => {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        onChange(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      {/* Current Image Preview */}
-      {imageUrl && (
-        <div className="relative">
-          <img 
-            src={imageUrl} 
-            alt="Background" 
-            className="w-full h-24 object-cover rounded-lg"
-          />
-          <button
-            onClick={() => onChange(undefined)}
-            className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      )}
-      
-      {/* Upload Button */}
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="w-full"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <Upload className="w-4 h-4 mr-2" />
-        {imageUrl ? 'Change Image' : 'Upload Image'}
-      </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-      
-      {/* Preset Images */}
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">Preset backgrounds:</p>
-        <div className="grid grid-cols-3 gap-1">
-          {WHATSAPP_BG_IMAGES.map((url, i) => (
-            <button
-              key={i}
-              onClick={() => onChange(url)}
-              className={cn(
-                "aspect-[3/4] rounded overflow-hidden transition-all",
-                imageUrl === url ? "ring-2 ring-primary" : "hover:ring-2 ring-muted-foreground/50"
-              )}
-            >
-              <img src={url} alt={`Preset ${i + 1}`} className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// WhatsApp Settings Panel
-function WhatsAppSettingsPanel({
-  settings,
-  onChange,
-  darkMode,
-}: {
-  settings: WhatsAppSettings
-  onChange: (settings: Partial<WhatsAppSettings>) => void
-  darkMode: boolean
-}) {
-  const backgroundType = settings.backgroundType || 'doodle'
-  
-  return (
-    <div className="space-y-4 pt-2">
-      {/* Last Seen Status */}
-      <div className="space-y-2">
-        <Label className="text-sm">Status</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {(['online', 'typing', 'last-seen', 'none'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => onChange({ lastSeen: status })}
-              className={cn(
-                'px-3 py-2 rounded-md text-xs font-medium transition-colors capitalize',
-                settings.lastSeen === status
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted hover:bg-muted/80'
-              )}
-            >
-              {status === 'last-seen' ? 'Last Seen' : status}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Background Type */}
-      <div className="space-y-2">
-        <Label className="text-sm">Background Type</Label>
-        <div className="grid grid-cols-3 gap-2">
-          {(['solid', 'doodle', 'image'] as WhatsAppBackgroundType[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => onChange({ backgroundType: type })}
-              className={cn(
-                'px-3 py-2 rounded-md text-xs font-medium transition-colors capitalize',
-                backgroundType === type
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted hover:bg-muted/80'
-              )}
-            >
-              {type === 'doodle' ? 'Pattern' : type}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Solid Color Selector */}
-      {backgroundType === 'solid' && (
-        <div className="space-y-2">
-          <Label className="text-sm">Background Color</Label>
-          <div className="grid grid-cols-6 gap-2">
-            {WHATSAPP_BG_COLORS.map((color) => (
-              <button
-                key={color}
-                onClick={() => onChange({ backgroundColor: color })}
-                className={cn(
-                  'w-full aspect-square rounded-lg border-2 transition-all',
-                  settings.backgroundColor === color
-                    ? 'border-primary scale-110'
-                    : 'border-transparent hover:border-muted-foreground/50'
-                )}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            ))}
-          </div>
-          {/* Custom Color Input */}
-          <div className="flex items-center gap-2 mt-2">
-            <input
-              type="color"
-              value={settings.backgroundColor || '#EFEFE4'}
-              onChange={(e) => onChange({ backgroundColor: e.target.value })}
-              className="w-8 h-8 rounded cursor-pointer border-0"
-            />
-            <Input
-              value={settings.backgroundColor || '#EFEFE4'}
-              onChange={(e) => onChange({ backgroundColor: e.target.value })}
-              placeholder="#EFEFE4"
-              className="flex-1 text-sm h-8"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Doodle Pattern Settings */}
-      {backgroundType === 'doodle' && (
-        <>
-          <div className="space-y-2">
-            <Label className="text-sm">Base Color</Label>
-            <div className="grid grid-cols-6 gap-2">
-              {WHATSAPP_BG_COLORS.slice(0, 6).map((color) => (
-                <button
-                  key={color}
-                  onClick={() => onChange({ backgroundColor: color })}
-                  className={cn(
-                    'w-full aspect-square rounded-lg border-2 transition-all',
-                    settings.backgroundColor === color
-                      ? 'border-primary scale-110'
-                      : 'border-transparent hover:border-muted-foreground/50'
-                  )}
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-sm">Pattern Opacity: {Math.round((settings.doodleOpacity || 0.06) * 100)}%</Label>
-            <input
-              type="range"
-              min="0.02"
-              max="0.2"
-              step="0.02"
-              value={settings.doodleOpacity || 0.06}
-              onChange={(e) => onChange({ doodleOpacity: parseFloat(e.target.value) })}
-              className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-            />
-          </div>
-        </>
-      )}
-
-      {/* Image Background Settings */}
-      {backgroundType === 'image' && (
-        <BackgroundImageUploader
-          imageUrl={settings.backgroundImage}
-          onChange={(url) => onChange({ backgroundImage: url })}
-        />
-      )}
-
-      {/* Show Encryption Notice */}
-      <div className="flex items-center justify-between">
-        <Label className="text-sm">Show Encryption Notice</Label>
-        <Switch
-          checked={settings.showEncryptionNotice}
-          onCheckedChange={(checked) => onChange({ showEncryptionNotice: checked })}
-        />
-      </div>
-    </div>
-  )
-}
-
 export function EditorSidebar({
   platform,
-  setPlatform,
   sender,
   setSender,
   receiver,
   setReceiver,
   messages,
   setMessages,
-  darkMode,
-  setDarkMode,
-  mobileView,
-  setMobileView,
-  timeFormat,
-  setTimeFormat,
-  transparentBg,
-  setTransparentBg,
-  whatsappSettings,
-  setWhatsAppSettings,
-  onReset,
+  language,
 }: EditorSidebarProps) {
+  const t = useTranslations(language)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollPositionRef = useRef(0)
+  
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    
+    const handleScroll = () => {
+      scrollPositionRef.current = container.scrollTop
+    }
+    
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+  
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (scrollContainerRef.current && scrollPositionRef.current > 0) {
+        scrollContainerRef.current.scrollTop = scrollPositionRef.current
+      }
+    })
+  })
+  
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -971,102 +785,94 @@ export function EditorSidebar({
   }
 
   return (
-    <div className="w-80 border-r bg-background flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-y-auto">
-        <Accordion
-          type="multiple"
-          defaultValue={['app', 'people', 'messages', 'appearance']}
-          className="w-full"
-        >
-          {/* Platform Info - WhatsApp Only */}
-          <div className="px-4 py-3 border-b">
-            <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950 rounded-lg p-3">
-              <span className="text-2xl">📱</span>
-              <div>
-                <p className="font-medium text-green-800 dark:text-green-200">WhatsApp</p>
-                <p className="text-xs text-green-600 dark:text-green-400">iOS Style</p>
+    <div className="fixed left-4 top-20 z-50 w-80">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+          <div className="w-10 h-10 rounded-xl bg-[#d4f5e2] flex items-center justify-center">
+            <Edit3 className="w-5 h-5 text-[#128C7E]" />
+          </div>
+          <span className="font-semibold text-gray-800 text-lg">{t.common.editor}</span>
+        </div>
+
+        {/* Content */}
+        <div ref={scrollContainerRef} className="p-3 space-y-2 max-h-[calc(100vh-180px)] overflow-y-auto">
+          {/* People Section */}
+          <CollapsibleSection
+            title={t.editor.people}
+            icon={Users}
+            defaultOpen={false}
+          >
+            {/* Sender */}
+            <div className="space-y-2">
+              <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.senderYou}</Label>
+              <div className="flex items-center gap-3">
+                <AvatarUpload
+                  value={sender.avatar}
+                  onChange={(avatar) => setSender({ ...sender, avatar })}
+                  fallback={sender.name}
+                  variant="primary"
+                  language={language}
+                />
+                <DebouncedInput
+                  value={sender.name}
+                  onChange={(name) => setSender({ ...sender, name })}
+                  className="flex-1"
+                  placeholder="Your name"
+                />
               </div>
             </div>
-          </div>
 
-          {/* People */}
-          <AccordionItem value="people" className="border-b px-4">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>People</span>
+            {/* Receiver */}
+            <div className="space-y-2">
+              <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.receiver}</Label>
+              <div className="flex items-center gap-3">
+                <AvatarUpload
+                  value={receiver.avatar}
+                  onChange={(avatar) => setReceiver({ ...receiver, avatar })}
+                  fallback={receiver.name}
+                  variant="secondary"
+                  language={language}
+                />
+                <DebouncedInput
+                  value={receiver.name}
+                  onChange={(name) => setReceiver({ ...receiver, name })}
+                  className="flex-1"
+                  placeholder="Their name"
+                />
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-4">
-              {/* Sender */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Sender (You)</Label>
-                <div className="flex items-center gap-3">
-                  <AvatarUpload
-                    value={sender.avatar}
-                    onChange={(avatar) => setSender({ ...sender, avatar })}
-                    fallback={sender.name}
-                    variant="primary"
-                  />
-                  <Input
-                    value={sender.name}
-                    onChange={(e) => setSender({ ...sender, name: e.target.value })}
-                    className="flex-1"
-                    placeholder="Your name"
-                  />
-                </div>
-              </div>
+            </div>
+          </CollapsibleSection>
 
-              {/* Receiver */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Receiver</Label>
-                <div className="flex items-center gap-3">
-                  <AvatarUpload
-                    value={receiver.avatar}
-                    onChange={(avatar) => setReceiver({ ...receiver, avatar })}
-                    fallback={receiver.name}
-                    variant="secondary"
-                  />
-                  <Input
-                    value={receiver.name}
-                    onChange={(e) => setReceiver({ ...receiver, name: e.target.value })}
-                    className="flex-1"
-                    placeholder="Their name"
-                  />
-                </div>
+          {/* Messages Section */}
+          <CollapsibleSection
+            title={t.editor.messages}
+            icon={MessageSquare}
+            defaultOpen={false}
+            badge={
+              <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
+                {messages.length}
+              </span>
+            }
+          >
+            {/* WhatsApp Features Info */}
+            {platform === 'whatsapp' && (
+              <div className="text-xs text-gray-500 bg-[#d4f5e2]/50 p-2 rounded-lg">
+                <p className="font-medium text-[#128C7E] mb-1">{t.editor.whatsappFeatures}</p>
+                <p>{t.editor.whatsappFeaturesDesc}</p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Messages */}
-          <AccordionItem value="messages" className="border-b px-4">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                <span>Messages</span>
-                <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {messages.length}
-                </span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-3">
-              {/* WhatsApp Features Info */}
-              {platform === 'whatsapp' && (
-                <div className="text-xs text-muted-foreground bg-green-50 p-2 rounded-lg">
-                  <p className="font-medium text-green-700 mb-1">💡 WhatsApp Features</p>
-                  <p>Use the icons below each message to add images, replies, forwarded labels, and reactions.</p>
-                </div>
-              )}
-              
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+            )}
+            
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={messages.map((m) => m.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <SortableContext
-                  items={messages.map((m) => m.id)}
-                  strategy={verticalListSortingStrategy}
-                >
+                <div className="space-y-3">
                   {messages.map((message) => (
                     <SortableMessageItem
                       key={message.id}
@@ -1086,149 +892,21 @@ export function EditorSidebar({
                       onToggleUser={() => toggleMessageUser(message.id)}
                     />
                   ))}
-                </SortableContext>
-              </DndContext>
-              <Button
-                onClick={addMessage}
-                variant="outline"
-                className="w-full"
-                size="sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Message
-              </Button>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Appearance */}
-          <AccordionItem value="appearance" className="border-b px-4">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4" />
-                <span>Appearance</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-4">
-              {/* View Toggle */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">VIEW</Label>
-                <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                  <button
-                    onClick={() => setMobileView(false)}
-                    className={cn(
-                      'flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                      !mobileView
-                        ? 'bg-background shadow-sm'
-                        : 'text-muted-foreground'
-                    )}
-                  >
-                    Desktop
-                  </button>
-                  <button
-                    onClick={() => setMobileView(true)}
-                    className={cn(
-                      'flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                      mobileView
-                        ? 'bg-background shadow-sm'
-                        : 'text-muted-foreground'
-                    )}
-                  >
-                    Mobile
-                  </button>
                 </div>
-              </div>
-
-              {/* General Settings */}
-              <div className="space-y-3">
-                <Label className="text-xs text-muted-foreground">GENERAL</Label>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Dark Mode</span>
-                  <Switch checked={darkMode} onCheckedChange={setDarkMode} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Transparent Background</span>
-                  <Switch checked={transparentBg} onCheckedChange={setTransparentBg} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Time Format</span>
-                  <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-                    <button
-                      onClick={() => setTimeFormat('12h')}
-                      className={cn(
-                        'px-2 py-1 rounded text-xs font-medium transition-colors',
-                        timeFormat === '12h'
-                          ? 'bg-background shadow-sm'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      12h
-                    </button>
-                    <button
-                      onClick={() => setTimeFormat('24h')}
-                      className={cn(
-                        'px-2 py-1 rounded text-xs font-medium transition-colors',
-                        timeFormat === '24h'
-                          ? 'bg-background shadow-sm'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      24h
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Reset Button */}
-              {onReset && (
-                <Button
-                  onClick={onReset}
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset to Defaults
-                </Button>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* WhatsApp Settings - Only show when WhatsApp is selected */}
-          {platform === 'whatsapp' && whatsappSettings && setWhatsAppSettings && (
-            <AccordionItem value="whatsapp-settings" className="border-b px-4">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Settings2 className="w-4 h-4" />
-                  <span>WhatsApp</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <WhatsAppSettingsPanel
-                  settings={whatsappSettings}
-                  onChange={setWhatsAppSettings}
-                  darkMode={darkMode}
-                />
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {/* About */}
-          <AccordionItem value="about" className="px-4">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4" />
-                <span>About</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <p className="text-sm text-muted-foreground">
-                FakeSocialMessage is a free tool to create realistic fake chat
-                screenshots for social media platforms. Your changes are automatically
-                saved to your browser.
-              </p>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              </SortableContext>
+            </DndContext>
+            
+            <Button
+              onClick={addMessage}
+              variant="outline"
+              className="w-full mt-3"
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t.editor.addMessage}
+            </Button>
+          </CollapsibleSection>
+        </div>
       </div>
     </div>
   )

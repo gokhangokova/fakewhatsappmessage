@@ -1,6 +1,6 @@
 'use client'
 
-import { Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, VoiceMessageData, DocumentData, VideoData, LocationData, ContactData } from '@/types'
+import { Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, VoiceMessageData, DocumentData, VideoData, LocationData, ContactData, FontFamily, SUPPORTED_FONTS } from '@/types'
 import { formatTime, cn } from '@/lib/utils'
 import {
   ChevronLeft,
@@ -22,6 +22,26 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useTranslations } from '@/lib/i18n/translations'
+import { Language } from '@/types'
+
+// Helper function to check if avatar is a color
+const isColorAvatar = (avatar: string | null | undefined): boolean => {
+  return avatar?.startsWith('color:') || false
+}
+
+// Helper function to get color from avatar string
+const getAvatarColor = (avatar: string | null | undefined): string | null => {
+  if (avatar?.startsWith('color:')) {
+    return avatar.replace('color:', '')
+  }
+  return null
+}
+
+// Helper function to check if avatar is a valid image URL
+const isImageAvatar = (avatar: string | null | undefined): boolean => {
+  return !!avatar && !avatar.startsWith('color:')
+}
 
 interface WhatsAppPreviewProps {
   sender: User
@@ -32,6 +52,9 @@ interface WhatsAppPreviewProps {
   timeFormat: '12h' | '24h'
   transparentBg: boolean
   settings: WhatsAppSettings
+  language?: Language
+  fontFamily?: FontFamily
+  batteryLevel?: number
   // Animation props for video export
   visibleMessageCount?: number // If set, only shows this many messages
   showTypingIndicator?: boolean // If true, shows typing indicator at the end
@@ -147,9 +170,12 @@ const WhatsAppDoodle = ({ opacity, color }: { opacity: number; color: string }) 
 )
 
 // iOS Status Bar
-const IOSStatusBar = ({ darkMode }: { darkMode: boolean }) => {
+const IOSStatusBar = ({ darkMode, batteryLevel = 100 }: { darkMode: boolean; batteryLevel?: number }) => {
   const theme = darkMode ? themes.dark : themes.light
   const iconColor = theme.statusBarText
+  const isLowBattery = batteryLevel <= 20
+  const batteryFillColor = isLowBattery ? '#FF3B30' : iconColor
+  const batteryWidth = Math.max(0, Math.min(100, batteryLevel)) / 100 * 18 // 18 is max fill width
   
   return (
     <div 
@@ -173,7 +199,7 @@ const IOSStatusBar = ({ darkMode }: { darkMode: boolean }) => {
         </svg>
         <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
           <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={iconColor} strokeOpacity="0.35"/>
-          <rect x="2" y="2" width="18" height="8" rx="1.5" fill={iconColor}/>
+          <rect x="2" y="2" width={batteryWidth} height="8" rx="1.5" fill={batteryFillColor}/>
           <path d="M23 4V8C24.1 7.5 24.1 4.5 23 4Z" fill={iconColor} fillOpacity="0.4"/>
         </svg>
       </div>
@@ -190,6 +216,7 @@ const IOSWhatsAppHeader = ({
   isGroupChat,
   groupName,
   participantCount,
+  t,
 }: {
   receiver: User
   lastSeen: WhatsAppSettings['lastSeen']
@@ -198,27 +225,27 @@ const IOSWhatsAppHeader = ({
   isGroupChat?: boolean
   groupName?: string
   participantCount?: number
+  t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
   
   const getStatusText = () => {
     if (isGroupChat && participantCount) {
-      if (lastSeen === 'typing') return 'Sarah is typing...'
-      return `${participantCount} participants`
+      if (lastSeen === 'typing') return 'Sarah ' + t.preview.typing
+      return `${participantCount} ${t.preview.participants}`
     }
     
     switch (lastSeen) {
       case 'online':
-        return 'online'
+        return t.preview.online
       case 'typing':
-        return 'typing...'
+        return t.preview.typing
       case 'last-seen':
-        // Use fixed text to avoid hydration issues
-        return 'last seen today at 14:30'
+        return `${t.preview.lastSeenToday} 14:30`
       case 'none':
-        return 'tap here for contact info'
+        return t.preview.tapForContactInfo
       default:
-        return 'tap here for contact info'
+        return t.preview.tapForContactInfo
     }
   }
 
@@ -233,14 +260,14 @@ const IOSWhatsAppHeader = ({
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
       
       <Avatar className="w-[36px] h-[36px]">
-        {receiver.avatar ? (
-          <AvatarImage src={receiver.avatar} />
+        {isImageAvatar(receiver.avatar) ? (
+          <AvatarImage src={receiver.avatar!} />
         ) : (
           <AvatarFallback 
-            className="text-[14px] font-medium"
+            className="text-[14px] font-medium text-white"
             style={{ 
-              backgroundColor: darkMode ? '#2A3942' : '#DFE5E7',
-              color: darkMode ? '#8696A0' : '#54656F',
+              backgroundColor: getAvatarColor(receiver.avatar) || (darkMode ? '#2A3942' : '#DFE5E7'),
+              color: getAvatarColor(receiver.avatar) ? '#FFFFFF' : (darkMode ? '#8696A0' : '#54656F'),
             }}
           >
             {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
@@ -284,7 +311,7 @@ const DateSeparator = ({ date, darkMode }: { date: string; darkMode: boolean }) 
 }
 
 // Encryption Notice
-const EncryptionNotice = ({ darkMode }: { darkMode: boolean }) => {
+const EncryptionNotice = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
   const theme = darkMode ? themes.dark : themes.light
   return (
     <div className="flex justify-center my-[6px] px-[16px]">
@@ -294,7 +321,7 @@ const EncryptionNotice = ({ darkMode }: { darkMode: boolean }) => {
       >
         <Lock className="w-[12px] h-[12px] flex-shrink-0" style={{ color: theme.encryptionIcon }} />
         <span className="text-[11px] text-center leading-[14px]" style={{ color: theme.encryptionText }}>
-          Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.
+          {t.preview.encryptionNotice}
         </span>
       </div>
     </div>
@@ -302,12 +329,12 @@ const EncryptionNotice = ({ darkMode }: { darkMode: boolean }) => {
 }
 
 // Forwarded Label
-const ForwardedLabel = ({ darkMode }: { darkMode: boolean }) => {
+const ForwardedLabel = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
   const theme = darkMode ? themes.dark : themes.light
   return (
     <div className="flex items-center gap-[4px] text-[12px] italic mb-[2px]" style={{ color: theme.timeText }}>
       <Forward className="w-[12px] h-[12px]" />
-      <span>Forwarded</span>
+      <span>{t.preview.forwarded}</span>
     </div>
   )
 }
@@ -392,13 +419,14 @@ const VoiceMessage = ({
       {/* Avatar */}
       <div className="relative">
         <Avatar className="w-[40px] h-[40px]">
-          {avatar ? (
-            <AvatarImage src={avatar} />
+          {isImageAvatar(avatar) ? (
+            <AvatarImage src={avatar!} />
           ) : (
             <AvatarFallback 
+              className="text-white"
               style={{ 
-                backgroundColor: isSent ? (darkMode ? '#00A884' : '#25D366') : (darkMode ? '#8696A0' : '#DFE5E7'),
-                color: isSent ? '#FFFFFF' : (darkMode ? '#1F2C34' : '#54656F'),
+                backgroundColor: getAvatarColor(avatar) || (isSent ? (darkMode ? '#00A884' : '#25D366') : (darkMode ? '#8696A0' : '#DFE5E7')),
+                color: getAvatarColor(avatar) ? '#FFFFFF' : (isSent ? '#FFFFFF' : (darkMode ? '#1F2C34' : '#54656F')),
               }}
             >
               <Mic className="w-[20px] h-[20px]" />
@@ -612,12 +640,13 @@ const ContactMessage = ({
       >
         {/* Avatar */}
         <Avatar className="w-[44px] h-[44px]">
-          {contactData.avatar ? (
-            <AvatarImage src={contactData.avatar} />
+          {isImageAvatar(contactData.avatar) ? (
+            <AvatarImage src={contactData.avatar!} />
           ) : (
             <AvatarFallback 
+              className="text-white"
               style={{ 
-                backgroundColor: darkMode ? '#00A884' : '#25D366',
+                backgroundColor: getAvatarColor(contactData.avatar) || (darkMode ? '#00A884' : '#25D366'),
                 color: '#FFFFFF',
               }}
             >
@@ -676,6 +705,7 @@ const IOSMessageBubble = ({
   darkMode,
   isGroupChat,
   participants,
+  t,
 }: {
   message: Message
   sender: User
@@ -685,6 +715,7 @@ const IOSMessageBubble = ({
   darkMode: boolean
   isGroupChat?: boolean
   participants?: User[]
+  t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
   const isSent = message.userId === sender.id
@@ -754,7 +785,7 @@ const IOSMessageBubble = ({
           {/* Forwarded Label */}
           {message.isForwarded && (
             <div className="px-[12px] pt-[6px]">
-              <ForwardedLabel darkMode={darkMode} />
+              <ForwardedLabel darkMode={darkMode} t={t} />
             </div>
           )}
           
@@ -810,22 +841,26 @@ const IOSMessageBubble = ({
           
           {/* Message Content */}
           <div className={cn(
-            "flex flex-wrap items-end",
+            "relative",
             (hasImage || hasVideo || hasLocation) ? "px-[8px] pb-[6px] pt-[4px]" : 
             (hasVoice || hasDocument || hasContact) ? "px-[12px] pb-[8px]" : "px-[12px] py-[8px]"
           )}>
             {message.content && (
               <span className="text-[17px] leading-[22px] whitespace-pre-wrap break-words" style={{ color: textColor }}>
                 {message.content}
+                {/* Invisible spacer for time/status */}
+                <span className="invisible text-[11px]">
+                  {'  '}{time}{isSent ? ' ✓✓' : ''}
+                </span>
               </span>
             )}
             
-            {/* Time and Status */}
+            {/* Time and Status - absolute positioned */}
             <span className={cn(
-              "flex items-center gap-[3px] ml-[8px] whitespace-nowrap text-[11px] italic",
+              "flex items-center gap-[3px] whitespace-nowrap text-[11px]",
               (hasImage || hasVideo) && !message.content 
                 ? "absolute bottom-[8px] right-[10px] bg-black/40 px-[6px] py-[2px] rounded-full text-white/90" 
-                : ""
+                : "absolute bottom-[8px] right-[12px]"
             )} style={{ color: (hasImage || hasVideo) && !message.content ? undefined : timeColor }}>
               {time}
               {isSent && (
@@ -886,7 +921,7 @@ const TypingIndicator = ({ darkMode, senderName }: { darkMode: boolean; senderNa
 }
 
 // iOS WhatsApp Footer
-const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
+const IOSWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
   const theme = darkMode ? themes.dark : themes.light
   
   return (
@@ -902,7 +937,7 @@ const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
         >
           <input
             type="text"
-            placeholder="Message"
+            placeholder={t.preview.message}
             className="flex-1 text-[16px] bg-transparent outline-none"
             style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
             disabled
@@ -944,10 +979,17 @@ export function WhatsAppPreview({
   timeFormat,
   transparentBg,
   settings = defaultSettings,
+  language = 'en',
+  fontFamily = 'sf-pro',
+  batteryLevel = 100,
   visibleMessageCount,
   showTypingIndicator,
 }: WhatsAppPreviewProps) {
   const theme = darkMode ? themes.dark : themes.light
+  const t = useTranslations(language)
+  
+  // Get font style from SUPPORTED_FONTS
+  const fontStyle = SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style || SUPPORTED_FONTS[0].style
   
   // Filter messages based on visibleMessageCount for animation
   const visibleMessages = visibleMessageCount !== undefined 
@@ -972,13 +1014,14 @@ export function WhatsAppPreview({
   if (!mobileView) {
     return (
       <div
-        className="font-sf-pro transition-all duration-300 overflow-hidden"
+        className="transition-all duration-300 overflow-hidden"
         style={{
           width: '420px',
           height: '680px',
           borderRadius: '12px',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
+          fontFamily: fontStyle,
         }}
       >
         <div className="flex flex-col h-full overflow-hidden antialiased">
@@ -990,6 +1033,7 @@ export function WhatsAppPreview({
             isGroupChat={isGroupChat}
             groupName={settings.groupName}
             participantCount={settings.groupParticipants?.length}
+            t={t}
           />
 
           <div className={cn(
@@ -1013,11 +1057,11 @@ export function WhatsAppPreview({
             )}
             
             <div className="relative z-10 py-[4px]">
-              {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} />}
+              {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} t={t} />}
 
               {messageGroups.map((group) => (
                 <div key={group.date}>
-                  <DateSeparator date={group.date} darkMode={darkMode} />
+                  <DateSeparator date={t.preview.today} darkMode={darkMode} />
                   {group.messages.map((message, index) => {
                     const prevMessage = index > 0 ? group.messages[index - 1] : null
                     const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
@@ -1033,6 +1077,7 @@ export function WhatsAppPreview({
                         darkMode={darkMode}
                         isGroupChat={isGroupChat}
                         participants={settings.groupParticipants}
+                        t={t}
                       />
                     )
                   })}
@@ -1057,7 +1102,7 @@ export function WhatsAppPreview({
               >
                 <input
                   type="text"
-                  placeholder="Message"
+                  placeholder={t.preview.message}
                   className="flex-1 text-[15px] bg-transparent outline-none"
                   style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
                   disabled
@@ -1081,12 +1126,13 @@ export function WhatsAppPreview({
   // Mobile view - phone frame with status bar
   return (
     <div
-      className="font-sf-pro transition-all duration-300 overflow-hidden w-[375px]"
+      className="transition-all duration-300 overflow-hidden w-[375px]"
       style={{
         borderRadius: '44px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
         background: '#000',
         padding: '2px',
+        fontFamily: fontStyle,
       }}
     >
       <div
@@ -1097,7 +1143,7 @@ export function WhatsAppPreview({
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
         }}
       >
-        <IOSStatusBar darkMode={darkMode} />
+        <IOSStatusBar darkMode={darkMode} batteryLevel={batteryLevel} />
 
         <IOSWhatsAppHeader
           receiver={receiver}
@@ -1107,6 +1153,7 @@ export function WhatsAppPreview({
           isGroupChat={isGroupChat}
           groupName={settings.groupName}
           participantCount={settings.groupParticipants?.length}
+          t={t}
         />
 
         <div className={cn(
@@ -1130,11 +1177,11 @@ export function WhatsAppPreview({
           )}
           
           <div className="relative z-10 py-[4px]">
-            {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} />}
+            {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} t={t} />}
 
             {messageGroups.map((group) => (
               <div key={group.date}>
-                <DateSeparator date={group.date} darkMode={darkMode} />
+                <DateSeparator date={t.preview.today} darkMode={darkMode} />
                 {group.messages.map((message, index) => {
                   const prevMessage = index > 0 ? group.messages[index - 1] : null
                   const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
@@ -1150,6 +1197,7 @@ export function WhatsAppPreview({
                       darkMode={darkMode}
                       isGroupChat={isGroupChat}
                       participants={settings.groupParticipants}
+                      t={t}
                     />
                   )
                 })}
@@ -1161,7 +1209,7 @@ export function WhatsAppPreview({
           </div>
         </div>
 
-        <IOSWhatsAppFooter darkMode={darkMode} />
+        <IOSWhatsAppFooter darkMode={darkMode} t={t} />
       </div>
     </div>
   )

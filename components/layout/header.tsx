@@ -15,7 +15,8 @@ export function Header() {
           </div>
           <span className="font-bold text-lg md:text-xl">
             <span className="hidden sm:inline">FakeSocial</span>
-            <span className="sm:hidden">Fake</span>
+            <span className="sm:hidden">FS</span>
+            <span className="text-primary">.io</span>
           </span>
         </Link>
 

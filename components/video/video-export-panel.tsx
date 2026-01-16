@@ -26,10 +26,13 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VideoFormat, VideoQuality } from '@/hooks/use-video-export'
+import { Language } from '@/types'
+import { useTranslations } from '@/lib/i18n/translations'
 
 export interface VideoExportSettings {
   typingDuration: number
   messageDelay: number
+  messageAppearDuration: number
   quality: VideoQuality
   format: VideoFormat
   endPauseDuration: number
@@ -53,17 +56,7 @@ interface VideoExportPanelProps {
   onSettingsChange: (settings: Partial<VideoExportSettings>) => void
   messageCount: number
   currentFormat: VideoFormat
-}
-
-const FORMAT_INFO: Record<VideoFormat, { label: string; desc: string; icon: string; ext: string }> = {
-  mp4: { label: 'MP4 Video', desc: 'Universal format, works everywhere', icon: '🎬', ext: '.mp4' },
-  gif: { label: 'Animated GIF', desc: 'Easy to share everywhere', icon: '🎞️', ext: '.gif' },
-}
-
-const QUALITY_INFO: Record<VideoQuality, { label: string; desc: string }> = {
-  low: { label: 'Low', desc: 'Smaller file' },
-  medium: { label: 'Medium', desc: 'Balanced' },
-  high: { label: 'High', desc: 'Best quality' },
+  language: Language
 }
 
 export function VideoExportPanel({
@@ -84,8 +77,21 @@ export function VideoExportPanel({
   onSettingsChange,
   messageCount,
   currentFormat,
+  language,
 }: VideoExportPanelProps) {
   const [showSettings, setShowSettings] = useState(false)
+  const t = useTranslations(language)
+
+  const FORMAT_INFO: Record<VideoFormat, { label: string; desc: string; icon: string; ext: string }> = {
+    mp4: { label: 'MP4 Video', desc: t.video.mp4Desc, icon: '🎬', ext: '.mp4' },
+    gif: { label: 'Animated GIF', desc: t.video.gifDesc, icon: '🎞️', ext: '.gif' },
+  }
+
+  const QUALITY_INFO: Record<VideoQuality, { label: string; desc: string }> = {
+    low: { label: t.video.lowQuality, desc: t.video.smallerFile },
+    medium: { label: t.video.mediumQuality, desc: t.video.balanced },
+    high: { label: t.video.highQuality, desc: t.video.bestQuality },
+  }
 
   const estimatedDuration = (
     (messageCount * settings.messageDelay) + 
@@ -116,10 +122,10 @@ export function VideoExportPanel({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5" />
-            Export Video
+            {t.video.videoExport}
           </DialogTitle>
           <DialogDescription>
-            Create an animated video of your chat conversation
+            {t.video.videoExportDesc}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,15 +136,15 @@ export function VideoExportPanel({
               <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-green-800 dark:text-green-200">
-                  {FORMAT_INFO[currentFormat].icon} {FORMAT_INFO[currentFormat].label} ready!
+                  {FORMAT_INFO[currentFormat].icon} {FORMAT_INFO[currentFormat].label} {t.video.videoReady}
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400">
-                  Duration: {formatDuration(videoDuration)} • {FORMAT_INFO[currentFormat].ext}
+                  {t.video.duration}: {formatDuration(videoDuration)} • {FORMAT_INFO[currentFormat].ext}
                 </p>
               </div>
               <Button size="sm" onClick={onDownload} className="gap-1.5 flex-shrink-0">
                 <Download className="w-4 h-4" />
-                Download
+                {t.export.download}
               </Button>
             </div>
           )}
@@ -150,10 +156,10 @@ export function VideoExportPanel({
                 <Loader2 className="w-5 h-5 animate-spin text-violet-600 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-violet-800 dark:text-violet-200">
-                    {progressText || 'Creating video...'}
+                    {progressText || t.video.creatingVideo}
                   </p>
                   <p className="text-xs text-violet-600 dark:text-violet-400">
-                    Please wait while we generate your video
+                    {t.video.pleaseWait}
                   </p>
                 </div>
               </div>
@@ -165,7 +171,9 @@ export function VideoExportPanel({
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground text-center font-medium">{Math.round(progress)}% complete</p>
+                <p className="text-xs text-muted-foreground text-center font-medium">
+                  {Math.round(progress)}% {t.video.complete}
+                </p>
               </div>
             </div>
           )}
@@ -173,7 +181,7 @@ export function VideoExportPanel({
           {/* Format Selection */}
           {!isWorking && !hasVideo && (
             <div className="space-y-3">
-              <Label className="text-sm font-semibold">Output Format</Label>
+              <Label className="text-sm font-semibold">{t.video.outputFormat}</Label>
               <div className="grid grid-cols-2 gap-3">
                 {(['mp4', 'gif'] as VideoFormat[]).map((format) => (
                   <button
@@ -200,7 +208,7 @@ export function VideoExportPanel({
           {/* Quality Selection */}
           {!isWorking && !hasVideo && (
             <div className="space-y-3">
-              <Label className="text-sm font-semibold">Quality</Label>
+              <Label className="text-sm font-semibold">{t.export.quality}</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(['low', 'medium', 'high'] as VideoQuality[]).map((q) => (
                   <button
@@ -225,7 +233,7 @@ export function VideoExportPanel({
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Estimated Duration</span>
+                <span className="text-sm">{t.video.estimatedDuration}</span>
               </div>
               <span className="text-sm font-semibold">~{formatDuration(estimatedDuration)}</span>
             </div>
@@ -241,9 +249,9 @@ export function VideoExportPanel({
                 className={cn("w-full justify-start", showSettings && "bg-muted")}
               >
                 <Settings2 className="w-4 h-4 mr-2" />
-                Animation Settings
+                {t.video.animationSettings}
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {messageCount} messages
+                  {messageCount} {t.editor.messages.toLowerCase()}
                 </span>
               </Button>
 
@@ -252,16 +260,16 @@ export function VideoExportPanel({
                   {/* Typing Duration */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">Typing Duration</Label>
+                      <Label className="text-sm">{t.video.typingDuration}</Label>
                       <span className="text-xs text-muted-foreground font-medium">
-                        {settings.typingDuration}ms
+                        {(settings.typingDuration / 1000).toFixed(1)}s
                       </span>
                     </div>
                     <Slider
                       value={[settings.typingDuration]}
                       onValueChange={([value]) => onSettingsChange({ typingDuration: value })}
                       min={500}
-                      max={3000}
+                      max={5000}
                       step={100}
                     />
                   </div>
@@ -269,24 +277,41 @@ export function VideoExportPanel({
                   {/* Message Delay */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">Message Delay</Label>
+                      <Label className="text-sm">{t.video.messageDelay}</Label>
                       <span className="text-xs text-muted-foreground font-medium">
-                        {settings.messageDelay}ms
+                        {(settings.messageDelay / 1000).toFixed(1)}s
                       </span>
                     </div>
                     <Slider
                       value={[settings.messageDelay]}
                       onValueChange={([value]) => onSettingsChange({ messageDelay: value })}
                       min={200}
-                      max={2000}
+                      max={4000}
                       step={100}
+                    />
+                  </div>
+
+                  {/* Message Appear Duration */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">{t.video.messageAppearDuration}</Label>
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {settings.messageAppearDuration}ms
+                      </span>
+                    </div>
+                    <Slider
+                      value={[settings.messageAppearDuration]}
+                      onValueChange={([value]) => onSettingsChange({ messageAppearDuration: value })}
+                      min={100}
+                      max={1500}
+                      step={50}
                     />
                   </div>
 
                   {/* End Pause */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm">End Pause</Label>
+                      <Label className="text-sm">{t.video.endPause}</Label>
                       <span className="text-xs text-muted-foreground font-medium">
                         {settings.endPauseDuration / 1000}s
                       </span>
@@ -305,31 +330,31 @@ export function VideoExportPanel({
               {/* Speed Presets */}
               {!showSettings && (
                 <div className="space-y-3">
-                  <Label className="text-sm text-muted-foreground">Animation Speed</Label>
+                  <Label className="text-sm text-muted-foreground">{t.video.animationSpeed}</Label>
                   <div className="grid grid-cols-3 gap-2">
                     <Button
-                      variant={settings.typingDuration === 2000 ? "default" : "outline"}
+                      variant={settings.typingDuration === 3000 && settings.messageDelay === 2000 ? "default" : "outline"}
                       size="sm"
-                      onClick={() => onSettingsChange({ typingDuration: 2000, messageDelay: 1200 })}
-                      className={settings.typingDuration === 2000 ? "bg-violet-500 hover:bg-violet-600" : ""}
+                      onClick={() => onSettingsChange({ typingDuration: 3000, messageDelay: 2000, messageAppearDuration: 600 })}
+                      className={settings.typingDuration === 3000 && settings.messageDelay === 2000 ? "bg-violet-500 hover:bg-violet-600" : ""}
                     >
-                      🐢 Slow
+                      {t.video.slow}
                     </Button>
                     <Button
-                      variant={settings.typingDuration === 1500 ? "default" : "outline"}
+                      variant={settings.typingDuration === 2000 && settings.messageDelay === 1200 ? "default" : "outline"}
                       size="sm"
-                      onClick={() => onSettingsChange({ typingDuration: 1500, messageDelay: 800 })}
-                      className={settings.typingDuration === 1500 ? "bg-violet-500 hover:bg-violet-600" : ""}
+                      onClick={() => onSettingsChange({ typingDuration: 2000, messageDelay: 1200, messageAppearDuration: 400 })}
+                      className={settings.typingDuration === 2000 && settings.messageDelay === 1200 ? "bg-violet-500 hover:bg-violet-600" : ""}
                     >
-                      ⚡ Normal
+                      {t.video.normal}
                     </Button>
                     <Button
-                      variant={settings.typingDuration === 800 ? "default" : "outline"}
+                      variant={settings.typingDuration === 1000 && settings.messageDelay === 600 ? "default" : "outline"}
                       size="sm"
-                      onClick={() => onSettingsChange({ typingDuration: 800, messageDelay: 400 })}
-                      className={settings.typingDuration === 800 ? "bg-violet-500 hover:bg-violet-600" : ""}
+                      onClick={() => onSettingsChange({ typingDuration: 1000, messageDelay: 600, messageAppearDuration: 200 })}
+                      className={settings.typingDuration === 1000 && settings.messageDelay === 600 ? "bg-violet-500 hover:bg-violet-600" : ""}
                     >
-                      🚀 Fast
+                      {t.video.fast}
                     </Button>
                   </div>
                 </div>
@@ -346,7 +371,7 @@ export function VideoExportPanel({
               disabled={isProcessing}
               className="gap-2"
             >
-              Cancel
+              {t.common.cancel}
             </Button>
           ) : hasVideo ? (
             <>
@@ -356,11 +381,11 @@ export function VideoExportPanel({
                 className="gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
-                Create Another
+                {t.video.createAnother}
               </Button>
               <Button onClick={onDownload} className="gap-2 bg-violet-500 hover:bg-violet-600">
                 <Download className="w-4 h-4" />
-                Download {FORMAT_INFO[currentFormat].ext}
+                {t.export.download} {FORMAT_INFO[currentFormat].ext}
               </Button>
             </>
           ) : (
@@ -369,7 +394,7 @@ export function VideoExportPanel({
               className="gap-2 w-full sm:w-auto bg-violet-500 hover:bg-violet-600"
             >
               <Sparkles className="w-4 h-4" />
-              Create {FORMAT_INFO[settings.format].label}
+              {t.video.createVideo} {FORMAT_INFO[settings.format].label}
             </Button>
           )}
         </DialogFooter>

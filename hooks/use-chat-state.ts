@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction } from '@/types'
+import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction, Language, FontFamily } from '@/types'
 import { useLocalStorage } from './use-local-storage'
 import { generateId } from '@/lib/utils'
 
@@ -85,6 +85,9 @@ interface ChatState {
   timeFormat: '12h' | '24h'
   transparentBg: boolean
   whatsappSettings: WhatsAppSettings
+  language: Language
+  fontFamily: FontFamily
+  batteryLevel: number
 }
 
 const defaultState: ChatState = {
@@ -97,6 +100,9 @@ const defaultState: ChatState = {
   timeFormat: '24h', // WhatsApp iOS uses 24h format
   transparentBg: false,
   whatsappSettings: defaultWhatsAppSettings,
+  language: 'en',
+  fontFamily: 'sf-pro',
+  batteryLevel: 100,
 }
 
 export function useChatState() {
@@ -257,6 +263,21 @@ export function useChatState() {
     }))
   }, [setState])
 
+  // Language
+  const setLanguage = useCallback((language: Language) => {
+    setState((prev) => ({ ...prev, language }))
+  }, [setState])
+
+  // Font Family
+  const setFontFamily = useCallback((fontFamily: FontFamily) => {
+    setState((prev) => ({ ...prev, fontFamily }))
+  }, [setState])
+
+  // Battery Level
+  const setBatteryLevel = useCallback((batteryLevel: number) => {
+    setState((prev) => ({ ...prev, batteryLevel: Math.min(100, Math.max(0, batteryLevel)) }))
+  }, [setState])
+
   // Reset
   const resetToDefaults = useCallback(() => {
     setState(defaultState)
@@ -284,6 +305,9 @@ export function useChatState() {
       setTimeFormat,
       setTransparentBg,
       setWhatsAppSettings,
+      setLanguage,
+      setFontFamily,
+      setBatteryLevel,
       resetToDefaults,
       isHydrated: false,
     }
@@ -309,6 +333,9 @@ export function useChatState() {
     setTimeFormat,
     setTransparentBg,
     setWhatsAppSettings,
+    setLanguage,
+    setFontFamily,
+    setBatteryLevel,
     resetToDefaults,
     isHydrated: true,
   }

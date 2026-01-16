@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Camera, Upload, Trash2, Link, X } from 'lucide-react'
+import { Language } from '@/types'
+import { useTranslations } from '@/lib/i18n/translations'
 
 interface AvatarUploadProps {
   value: string | null
@@ -14,18 +16,26 @@ interface AvatarUploadProps {
   fallback: string
   className?: string
   variant?: 'primary' | 'secondary'
+  language?: Language
 }
 
 // Preset avatar images - using reliable sources
 const presetAvatars = [
+  // Row 1
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face',
+  // Row 2
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
   'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+  // Row 3
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=100&h=100&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&crop=face',
 ]
 
 // Fallback color avatars (initials)
@@ -46,11 +56,17 @@ export function AvatarUpload({
   fallback,
   className,
   variant = 'primary',
+  language = 'en',
 }: AvatarUploadProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [urlInput, setUrlInput] = React.useState('')
   const [showUrlInput, setShowUrlInput] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const t = useTranslations(language)
+
+  // Check if value is a color
+  const isColorAvatar = value?.startsWith('color:')
+  const avatarColor = isColorAvatar ? value.replace('color:', '') : null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -91,8 +107,15 @@ export function AvatarUpload({
           className={cn('relative group cursor-pointer', className)}
         >
           <Avatar className="w-10 h-10 ring-2 ring-transparent hover:ring-primary/50 transition-all">
-            {value ? (
+            {value && !isColorAvatar ? (
               <AvatarImage src={value} />
+            ) : isColorAvatar ? (
+              <AvatarFallback
+                className="text-sm font-medium text-white"
+                style={{ backgroundColor: avatarColor || undefined }}
+              >
+                {fallback?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
             ) : (
               <AvatarFallback
                 className={cn(
@@ -111,10 +134,10 @@ export function AvatarUpload({
           </div>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-4" align="start" sideOffset={8}>
+      <PopoverContent className="w-80 p-4 max-h-[70vh] overflow-y-auto" align="start" sideOffset={8}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Choose Avatar</span>
+            <span className="text-sm font-medium">{t.avatar.chooseAvatar}</span>
             {value && (
               <Button
                 variant="ghost"
@@ -123,7 +146,7 @@ export function AvatarUpload({
                 onClick={handleRemove}
               >
                 <Trash2 className="w-3 h-3 mr-1" />
-                Remove
+                {t.avatar.remove}
               </Button>
             )}
           </div>
@@ -132,9 +155,18 @@ export function AvatarUpload({
           {value && (
             <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
               <Avatar className="w-12 h-12">
-                <AvatarImage src={value} />
+                {isColorAvatar ? (
+                  <AvatarFallback
+                    className="text-lg font-medium text-white"
+                    style={{ backgroundColor: avatarColor || undefined }}
+                  >
+                    {fallback?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                ) : (
+                  <AvatarImage src={value} />
+                )}
               </Avatar>
-              <span className="text-xs text-muted-foreground">Current avatar</span>
+              <span className="text-xs text-muted-foreground">{t.avatar.currentAvatar}</span>
             </div>
           )}
 
@@ -154,7 +186,7 @@ export function AvatarUpload({
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Upload
+              {t.avatar.upload}
             </Button>
             <Button
               variant="outline"
@@ -163,7 +195,7 @@ export function AvatarUpload({
               onClick={() => setShowUrlInput(!showUrlInput)}
             >
               <Link className="w-4 h-4 mr-2" />
-              URL
+              {t.avatar.url}
             </Button>
           </div>
 
@@ -173,19 +205,19 @@ export function AvatarUpload({
               <Input
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="Paste image URL..."
+                placeholder={t.avatar.pasteImageUrl}
                 className="text-sm h-9"
                 onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
               />
               <Button size="sm" className="h-9 px-3" onClick={handleUrlSubmit}>
-                Add
+                {t.avatar.add}
               </Button>
             </div>
           )}
 
           {/* Preset Avatars */}
           <div className="space-y-2">
-            <div className="text-xs text-muted-foreground font-medium">Select a photo</div>
+            <div className="text-xs text-muted-foreground font-medium">{t.avatar.selectPhoto}</div>
             <div className="grid grid-cols-4 gap-2">
               {presetAvatars.map((url, index) => (
                 <button
@@ -193,7 +225,7 @@ export function AvatarUpload({
                   type="button"
                   onClick={() => handlePresetSelect(url)}
                   className={cn(
-                    'w-14 h-14 rounded-full overflow-hidden border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary',
+                    'w-[60px] h-[60px] rounded-full overflow-hidden border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary',
                     value === url ? 'border-primary ring-2 ring-primary' : 'border-muted hover:border-primary/50'
                   )}
                 >
@@ -210,16 +242,22 @@ export function AvatarUpload({
 
           {/* Color Options (for initials) */}
           <div className="space-y-2">
-            <div className="text-xs text-muted-foreground font-medium">Or use initials</div>
+            <div className="text-xs text-muted-foreground font-medium">{t.avatar.orUseInitials}</div>
             <div className="grid grid-cols-8 gap-1.5">
               {presetColors.map((color) => (
                 <button
                   key={color}
                   type="button"
-                  onClick={() => onChange(null)}
-                  className="w-7 h-7 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  onClick={() => {
+                    onChange(`color:${color}`)
+                    setIsOpen(false)
+                  }}
+                  className={cn(
+                    "w-7 h-7 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary",
+                    value === `color:${color}` && "ring-2 ring-offset-2 ring-primary"
+                  )}
                   style={{ backgroundColor: color }}
-                  title={`Use ${fallback?.charAt(0).toUpperCase() || 'U'} with this color`}
+                  title={`${fallback?.charAt(0).toUpperCase() || 'U'}`}
                 />
               ))}
             </div>

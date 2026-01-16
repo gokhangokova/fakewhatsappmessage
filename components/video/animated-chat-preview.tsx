@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react'
-import { Message, User, WhatsAppSettings } from '@/types'
+import { Message, User, WhatsAppSettings, Language, FontFamily, SUPPORTED_FONTS } from '@/types'
 import { cn } from '@/lib/utils'
 import {
   ChevronLeft,
@@ -14,6 +14,25 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatTime } from '@/lib/utils'
+import { useTranslations } from '@/lib/i18n/translations'
+
+// Helper function to check if avatar is a color
+const isColorAvatar = (avatar: string | null | undefined): boolean => {
+  return avatar?.startsWith('color:') || false
+}
+
+// Helper function to get color from avatar string
+const getAvatarColor = (avatar: string | null | undefined): string | null => {
+  if (avatar?.startsWith('color:')) {
+    return avatar.replace('color:', '')
+  }
+  return null
+}
+
+// Helper function to check if avatar is a valid image URL
+const isImageAvatar = (avatar: string | null | undefined): boolean => {
+  return !!avatar && !avatar.startsWith('color:')
+}
 
 interface AnimatedChatPreviewProps {
   sender: User
@@ -22,9 +41,12 @@ interface AnimatedChatPreviewProps {
   darkMode: boolean
   timeFormat: '12h' | '24h'
   settings: WhatsAppSettings
+  language?: Language
+  fontFamily?: FontFamily
   // Animation settings
   typingDuration?: number // ms - typing indicator süresi
   messageDelay?: number // ms - mesajlar arası bekleme
+  messageAppearDuration?: number // ms - mesajın ekrana gelme animasyon süresi
   onAnimationComplete?: () => void
   onAnimationStart?: () => void
   // Video export mode - no phone frame, sharp corners
@@ -169,18 +191,20 @@ const IOSWhatsAppHeader = ({
   darkMode,
   showTyping,
   lastSeenTime,
+  t,
 }: {
   receiver: User
   darkMode: boolean
   showTyping: boolean
   lastSeenTime?: Date
+  t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
   
   const getStatusText = () => {
-    if (showTyping) return 'typing...'
+    if (showTyping) return t.preview.typing
     // Always show 'online' to avoid hydration issues with date comparisons
-    return 'online'
+    return t.preview.online
   }
 
   return (
@@ -194,14 +218,14 @@ const IOSWhatsAppHeader = ({
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
       
       <Avatar className="w-[36px] h-[36px]">
-        {receiver.avatar ? (
-          <AvatarImage src={receiver.avatar} />
+        {isImageAvatar(receiver.avatar) ? (
+          <AvatarImage src={receiver.avatar!} />
         ) : (
           <AvatarFallback 
-            className="text-[14px] font-medium"
+            className="text-[14px] font-medium text-white"
             style={{ 
-              backgroundColor: darkMode ? '#2A3942' : '#DFE5E7',
-              color: darkMode ? '#8696A0' : '#54656F',
+              backgroundColor: getAvatarColor(receiver.avatar) || (darkMode ? '#2A3942' : '#DFE5E7'),
+              color: getAvatarColor(receiver.avatar) ? '#FFFFFF' : (darkMode ? '#8696A0' : '#54656F'),
             }}
           >
             {receiver.name?.charAt(0).toUpperCase()}
@@ -245,7 +269,7 @@ const DateSeparator = ({ date, darkMode }: { date: string; darkMode: boolean }) 
 }
 
 // Encryption Notice
-const EncryptionNotice = ({ darkMode }: { darkMode: boolean }) => {
+const EncryptionNotice = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
   const theme = darkMode ? themes.dark : themes.light
   return (
     <div className="flex justify-center my-[6px] px-[16px]">
@@ -255,7 +279,7 @@ const EncryptionNotice = ({ darkMode }: { darkMode: boolean }) => {
       >
         <Lock className="w-[12px] h-[12px] flex-shrink-0" style={{ color: theme.encryptionIcon }} />
         <span className="text-[11px] text-center leading-[14px]" style={{ color: theme.encryptionText }}>
-          Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.
+          {t.preview.encryptionNotice}
         </span>
       </div>
     </div>
@@ -305,6 +329,7 @@ const AnimatedMessageBubble = ({
   isFirstInGroup,
   darkMode,
   isVisible,
+  appearDuration = 400,
 }: {
   message: Message
   sender: User
@@ -313,6 +338,7 @@ const AnimatedMessageBubble = ({
   isFirstInGroup: boolean
   darkMode: boolean
   isVisible: boolean
+  appearDuration?: number
 }) => {
   const theme = darkMode ? themes.dark : themes.light
   const isSent = message.userId === sender.id
@@ -332,12 +358,12 @@ const AnimatedMessageBubble = ({
   return (
     <div 
       className={cn(
-        "flex px-[12px] transition-all duration-300",
+        "flex px-[12px]",
         isSent ? "justify-end" : "justify-start",
         isFirstInGroup ? "mt-[8px]" : "mt-[2px]",
       )}
       style={{
-        animation: 'slideUp 0.3s ease-out',
+        animation: `slideUp ${appearDuration}ms ease-out`,
       }}
     >
       <div className="relative max-w-[75%]">
@@ -404,13 +430,20 @@ const AnimatedMessageBubble = ({
           
           {/* Text Content */}
           {hasText && (
-            <div className="flex flex-wrap items-end px-[12px] py-[8px]">
+            <div className="relative px-[12px] py-[8px]">
               <span className="text-[17px] leading-[22px] whitespace-pre-wrap break-words" style={{ color: textColor }}>
                 {message.content}
+                {/* Invisible spacer for time/status */}
+                <span className="invisible text-[11px]">
+                  {'  '}{time}{isSent ? ' ✓✓' : ''}
+                </span>
               </span>
               
-              {/* Time and Status */}
-              <span className="flex items-center gap-[3px] ml-[8px] whitespace-nowrap text-[11px] italic" style={{ color: timeColor }}>
+              {/* Time and Status - absolute positioned */}
+              <span 
+                className="absolute bottom-[8px] right-[12px] flex items-center gap-[3px] whitespace-nowrap text-[11px]" 
+                style={{ color: timeColor }}
+              >
                 {time}
                 {isSent && (
                   <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
@@ -436,7 +469,7 @@ const AnimatedMessageBubble = ({
 }
 
 // Footer
-const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
+const IOSWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
   const theme = darkMode ? themes.dark : themes.light
   
   return (
@@ -452,7 +485,7 @@ const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
         >
           <input
             type="text"
-            placeholder="Message"
+            placeholder={t.preview.message}
             className="flex-1 text-[16px] bg-transparent outline-none"
             style={{ color: darkMode ? '#FFFFFF' : '#000000' }}
             disabled
@@ -475,6 +508,16 @@ const IOSWhatsAppFooter = ({ darkMode }: { darkMode: boolean }) => {
   )
 }
 
+// Animation state machine
+type AnimationPhase = 
+  | 'idle' 
+  | 'waiting_before_typing'  // Mesajdan önce bekleme
+  | 'typing'                  // Typing gösteriliyor
+  | 'waiting_after_typing'    // Typing'den sonra kısa bekleme
+  | 'showing_message'         // Mesaj gösteriliyor (animasyon)
+  | 'waiting_after_message'   // Mesaj animasyonu bittikten sonra bekleme
+  | 'complete'
+
 // Main Animated Chat Preview Component
 export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedChatPreviewProps>(({
   sender,
@@ -483,54 +526,76 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   darkMode,
   timeFormat,
   settings,
-  typingDuration = 1500,
-  messageDelay = 800,
+  language = 'en',
+  fontFamily = 'sf-pro',
+  typingDuration = 2000,
+  messageDelay = 1200,
+  messageAppearDuration = 400,
   onAnimationComplete,
   onAnimationStart,
   forVideoExport = false,
 }, ref) => {
   const theme = darkMode ? themes.dark : themes.light
+  const t = useTranslations(language)
+  
+  // Get font style from SUPPORTED_FONTS
+  const fontStyle = SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style || SUPPORTED_FONTS[0].style
   const [visibleMessageCount, setVisibleMessageCount] = useState(0)
   const [showTyping, setShowTyping] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [animationStopped, setAnimationStopped] = useState(false)
+  const [phase, setPhase] = useState<AnimationPhase>('idle')
+  const animationStoppedRef = useRef(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [contentOffset, setContentOffset] = useState(0)
 
   // Auto-scroll to bottom when new messages appear or typing indicator shows
   useEffect(() => {
-    if (chatContainerRef.current) {
-      const scrollToBottom = () => {
-        if (chatContainerRef.current) {
-          // Always use instant scroll for reliable positioning
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
-        }
-      }
-      
-      // Small delay to ensure DOM is fully updated
-      const timer = setTimeout(scrollToBottom, 20)
-      return () => clearTimeout(timer)
+    if (chatContainerRef.current && contentRef.current) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (chatContainerRef.current && contentRef.current) {
+            const containerHeight = chatContainerRef.current.clientHeight
+            const contentHeight = contentRef.current.scrollHeight
+            
+            if (forVideoExport) {
+              // For video export: use transform instead of scroll
+              // This ensures html-to-image captures the correct position
+              const offset = Math.max(0, contentHeight - containerHeight)
+              setContentOffset(offset)
+            } else {
+              // For preview: use normal scroll
+              chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+            }
+          }
+        })
+      })
     }
-  }, [visibleMessageCount, showTyping])
+  }, [visibleMessageCount, showTyping, forVideoExport])
 
   const startAnimation = useCallback(() => {
     setVisibleMessageCount(0)
     setShowTyping(false)
     setIsAnimating(true)
-    setAnimationStopped(false)
+    setPhase('waiting_before_typing')
+    animationStoppedRef.current = false
     onAnimationStart?.()
   }, [onAnimationStart])
 
   const stopAnimation = useCallback(() => {
-    setAnimationStopped(true)
+    animationStoppedRef.current = true
     setIsAnimating(false)
     setShowTyping(false)
+    setPhase('idle')
   }, [])
 
   const resetAnimation = useCallback(() => {
     setShowTyping(false)
     setIsAnimating(false)
-    setAnimationStopped(false)
+    setPhase('idle')
+    animationStoppedRef.current = false
     setVisibleMessageCount(0)
+    setContentOffset(0)
   }, [])
 
   useImperativeHandle(ref, () => ({
@@ -540,53 +605,101 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     isAnimating,
   }))
 
-  // Animation logic
+  // Animation state machine
   useEffect(() => {
-    if (!isAnimating || animationStopped) return
+    if (!isAnimating || animationStoppedRef.current || phase === 'idle') return
 
-    if (visibleMessageCount >= messages.length) {
-      // Animation complete - don't reset isAnimating here to preserve scroll position
-      // Parent component will call stopAnimation when ready
+    // Animation tamamlandı
+    if (visibleMessageCount >= messages.length && phase !== 'complete') {
+      setPhase('complete')
+      // Final scroll and complete
       setTimeout(() => {
-        onAnimationComplete?.()
-      }, 1000) // Wait 1 second at the end
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+        }
+        setTimeout(() => {
+          setIsAnimating(false)
+          onAnimationComplete?.()
+        }, 500)
+      }, 500)
       return
     }
 
+    if (phase === 'complete') return
+
     const currentMessage = messages[visibleMessageCount]
-    const isReceiverMessage = currentMessage?.userId !== sender.id
+    if (!currentMessage) return
 
-    if (isReceiverMessage) {
-      // Receiver message: show typing first
-      setShowTyping(true)
-      
-      const typingTimer = setTimeout(() => {
-        if (animationStopped) return
-        setShowTyping(false)
+    const isReceiverMessage = currentMessage.userId !== sender.id
+
+    // State machine transitions
+    switch (phase) {
+      case 'waiting_before_typing': {
+        // Mesajdan önce kısa bir bekleme (önceki mesajın oturması için)
+        const waitTime = visibleMessageCount === 0 ? 300 : messageDelay
+        const timer = setTimeout(() => {
+          if (animationStoppedRef.current) return
+          
+          if (isReceiverMessage) {
+            // Receiver mesajı: typing göster
+            setShowTyping(true)
+            setPhase('typing')
+          } else {
+            // Sender mesajı: direkt mesajı göster
+            setPhase('showing_message')
+          }
+        }, waitTime)
+        return () => clearTimeout(timer)
+      }
+
+      case 'typing': {
+        // Typing süresi
+        const timer = setTimeout(() => {
+          if (animationStoppedRef.current) return
+          setShowTyping(false)
+          setPhase('waiting_after_typing')
+        }, typingDuration)
+        return () => clearTimeout(timer)
+      }
+
+      case 'waiting_after_typing': {
+        // Typing bittikten sonra çok kısa bekleme (görsel geçiş için)
+        const timer = setTimeout(() => {
+          if (animationStoppedRef.current) return
+          setPhase('showing_message')
+        }, 100)
+        return () => clearTimeout(timer)
+      }
+
+      case 'showing_message': {
+        // Mesajı göster
         setVisibleMessageCount(prev => prev + 1)
-      }, typingDuration)
+        setPhase('waiting_after_message')
+        break
+      }
 
-      return () => clearTimeout(typingTimer)
-    } else {
-      // Sender message: show directly after delay
-      const messageTimer = setTimeout(() => {
-        if (animationStopped) return
-        setVisibleMessageCount(prev => prev + 1)
-      }, messageDelay)
-
-      return () => clearTimeout(messageTimer)
+      case 'waiting_after_message': {
+        // Mesaj animasyonu + ekstra bekleme süresi
+        // Bu süre mesajın tam görünmesi ve bir sonraki adıma geçmeden önce beklemesi için
+        const timer = setTimeout(() => {
+          if (animationStoppedRef.current) return
+          setPhase('waiting_before_typing')
+        }, messageAppearDuration + 200) // Animasyon süresi + ekstra 200ms bekleme
+        return () => clearTimeout(timer)
+      }
     }
-  }, [isAnimating, visibleMessageCount, messages, sender.id, typingDuration, messageDelay, animationStopped, onAnimationComplete])
+  }, [isAnimating, phase, visibleMessageCount, messages, sender.id, typingDuration, messageDelay, messageAppearDuration, onAnimationComplete])
 
   return (
     <div
-      className="font-sf-pro transition-all duration-300 w-[375px]"
+      className="transition-all duration-300 w-[375px]"
       style={{
         borderRadius: forVideoExport ? 0 : '44px',
         boxShadow: forVideoExport ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
         background: forVideoExport ? 'transparent' : '#000',
         padding: forVideoExport ? 0 : '2px',
         overflow: 'hidden',
+        fontFamily: fontStyle,
       }}
     >
       <style jsx global>{`
@@ -618,10 +731,12 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
           darkMode={darkMode}
           showTyping={showTyping}
           lastSeenTime={settings.lastSeenTime}
+          t={t}
         />
 
         <div 
           ref={chatContainerRef}
+          data-scroll-container="true"
           className={cn(
             "flex-1 overflow-y-auto overflow-x-hidden relative",
             forVideoExport 
@@ -642,10 +757,14 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             />
           )}
           
-          <div className="relative z-10 py-[4px] overflow-hidden">
-            {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} />}
+          <div 
+            ref={contentRef}
+            className="relative z-10 py-[4px] pb-[40px]"
+            style={forVideoExport ? { transform: `translateY(-${contentOffset}px)` } : undefined}
+          >
+            {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} t={t} />}
             
-            <DateSeparator date="Today" darkMode={darkMode} />
+            <DateSeparator date={t.preview.today} darkMode={darkMode} />
             
             {messages.slice(0, visibleMessageCount).map((message, index) => {
               const prevMessage = index > 0 ? messages[index - 1] : null
@@ -661,6 +780,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
                   isFirstInGroup={isFirstInGroup}
                   darkMode={darkMode}
                   isVisible={true}
+                  appearDuration={messageAppearDuration}
                 />
               )
             })}
@@ -670,7 +790,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
           </div>
         </div>
 
-        <IOSWhatsAppFooter darkMode={darkMode} />
+        <IOSWhatsAppFooter darkMode={darkMode} t={t} />
       </div>
     </div>
   )

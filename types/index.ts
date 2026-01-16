@@ -12,6 +12,33 @@ export type Platform =
   | 'twitter'
   | 'linkedin'
 
+// Supported languages
+export type Language = 'en' | 'tr'
+
+// Supported font families
+export type FontFamily = 'sf-pro' | 'roboto' | 'inter' | 'open-sans' | 'system' | 'arial' | 'helvetica' | 'georgia' | 'times' | 'verdana' | 'tahoma' | 'trebuchet' | 'comic-sans'
+
+export const SUPPORTED_FONTS: { code: FontFamily; name: string; style: string }[] = [
+  { code: 'sf-pro', name: 'SF Pro (iOS)', style: '"SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif' },
+  { code: 'roboto', name: 'Roboto (Android)', style: '"Roboto", "Noto Sans", sans-serif' },
+  { code: 'inter', name: 'Inter', style: '"Inter", sans-serif' },
+  { code: 'open-sans', name: 'Open Sans', style: '"Open Sans", sans-serif' },
+  { code: 'arial', name: 'Arial', style: 'Arial, sans-serif' },
+  { code: 'helvetica', name: 'Helvetica', style: 'Helvetica, Arial, sans-serif' },
+  { code: 'georgia', name: 'Georgia', style: 'Georgia, serif' },
+  { code: 'times', name: 'Times New Roman', style: '"Times New Roman", Times, serif' },
+  { code: 'verdana', name: 'Verdana', style: 'Verdana, Geneva, sans-serif' },
+  { code: 'tahoma', name: 'Tahoma', style: 'Tahoma, Geneva, sans-serif' },
+  { code: 'trebuchet', name: 'Trebuchet MS', style: '"Trebuchet MS", sans-serif' },
+  { code: 'comic-sans', name: 'Comic Sans MS', style: '"Comic Sans MS", cursive, sans-serif' },
+  { code: 'system', name: 'System Default', style: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
+]
+
+export const SUPPORTED_LANGUAGES: { code: Language; name: string; flag: string }[] = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+]
+
 export interface User {
   id: string
   name: string

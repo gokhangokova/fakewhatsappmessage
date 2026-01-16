@@ -1,6 +1,6 @@
 'use client'
 
-import { Platform, Message, User, WhatsAppSettings } from '@/types'
+import { Platform, Message, User, WhatsAppSettings, Language, FontFamily } from '@/types'
 import { WhatsAppPreview } from './platforms/whatsapp-preview'
 import { platforms } from '@/lib/platforms'
 import { formatTime, cn } from '@/lib/utils'
@@ -31,6 +31,9 @@ interface PhonePreviewProps {
   timeFormat: '12h' | '24h'
   transparentBg: boolean
   whatsappSettings?: WhatsAppSettings
+  language?: Language
+  fontFamily?: FontFamily
+  batteryLevel?: number
   // Animation props for video export
   visibleMessageCount?: number
   showTypingIndicator?: boolean
@@ -46,6 +49,9 @@ export function PhonePreview({
   timeFormat,
   transparentBg,
   whatsappSettings,
+  language = 'en',
+  fontFamily = 'sf-pro',
+  batteryLevel = 100,
   visibleMessageCount,
   showTypingIndicator,
 }: PhonePreviewProps) {
@@ -60,6 +66,9 @@ export function PhonePreview({
         mobileView={mobileView}
         timeFormat={timeFormat}
         transparentBg={transparentBg}
+        language={language}
+        fontFamily={fontFamily}
+        batteryLevel={batteryLevel}
         settings={whatsappSettings || {
           showDoodle: true,
           doodleOpacity: 0.4,
