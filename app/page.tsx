@@ -14,6 +14,12 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
 
+const FORMAT_INFO = {
+  png: { name: 'PNG' },
+  jpg: { name: 'JPG' },
+  webp: { name: 'WebP' },
+}
+
 export default function Home() {
   const {
     platform,
