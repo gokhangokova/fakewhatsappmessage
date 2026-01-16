@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react'
-import { Message, User, WhatsAppSettings, Language, FontFamily, SUPPORTED_FONTS } from '@/types'
+import { Message, User, WhatsAppSettings, Language, FontFamily, SUPPORTED_FONTS, DeviceType } from '@/types'
 import { cn } from '@/lib/utils'
 import {
   ChevronLeft,
@@ -11,6 +11,9 @@ import {
   Mic,
   Plus,
   Lock,
+  MoreVertical,
+  Smile,
+  Paperclip,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatTime } from '@/lib/utils'
@@ -43,6 +46,7 @@ interface AnimatedChatPreviewProps {
   settings: WhatsAppSettings
   language?: Language
   fontFamily?: FontFamily
+  deviceType?: DeviceType
   // Animation settings
   typingDuration?: number // ms - typing indicator süresi
   messageDelay?: number // ms - mesajlar arası bekleme
@@ -185,6 +189,41 @@ const IOSStatusBar = ({ darkMode }: { darkMode: boolean }) => {
   )
 }
 
+// Android Status Bar
+const AndroidStatusBar = ({ darkMode }: { darkMode: boolean }) => {
+  return (
+    <div 
+      className="flex items-center justify-between px-[16px] py-[8px]"
+      style={{ backgroundColor: '#075E54' }}
+    >
+      <span 
+        className="text-[14px] font-normal"
+        style={{ color: '#FFFFFF', fontFamily: 'Roboto, sans-serif' }}
+      >
+        9:41
+      </span>
+      <div className="flex items-center gap-[6px]">
+        <span className="text-[12px] font-medium" style={{ color: '#FFFFFF' }}>4G</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M0 14L14 0V14H0Z" fill="#FFFFFF" fillOpacity="0.3"/>
+          <path d="M4 14L14 4V14H4Z" fill="#FFFFFF"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 3C10.2 3 12.2 3.8 13.7 5.1L12.3 6.7C11.1 5.6 9.6 5 8 5C6.4 5 4.9 5.6 3.7 6.7L2.3 5.1C3.8 3.8 5.8 3 8 3Z" fill="#FFFFFF"/>
+          <path d="M8 7C9.3 7 10.5 7.5 11.4 8.3L10 9.9C9.4 9.4 8.7 9 8 9C7.3 9 6.6 9.4 6 9.9L4.6 8.3C5.5 7.5 6.7 7 8 7Z" fill="#FFFFFF"/>
+          <circle cx="8" cy="11" r="1" fill="#FFFFFF"/>
+        </svg>
+        <span className="text-[12px]" style={{ color: '#FFFFFF' }}>100%</span>
+        <svg width="20" height="10" viewBox="0 0 20 10" fill="none">
+          <rect x="0.5" y="0.5" width="16" height="9" rx="1" stroke="#FFFFFF" strokeOpacity="0.5"/>
+          <rect x="2" y="2" width="14" height="6" rx="0.5" fill="#4CAF50"/>
+          <rect x="17" y="3" width="2" height="4" rx="0.5" fill="#FFFFFF" fillOpacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
 // Header with typing status
 const IOSWhatsAppHeader = ({
   receiver,
@@ -245,6 +284,80 @@ const IOSWhatsAppHeader = ({
       <div className="flex items-center gap-[20px] pr-[4px]">
         <Video className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
         <Phone className="w-[22px] h-[22px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
+      </div>
+    </div>
+  )
+}
+
+// Android WhatsApp Header
+const AndroidWhatsAppHeader = ({
+  receiver,
+  darkMode,
+  showTyping,
+  t,
+}: {
+  receiver: User
+  darkMode: boolean
+  showTyping: boolean
+  t: ReturnType<typeof useTranslations>
+}) => {
+  const getStatusText = () => {
+    if (showTyping) return t.preview.typing
+    return t.preview.online
+  }
+
+  return (
+    <div 
+      className="flex items-center gap-[6px] px-[4px] py-[8px]"
+      style={{ backgroundColor: '#075E54' }}
+    >
+      <button className="p-[8px]">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="#FFFFFF"/>
+        </svg>
+      </button>
+      
+      <Avatar className="w-[40px] h-[40px]">
+        {isImageAvatar(receiver.avatar) ? (
+          <AvatarImage src={receiver.avatar!} />
+        ) : (
+          <AvatarFallback 
+            className="text-[16px] font-medium text-white"
+            style={{ 
+              backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
+              color: '#FFFFFF',
+            }}
+          >
+            {receiver.name?.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      
+      <div className="flex-1 min-w-0 ml-[4px]">
+        <p 
+          className="font-medium text-[16px] truncate leading-[20px]" 
+          style={{ color: '#FFFFFF', fontFamily: 'Roboto, sans-serif' }}
+        >
+          {receiver.name}
+        </p>
+        <p 
+          className="text-[13px] truncate leading-[16px]" 
+          style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'Roboto, sans-serif' }}
+        >
+          {getStatusText()}
+        </p>
+      </div>
+      
+      <div className="flex items-center">
+        <button className="p-[8px]">
+          <Video className="w-[22px] h-[22px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
+        </button>
+        <button className="p-[8px]">
+          <Phone className="w-[20px] h-[20px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
+        </button>
+        <button className="p-[8px]">
+          <MoreVertical className="w-[20px] h-[20px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
+        </button>
       </div>
     </div>
   )
@@ -508,6 +621,55 @@ const IOSWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<t
   )
 }
 
+// Android WhatsApp Footer
+const AndroidWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnType<typeof useTranslations> }) => {
+  return (
+    <div 
+      className="flex items-center gap-[8px] px-[8px] py-[8px]"
+      style={{ backgroundColor: darkMode ? '#1F2C34' : '#F0F0F0' }}
+    >
+      <button className="w-[40px] h-[40px] flex items-center justify-center">
+        <Smile className="w-[24px] h-[24px]" style={{ color: darkMode ? '#8696A0' : '#54656F' }} strokeWidth={1.5} />
+      </button>
+      
+      <div 
+        className="flex-1 flex items-center rounded-[24px] px-[4px] py-[4px]"
+        style={{ backgroundColor: darkMode ? '#2A3942' : '#FFFFFF' }}
+      >
+        <input
+          type="text"
+          placeholder={t.preview.message}
+          className="flex-1 text-[16px] bg-transparent outline-none px-[12px]"
+          style={{ 
+            color: darkMode ? '#FFFFFF' : '#000000',
+            fontFamily: 'Roboto, sans-serif',
+          }}
+          disabled
+        />
+        
+        <button className="w-[36px] h-[36px] flex items-center justify-center">
+          <Paperclip 
+            className="w-[22px] h-[22px] rotate-45" 
+            style={{ color: darkMode ? '#8696A0' : '#54656F' }} 
+            strokeWidth={1.5} 
+          />
+        </button>
+        
+        <button className="w-[36px] h-[36px] flex items-center justify-center">
+          <Camera className="w-[22px] h-[22px]" style={{ color: darkMode ? '#8696A0' : '#54656F' }} strokeWidth={1.5} />
+        </button>
+      </div>
+      
+      <button 
+        className="w-[48px] h-[48px] rounded-full flex items-center justify-center"
+        style={{ backgroundColor: '#00A884' }}
+      >
+        <Mic className="w-[24px] h-[24px] text-white" strokeWidth={2} />
+      </button>
+    </div>
+  )
+}
+
 // Animation state machine
 type AnimationPhase = 
   | 'idle' 
@@ -528,6 +690,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   settings,
   language = 'en',
   fontFamily = 'sf-pro',
+  deviceType = 'ios',
   typingDuration = 2000,
   messageDelay = 1200,
   messageAppearDuration = 400,
@@ -537,6 +700,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
 }, ref) => {
   const theme = darkMode ? themes.dark : themes.light
   const t = useTranslations(language)
+  const isAndroid = deviceType === 'android'
   
   // Get font style from SUPPORTED_FONTS
   const fontStyle = SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style || SUPPORTED_FONTS[0].style
@@ -694,7 +858,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     <div
       className="transition-all duration-300 w-[375px]"
       style={{
-        borderRadius: forVideoExport ? 0 : '44px',
+        borderRadius: forVideoExport ? 0 : (isAndroid ? '24px' : '44px'),
         boxShadow: forVideoExport ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
         background: forVideoExport ? 'transparent' : '#000',
         padding: forVideoExport ? 0 : '2px',
@@ -719,20 +883,35 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         className="flex flex-col antialiased"
         style={{ 
           height: '812px',
-          borderRadius: forVideoExport ? 0 : '42px',
+          borderRadius: forVideoExport ? 0 : (isAndroid ? '22px' : '42px'),
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',
           overflow: 'hidden',
         }}
       >
-        <IOSStatusBar darkMode={darkMode} />
+        {/* Status Bar - Conditional */}
+        {isAndroid ? (
+          <AndroidStatusBar darkMode={darkMode} />
+        ) : (
+          <IOSStatusBar darkMode={darkMode} />
+        )}
 
-        <IOSWhatsAppHeader
-          receiver={receiver}
-          darkMode={darkMode}
-          showTyping={showTyping}
-          lastSeenTime={settings.lastSeenTime}
-          t={t}
-        />
+        {/* Header - Conditional */}
+        {isAndroid ? (
+          <AndroidWhatsAppHeader
+            receiver={receiver}
+            darkMode={darkMode}
+            showTyping={showTyping}
+            t={t}
+          />
+        ) : (
+          <IOSWhatsAppHeader
+            receiver={receiver}
+            darkMode={darkMode}
+            showTyping={showTyping}
+            lastSeenTime={settings.lastSeenTime}
+            t={t}
+          />
+        )}
 
         <div 
           ref={chatContainerRef}
@@ -790,7 +969,12 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
           </div>
         </div>
 
-        <IOSWhatsAppFooter darkMode={darkMode} t={t} />
+        {/* Footer - Conditional */}
+        {isAndroid ? (
+          <AndroidWhatsAppFooter darkMode={darkMode} t={t} />
+        ) : (
+          <IOSWhatsAppFooter darkMode={darkMode} t={t} />
+        )}
       </div>
     </div>
   )

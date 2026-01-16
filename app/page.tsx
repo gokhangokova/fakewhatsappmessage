@@ -287,7 +287,7 @@ export default function Home() {
         {/* Phone Preview - Scaled for mobile */}
         <div className="transform scale-[0.55] sm:scale-[0.65] md:scale-[0.8] lg:scale-100 origin-center">
           {isVideoMode ? (
-            <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : '44px' }}>
+            <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
               <AnimatedChatPreview
                 ref={animatedPreviewRef}
                 sender={sender}
@@ -298,6 +298,7 @@ export default function Home() {
                 settings={whatsappSettings}
                 language={language}
                 fontFamily={fontFamily}
+                deviceType={deviceType}
                 typingDuration={videoSettings.typingDuration}
                 messageDelay={videoSettings.messageDelay}
                 messageAppearDuration={videoSettings.messageAppearDuration}
