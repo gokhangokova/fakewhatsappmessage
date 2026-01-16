@@ -1349,7 +1349,7 @@ export function TabbedSidebar({
                   {backgroundType === 'doodle' && (
                     <>
                       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg mb-3">
-                        <p>✨ {t.settings.authenticPattern || 'Orijinal WhatsApp desen görseli kullanılıyor.'}</p>
+                        <p>✨ Orijinal WhatsApp desen görseli kullanılıyor.</p>
                       </div>
                       
                       <div className="space-y-2">
