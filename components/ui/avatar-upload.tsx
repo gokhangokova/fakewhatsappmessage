@@ -66,7 +66,7 @@ export function AvatarUpload({
 
   // Check if value is a color
   const isColorAvatar = value?.startsWith('color:')
-  const avatarColor = isColorAvatar ? value.replace('color:', '') : null
+  const avatarColor = isColorAvatar && value ? value.replace('color:', '') : null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
