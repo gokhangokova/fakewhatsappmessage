@@ -8,7 +8,7 @@ import { useChatState } from '@/hooks/use-chat-state'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Download, Copy, Loader2, Check, Play, Square } from 'lucide-react'
+import { Download, Copy, Loader2, Check, Play, Square, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -62,6 +62,9 @@ export default function Home() {
   const { toast } = useToast()
   const t = useTranslations(language)
   
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  
   // Export options
   const [showWatermark, setShowWatermark] = useState(false)
   const [exportScale, setExportScale] = useState<1 | 2 | 3>(2)
@@ -74,7 +77,7 @@ export default function Home() {
   const [videoExportOpen, setVideoExportOpen] = useState(false)
   const [isVideoMode, setIsVideoMode] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
-  const [isRecordingMode, setIsRecordingMode] = useState(false) // True before recording starts for clean first frame
+  const [isRecordingMode, setIsRecordingMode] = useState(false)
   const [videoSettings, setVideoSettings] = useState<VideoExportSettings>({
     typingDuration: 2000,
     messageDelay: 1200,
@@ -174,12 +177,10 @@ export default function Home() {
 
   // Video Export Handlers
   const handleStartVideoRecording = useCallback(async () => {
-    // First, set recording mode to update UI (remove phone frame)
     setIsRecordingMode(true)
     setIsVideoMode(true)
     setIsPreviewMode(false)
     
-    // Wait for DOM to update with clean frame (no phone frame)
     await new Promise(resolve => setTimeout(resolve, 300))
     
     if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
@@ -232,9 +233,8 @@ export default function Home() {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
-  // TabbedSidebar props - combines editor and settings
+  // TabbedSidebar props
   const sidebarProps = {
-    // Editor props
     platform,
     sender,
     setSender,
@@ -242,7 +242,6 @@ export default function Home() {
     setReceiver,
     messages,
     setMessages,
-    // Settings props
     darkMode,
     setDarkMode,
     mobileView,
@@ -262,10 +261,13 @@ export default function Home() {
     deviceType,
     setDeviceType,
     onReset: resetToDefaults,
+    // Mobile props
+    isOpen: sidebarOpen,
+    onClose: () => setSidebarOpen(false),
   }
 
   return (
-    <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] bg-gray-100 relative">
+    <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] bg-gray-100 relative overflow-hidden">
       {/* Loading State */}
       {!isHydrated && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
@@ -273,13 +275,34 @@ export default function Home() {
         </div>
       )}
 
-      {/* Tabbed Sidebar - Left (Editor + Settings combined) */}
+      {/* Mobile Menu Button - Fixed top left */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="lg:hidden fixed top-[72px] left-4 z-40 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 active:scale-95 transition-transform"
+        aria-label="Open menu"
+      >
+        <Menu className="w-5 h-5 text-gray-700" />
+      </button>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Tabbed Sidebar - Responsive */}
       <TabbedSidebar {...sidebarProps} />
 
-      {/* Preview Panel */}
-      <div className="w-full h-full flex items-center justify-center p-4 md:p-8 overflow-auto">
-        {/* Phone Preview - Scaled for mobile */}
-        <div className="transform scale-[0.55] sm:scale-[0.65] md:scale-[0.8] lg:scale-100 origin-center">
+      {/* Preview Panel - Full width on mobile */}
+      <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 md:p-8 overflow-auto">
+        {/* Phone Preview - Responsive scaling */}
+        <div className={cn(
+          "transform origin-center transition-transform",
+          // Responsive scaling: mobile -> tablet -> desktop
+          "scale-[0.45] sm:scale-[0.55] md:scale-[0.7] lg:scale-[0.85] xl:scale-100"
+        )}>
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
               <AnimatedChatPreview
@@ -321,32 +344,32 @@ export default function Home() {
           )}
         </div>
 
-        {/* Floating Export Panel - Responsive */}
-        <div className="absolute bottom-4 md:bottom-8 right-4 md:right-8 flex flex-col items-end gap-2 md:gap-3">
+        {/* Floating Export Panel - Mobile optimized */}
+        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-8 flex flex-col items-end gap-2 sm:gap-3">
           {/* Preview Animation Button */}
           {isPreviewMode ? (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 text-sm md:text-base"
+              className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0"
               onClick={handleStopPreview}
             >
-              <Square className="w-4 h-4 md:w-5 md:h-5" />
+              <Square className="w-5 h-5" />
               <span className="font-medium hidden sm:inline">{t.export.stop}</span>
             </Button>
           ) : (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 text-sm md:text-base"
+              className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0"
               onClick={handleStartPreview}
               disabled={isVideoMode || isExporting || messages.length === 0}
             >
-              <Play className="w-4 h-4 md:w-5 md:h-5" />
+              <Play className="w-5 h-5" />
               <span className="font-medium hidden sm:inline">{t.export.preview}</span>
             </Button>
           )}
 
           {/* Export Buttons Row */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Video Export Button */}
             <VideoExportPanel
               isOpen={videoExportOpen}
@@ -374,18 +397,18 @@ export default function Home() {
               <PopoverTrigger asChild>
                 <Button
                   size="default"
-                  className="rounded-full shadow-lg h-10 md:h-14 px-4 md:px-6 gap-1.5 md:gap-2 text-sm md:text-base"
+                  className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2"
                   disabled={isExporting || isVideoMode}
                 >
                   {isExporting ? (
-                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Download className="w-4 h-4 md:w-5 md:h-5" />
-                    )}
-                    <span className="font-medium hidden sm:inline">{t.export.export}</span>
+                    <Download className="w-5 h-5" />
+                  )}
+                  <span className="font-medium hidden sm:inline">{t.export.export}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-72 md:w-80" align="end" sideOffset={12}>
+              <PopoverContent className="w-72 sm:w-80" align="end" sideOffset={12}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{t.export.exportOptions}</h3>
@@ -403,7 +426,7 @@ export default function Home() {
                           key={f}
                           onClick={() => setExportFormat(f)}
                           className={cn(
-                            'flex flex-col items-center px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex flex-col items-center px-3 py-3 rounded-lg text-sm font-medium transition-all min-h-[48px]',
                             exportFormat === f
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted hover:bg-muted/80'
@@ -434,7 +457,7 @@ export default function Home() {
                         step="0.01"
                         value={jpgQuality}
                         onChange={(e) => setJpgQuality(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                        className="w-full h-3 bg-muted rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
                   )}
@@ -455,7 +478,7 @@ export default function Home() {
                           key={s}
                           onClick={() => setExportScale(s)}
                           className={cn(
-                            'flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex-1 px-3 py-3 rounded-lg text-sm font-medium transition-all min-h-[48px]',
                             exportScale === s
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted hover:bg-muted/80'
@@ -468,7 +491,7 @@ export default function Home() {
                   </div>
 
                   {/* Watermark Toggle */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between py-2">
                     <div>
                       <Label className="text-sm font-medium">{t.export.watermark}</Label>
                       <p className="text-xs text-muted-foreground">{t.export.watermarkDesc}</p>
@@ -483,7 +506,7 @@ export default function Home() {
                     {/* Download Button */}
                     <Button
                       onClick={handleDownload}
-                      className="w-full h-11"
+                      className="w-full h-12"
                       disabled={isExporting}
                     >
                       {isExporting ? (
@@ -503,7 +526,7 @@ export default function Home() {
                     <Button
                       onClick={handleCopyToClipboard}
                       variant="outline"
-                      className="w-full"
+                      className="w-full h-12"
                       disabled={isExporting}
                     >
                       {copied ? (
@@ -526,7 +549,7 @@ export default function Home() {
         </div>
 
         {/* Quick Info - Hidden on mobile */}
-        <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 hidden md:block">
+        <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 hidden lg:block">
           <p className="text-xs text-muted-foreground">
             {darkMode ? t.info.darkModeOn : t.info.lightModeOn} • {mobileView ? t.info.mobileView : t.info.desktopView}
             {isPreviewMode && ` • ${t.info.previewing}`}

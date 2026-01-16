@@ -1240,11 +1240,9 @@ export function WhatsAppPreview({
             <div 
               className="absolute inset-0 w-full h-full"
               style={{ 
-                backgroundColor: darkMode 
-                  ? theme.chatBg 
-                  : (settings.backgroundType === 'solid' || settings.backgroundType === 'doodle')
-                    ? (settings.backgroundColor || theme.chatBg)
-                    : theme.chatBg
+                backgroundColor: settings.backgroundType === 'solid'
+                  ? (settings.backgroundColor || theme.chatBg)
+                  : theme.chatBg
               }}
             >
               {/* Image Background - Fixed */}
@@ -1404,11 +1402,9 @@ export function WhatsAppPreview({
           <div 
             className="absolute inset-0 w-full h-full"
             style={{ 
-              backgroundColor: darkMode 
-                ? theme.chatBg 
-                : (settings.backgroundType === 'solid' || settings.backgroundType === 'doodle')
-                  ? (settings.backgroundColor || theme.chatBg)
-                  : theme.chatBg
+              backgroundColor: settings.backgroundType === 'solid'
+                ? (settings.backgroundColor || theme.chatBg)
+                : theme.chatBg
             }}
           >
             {/* Image Background - Fixed */}

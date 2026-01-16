@@ -124,6 +124,9 @@ interface TabbedSidebarProps {
   deviceType: DeviceType
   setDeviceType: (deviceType: DeviceType) => void
   onReset?: () => void
+  // Mobile props
+  isOpen?: boolean
+  onClose?: () => void
 }
 
 // Collapsible Section Component
@@ -574,7 +577,7 @@ function SortableMessageItem({
         />
         <button
           onClick={onDelete}
-          className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
+          className="ml-auto opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 lg:p-1 hover:bg-destructive/10 rounded active:bg-destructive/20"
         >
           <Trash2 className="w-4 h-4 text-destructive" />
         </button>
@@ -780,6 +783,8 @@ export function TabbedSidebar({
   deviceType,
   setDeviceType,
   onReset,
+  isOpen = false,
+  onClose,
 }: TabbedSidebarProps) {
   const t = useTranslations(language)
   const [activeTab, setActiveTab] = useState<TabType>('editor')
@@ -787,6 +792,17 @@ export function TabbedSidebar({
   const scrollPositionRef = useRef(0)
   
   const backgroundType = whatsappSettings?.backgroundType || 'doodle'
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && onClose) {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
 
   useEffect(() => {
     const container = scrollContainerRef.current
@@ -918,8 +934,21 @@ export function TabbedSidebar({
   }
 
   return (
-    <div className="fixed left-4 top-20 z-50 w-80">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+    <div className={cn(
+      // Mobile: Full-screen slide-in panel
+      "lg:fixed lg:left-4 lg:top-20 lg:z-50 lg:w-80",
+      // Mobile positioning
+      "fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[340px]",
+      // Mobile animation
+      "transform transition-transform duration-300 ease-in-out",
+      isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+      // Hide on mobile when closed (but always show on lg+)
+      !isOpen && "lg:block"
+    )}>
+      <div className={cn(
+        "bg-white shadow-2xl border border-gray-200 overflow-hidden h-full lg:h-auto",
+        "lg:rounded-2xl rounded-r-2xl"
+      )}>
         {/* Tab Header */}
         <div className="flex border-b border-gray-200">
           <button
@@ -946,14 +975,27 @@ export function TabbedSidebar({
             <FlaskConical className="w-4 h-4" />
             <span>{t.common.settings}</span>
           </button>
+          {/* Mobile Close Button */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden flex items-center justify-center w-12 border-l border-gray-200 text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Content */}
         <div ref={scrollContainerRef} className={cn(
           "p-3 space-y-2 overflow-y-auto",
+          // Mobile: full height minus header and footer
+          "h-[calc(100vh-120px)] lg:h-auto",
+          // Desktop: max height
           activeTab === 'settings' && onReset 
-            ? "max-h-[calc(100vh-240px)]" 
-            : "max-h-[calc(100vh-180px)]"
+            ? "lg:max-h-[calc(100vh-240px)]" 
+            : "lg:max-h-[calc(100vh-180px)]"
         )}>
           {/* Editor Tab Content */}
           {activeTab === 'editor' && (
