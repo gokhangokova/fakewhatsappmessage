@@ -157,19 +157,6 @@ export interface Translations {
     bestQuality: string
   }
   
-  // WhatsApp Preview
-  whatsappPreview: {
-    encryptionNotice: string
-    today: string
-    online: string
-    typing: string
-    lastSeenToday: string
-    tapForContactInfo: string
-    message: string
-    participants: string
-    isTyping: string
-  }
-  
   // Quick Info
   info: {
     darkModeOn: string
