@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { EditorSidebar } from '@/components/editor/sidebar'
+import { TabbedSidebar } from '@/components/editor/tabbed-sidebar'
 import { PhonePreview } from '@/components/preview/phone-preview'
 import { AnimatedChatPreview, AnimatedChatPreviewRef, VideoExportPanel, VideoExportSettings } from '@/components/video'
 import { useChatState } from '@/hooks/use-chat-state'
@@ -19,7 +19,6 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
-import { SettingsPanel } from '@/components/editor/settings-panel'
 
 const FORMAT_INFO = {
   png: { name: 'PNG', desc: 'Lossless, transparent' },
@@ -233,8 +232,9 @@ export default function Home() {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
-  // Sidebar props - only People and Messages related
+  // TabbedSidebar props - combines editor and settings
   const sidebarProps = {
+    // Editor props
     platform,
     sender,
     setSender,
@@ -242,7 +242,26 @@ export default function Home() {
     setReceiver,
     messages,
     setMessages,
+    // Settings props
+    darkMode,
+    setDarkMode,
+    mobileView,
+    setMobileView,
+    timeFormat,
+    setTimeFormat,
+    transparentBg,
+    setTransparentBg,
+    whatsappSettings,
+    setWhatsAppSettings,
     language,
+    setLanguage,
+    fontFamily,
+    setFontFamily,
+    batteryLevel,
+    setBatteryLevel,
+    deviceType,
+    setDeviceType,
+    onReset: resetToDefaults,
   }
 
   return (
@@ -254,36 +273,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Floating Editor Panel - Left */}
-      <EditorSidebar {...sidebarProps} />
+      {/* Tabbed Sidebar - Left (Editor + Settings combined) */}
+      <TabbedSidebar {...sidebarProps} />
 
       {/* Preview Panel */}
       <div className="w-full h-full flex items-center justify-center p-4 md:p-8 overflow-auto">
-
-        {/* Floating Settings Panel - Always visible */}
-        <SettingsPanel
-          platform={platform}
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
-          mobileView={mobileView}
-          setMobileView={setMobileView}
-          timeFormat={timeFormat}
-          setTimeFormat={setTimeFormat}
-          transparentBg={transparentBg}
-          setTransparentBg={setTransparentBg}
-          whatsappSettings={whatsappSettings}
-          setWhatsAppSettings={setWhatsAppSettings}
-          language={language}
-          setLanguage={setLanguage}
-          fontFamily={fontFamily}
-          setFontFamily={setFontFamily}
-          batteryLevel={batteryLevel}
-          setBatteryLevel={setBatteryLevel}
-          deviceType={deviceType}
-          setDeviceType={setDeviceType}
-          onReset={resetToDefaults}
-        />
-
         {/* Phone Preview - Scaled for mobile */}
         <div className="transform scale-[0.55] sm:scale-[0.65] md:scale-[0.8] lg:scale-100 origin-center">
           {isVideoMode ? (
