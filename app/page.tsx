@@ -300,8 +300,8 @@ export default function Home() {
         {/* Phone Preview - Responsive scaling */}
         <div className={cn(
           "transform origin-center transition-transform",
-          // Responsive scaling: mobile -> tablet -> desktop
-          "scale-[0.45] sm:scale-[0.55] md:scale-[0.7] lg:scale-[0.85] xl:scale-100"
+          // Responsive scaling: maximize on mobile
+          "scale-[0.7] sm:scale-[0.75] md:scale-[0.8] lg:scale-[0.9] xl:scale-100"
         )}>
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
