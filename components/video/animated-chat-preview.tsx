@@ -120,54 +120,19 @@ const themes = {
   },
 }
 
-// Doodle Pattern - Image based for light mode, SVG for dark mode
-const WhatsAppDoodle = ({ opacity, color, darkMode }: { opacity: number; color: string; darkMode?: boolean }) => {
-  // Light mode: use actual WhatsApp doodle image
-  if (!darkMode) {
-    return (
-      <div
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{
-          backgroundImage: 'url(/images/whatsapp-doodle-light.png)',
-          backgroundRepeat: 'repeat',
-          backgroundSize: '400px auto',
-        }}
-      />
-    )
-  }
-  
-  // Dark mode: use SVG pattern
+// Doodle Pattern - Image based for both light and dark mode
+const WhatsAppDoodle = ({ darkMode }: { opacity?: number; color?: string; darkMode?: boolean }) => {
   return (
-    <svg
+    <div
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity }}
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="xMidYMid slice"
-    >
-      <defs>
-        <pattern id="wa-doodle-anim" x="0" y="0" width="240" height="240" patternUnits="userSpaceOnUse">
-          <g fill={color}>
-            <rect x="20" y="15" width="14" height="22" rx="2" />
-            <path d="M60 20 Q60 14 66 14 L82 14 Q88 14 88 20 L88 28 Q88 34 82 34 L70 34 L66 40 L66 34 Q60 34 60 28 Z" />
-            <path d="M120 22 Q120 15 126 15 Q132 15 132 22 Q132 15 138 15 Q144 15 144 22 Q144 30 132 38 Q120 30 120 22 Z" />
-            <rect x="170" y="18" width="24" height="18" rx="3" />
-            <circle cx="182" cy="27" r="6" fill="currentColor" fillOpacity="0" stroke={color} strokeWidth="2"/>
-            <rect x="25" y="80" width="18" height="14" rx="2" />
-            <ellipse cx="80" cy="98" rx="6" ry="5" />
-            <path d="M145 70 L148 82 L162 82 L151 90 L154 104 L145 96 L136 104 L139 90 L128 82 L142 82 Z" />
-            <path d="M200 102 Q188 85 200 72 Q212 85 200 102 Z" />
-            <rect x="230" y="70" width="20" height="28" rx="2" />
-            <circle cx="40" cy="150" r="14" fill="none" stroke={color} strokeWidth="2.5"/>
-            <rect x="155" y="140" width="28" height="22" rx="2" />
-            <rect x="20" y="200" width="22" height="16" rx="2" />
-            <path d="M42 204 L54 198 L54 220 L42 214 Z" />
-            <rect x="180" y="205" width="22" height="20" rx="2" />
-            <rect x="225" y="200" width="20" height="24" rx="3" />
-          </g>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#wa-doodle-anim)" />
-    </svg>
+      style={{
+        backgroundImage: darkMode 
+          ? 'url(/images/whatsapp-doodle-dark.png)' 
+          : 'url(/images/whatsapp-doodle-light.png)',
+        backgroundRepeat: 'repeat',
+        backgroundSize: '400px auto',
+      }}
+    />
   )
 }
 
