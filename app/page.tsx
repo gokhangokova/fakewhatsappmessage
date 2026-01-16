@@ -406,8 +406,8 @@ export default function Home() {
                 <span className="font-medium hidden sm:inline">{t.export.export}</span>
               </Button>
             </PopoverTrigger>
-              <PopoverContent className="w-72 sm:w-80" align="end" sideOffset={12}>
-                <div className="space-y-4">
+              <PopoverContent className="w-[calc(100vw-32px)] sm:w-80 max-h-[70vh] overflow-y-auto" align="center" sideOffset={12}>
+                <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{t.export.exportOptions}</h3>
                     <span className="text-xs text-muted-foreground">
@@ -417,14 +417,14 @@ export default function Home() {
 
                   {/* Format Selection */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t.export.format}</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <Label className="text-xs sm:text-sm font-medium">{t.export.format}</Label>
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                       {(['png', 'jpg', 'webp'] as ExportFormat[]).map((f) => (
                         <button
                           key={f}
                           onClick={() => setExportFormat(f)}
                           className={cn(
-                            'flex flex-col items-center px-3 py-3 rounded-lg text-sm font-medium transition-all min-h-[48px]',
+                            'flex flex-col items-center px-2 sm:px-3 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-h-[40px] sm:min-h-[48px]',
                             exportFormat === f
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted hover:bg-muted/80'
@@ -434,17 +434,17 @@ export default function Home() {
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                       {FORMAT_INFO[exportFormat].desc}
                     </p>
                   </div>
 
                   {/* Quality Slider (for JPG and WebP) */}
                   {(exportFormat === 'jpg' || exportFormat === 'webp') && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">{t.export.quality}</Label>
-                        <span className="text-sm text-muted-foreground">
+                        <Label className="text-xs sm:text-sm font-medium">{t.export.quality}</Label>
+                        <span className="text-xs sm:text-sm text-muted-foreground">
                           {Math.round(jpgQuality * 100)}%
                         </span>
                       </div>
@@ -455,28 +455,28 @@ export default function Home() {
                         step="0.01"
                         value={jpgQuality}
                         onChange={(e) => setJpgQuality(parseFloat(e.target.value))}
-                        className="w-full h-3 bg-muted rounded-lg appearance-none cursor-pointer"
+                        className="w-full h-2 sm:h-3 bg-muted rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
                   )}
 
                   {/* Scale Selection */}
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">{t.export.scale}</Label>
-                      <span className="text-xs text-muted-foreground">
+                      <Label className="text-xs sm:text-sm font-medium">{t.export.scale}</Label>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">
                         {exportScale === 1 && '375×812px'}
                         {exportScale === 2 && '750×1624px'}
                         {exportScale === 3 && '1125×2436px'}
                       </span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 sm:gap-2">
                       {([1, 2, 3] as const).map((s) => (
                         <button
                           key={s}
                           onClick={() => setExportScale(s)}
                           className={cn(
-                            'flex-1 px-3 py-3 rounded-lg text-sm font-medium transition-all min-h-[48px]',
+                            'flex-1 px-2 sm:px-3 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all min-h-[40px] sm:min-h-[48px]',
                             exportScale === s
                               ? 'bg-primary text-primary-foreground'
                               : 'bg-muted hover:bg-muted/80'
@@ -489,10 +489,10 @@ export default function Home() {
                   </div>
 
                   {/* Watermark Toggle */}
-                  <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2">
                     <div>
-                      <Label className="text-sm font-medium">{t.export.watermark}</Label>
-                      <p className="text-xs text-muted-foreground">{t.export.watermarkDesc}</p>
+                      <Label className="text-xs sm:text-sm font-medium">{t.export.watermark}</Label>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">{t.export.watermarkDesc}</p>
                     </div>
                     <Switch
                       checked={showWatermark}
@@ -500,11 +500,11 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="space-y-2 pt-2 border-t">
+                  <div className="space-y-1.5 sm:space-y-2 pt-2 border-t">
                     {/* Download Button */}
                     <Button
                       onClick={handleDownload}
-                      className="w-full h-12"
+                      className="w-full h-10 sm:h-12 text-xs sm:text-sm"
                       disabled={isExporting}
                     >
                       {isExporting ? (
@@ -524,7 +524,7 @@ export default function Home() {
                     <Button
                       onClick={handleCopyToClipboard}
                       variant="outline"
-                      className="w-full h-12"
+                      className="w-full h-10 sm:h-12 text-xs sm:text-sm"
                       disabled={isExporting}
                     >
                       {copied ? (

@@ -118,7 +118,7 @@ export function VideoExportPanel({
           <span className="font-medium hidden sm:inline">Video</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5" />
@@ -129,7 +129,7 @@ export function VideoExportPanel({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="space-y-4 py-3 sm:py-4">
           {/* Success Banner */}
           {hasVideo && !isWorking && (
             <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950 rounded-xl border border-green-200 dark:border-green-800">
@@ -180,23 +180,23 @@ export function VideoExportPanel({
 
           {/* Format Selection */}
           {!isWorking && !hasVideo && (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <Label className="text-sm font-semibold">{t.video.outputFormat}</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {(['mp4', 'gif'] as VideoFormat[]).map((format) => (
                   <button
                     key={format}
                     onClick={() => onSettingsChange({ format })}
                     className={cn(
-                      'flex flex-col items-center p-4 rounded-xl border-2 transition-all',
+                      'flex flex-col items-center p-3 sm:p-4 rounded-xl border-2 transition-all',
                       settings.format === format
                         ? 'border-violet-500 bg-violet-50 dark:bg-violet-950 shadow-sm'
                         : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/50'
                     )}
                   >
-                    <span className="text-3xl mb-2">{FORMAT_INFO[format].icon}</span>
-                    <span className="text-sm font-semibold">{FORMAT_INFO[format].label}</span>
-                    <span className="text-[11px] text-muted-foreground text-center mt-1">
+                    <span className="text-2xl sm:text-3xl mb-1 sm:mb-2">{FORMAT_INFO[format].icon}</span>
+                    <span className="text-xs sm:text-sm font-semibold">{FORMAT_INFO[format].label}</span>
+                    <span className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-0.5 sm:mt-1">
                       {FORMAT_INFO[format].desc}
                     </span>
                   </button>
@@ -207,15 +207,15 @@ export function VideoExportPanel({
 
           {/* Quality Selection */}
           {!isWorking && !hasVideo && (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <Label className="text-sm font-semibold">{t.export.quality}</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                 {(['low', 'medium', 'high'] as VideoQuality[]).map((q) => (
                   <button
                     key={q}
                     onClick={() => onSettingsChange({ quality: q })}
                     className={cn(
-                      'px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                      'px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all',
                       settings.quality === q
                         ? 'bg-violet-500 text-white shadow-sm'
                         : 'bg-muted hover:bg-muted/80'
@@ -329,14 +329,17 @@ export function VideoExportPanel({
 
               {/* Speed Presets */}
               {!showSettings && (
-                <div className="space-y-3">
-                  <Label className="text-sm text-muted-foreground">{t.video.animationSpeed}</Label>
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2 sm:space-y-3">
+                  <Label className="text-xs sm:text-sm text-muted-foreground">{t.video.animationSpeed}</Label>
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     <Button
                       variant={settings.typingDuration === 3000 && settings.messageDelay === 2000 ? "default" : "outline"}
                       size="sm"
                       onClick={() => onSettingsChange({ typingDuration: 3000, messageDelay: 2000, messageAppearDuration: 600 })}
-                      className={settings.typingDuration === 3000 && settings.messageDelay === 2000 ? "bg-violet-500 hover:bg-violet-600" : ""}
+                      className={cn(
+                        "text-xs sm:text-sm px-2 sm:px-3",
+                        settings.typingDuration === 3000 && settings.messageDelay === 2000 ? "bg-violet-500 hover:bg-violet-600" : ""
+                      )}
                     >
                       {t.video.slow}
                     </Button>
@@ -344,7 +347,10 @@ export function VideoExportPanel({
                       variant={settings.typingDuration === 2000 && settings.messageDelay === 1200 ? "default" : "outline"}
                       size="sm"
                       onClick={() => onSettingsChange({ typingDuration: 2000, messageDelay: 1200, messageAppearDuration: 400 })}
-                      className={settings.typingDuration === 2000 && settings.messageDelay === 1200 ? "bg-violet-500 hover:bg-violet-600" : ""}
+                      className={cn(
+                        "text-xs sm:text-sm px-2 sm:px-3",
+                        settings.typingDuration === 2000 && settings.messageDelay === 1200 ? "bg-violet-500 hover:bg-violet-600" : ""
+                      )}
                     >
                       {t.video.normal}
                     </Button>
@@ -352,7 +358,10 @@ export function VideoExportPanel({
                       variant={settings.typingDuration === 1000 && settings.messageDelay === 600 ? "default" : "outline"}
                       size="sm"
                       onClick={() => onSettingsChange({ typingDuration: 1000, messageDelay: 600, messageAppearDuration: 200 })}
-                      className={settings.typingDuration === 1000 && settings.messageDelay === 600 ? "bg-violet-500 hover:bg-violet-600" : ""}
+                      className={cn(
+                        "text-xs sm:text-sm px-2 sm:px-3",
+                        settings.typingDuration === 1000 && settings.messageDelay === 600 ? "bg-violet-500 hover:bg-violet-600" : ""
+                      )}
                     >
                       {t.video.fast}
                     </Button>
