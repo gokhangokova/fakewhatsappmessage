@@ -344,8 +344,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* Floating Export Panel - Mobile optimized */}
-        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-8 flex flex-col items-end gap-2 sm:gap-3">
+        {/* Floating Export Panel - Mobile: single row centered at bottom */}
+        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3">
           {/* Preview Animation Button */}
           {isPreviewMode ? (
             <Button
@@ -368,46 +368,44 @@ export default function Home() {
             </Button>
           )}
 
-          {/* Export Buttons Row */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Video Export Button */}
-            <VideoExportPanel
-              isOpen={videoExportOpen}
-              onOpenChange={setVideoExportOpen}
-              isAnimating={isVideoMode && isRecording}
-              isRecording={isRecording}
-              isProcessing={isProcessing}
-              progress={progress}
-              progressText={progressText}
-              hasVideo={!!videoBlob}
-              videoDuration={videoDuration}
-              onStartAnimation={handleStartVideoRecording}
-              onStopAnimation={handleStopVideoRecording}
-              onResetAnimation={handleResetVideoAnimation}
-              onDownload={handleDownloadVideo}
-              settings={videoSettings}
-              onSettingsChange={handleVideoSettingsChange}
-              messageCount={messages.length}
-              currentFormat={currentFormat}
-              language={language}
-            />
+          {/* Video Export Button */}
+          <VideoExportPanel
+            isOpen={videoExportOpen}
+            onOpenChange={setVideoExportOpen}
+            isAnimating={isVideoMode && isRecording}
+            isRecording={isRecording}
+            isProcessing={isProcessing}
+            progress={progress}
+            progressText={progressText}
+            hasVideo={!!videoBlob}
+            videoDuration={videoDuration}
+            onStartAnimation={handleStartVideoRecording}
+            onStopAnimation={handleStopVideoRecording}
+            onResetAnimation={handleResetVideoAnimation}
+            onDownload={handleDownloadVideo}
+            settings={videoSettings}
+            onSettingsChange={handleVideoSettingsChange}
+            messageCount={messages.length}
+            currentFormat={currentFormat}
+            language={language}
+          />
 
-            {/* Image Export Button */}
-            <Popover open={showOptions} onOpenChange={setShowOptions}>
-              <PopoverTrigger asChild>
-                <Button
-                  size="default"
-                  className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2"
-                  disabled={isExporting || isVideoMode}
-                >
-                  {isExporting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  <span className="font-medium hidden sm:inline">{t.export.export}</span>
-                </Button>
-              </PopoverTrigger>
+          {/* Image Export Button */}
+          <Popover open={showOptions} onOpenChange={setShowOptions}>
+            <PopoverTrigger asChild>
+              <Button
+                size="default"
+                className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2"
+                disabled={isExporting || isVideoMode}
+              >
+                {isExporting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                <span className="font-medium hidden sm:inline">{t.export.export}</span>
+              </Button>
+            </PopoverTrigger>
               <PopoverContent className="w-72 sm:w-80" align="end" sideOffset={12}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -544,8 +542,7 @@ export default function Home() {
                   </div>
                 </div>
               </PopoverContent>
-            </Popover>
-          </div>
+          </Popover>
         </div>
 
         {/* Quick Info - Hidden on mobile */}
