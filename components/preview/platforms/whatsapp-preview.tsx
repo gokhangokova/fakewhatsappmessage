@@ -140,7 +140,7 @@ const defaultSettings: WhatsAppSettings = {
 }
 
 // iOS WhatsApp Doodle Pattern - Image based for both light and dark mode
-const WhatsAppDoodle = ({ darkMode }: { opacity?: number; color?: string; darkMode?: boolean }) => {
+const WhatsAppDoodle = ({ opacity = 1, darkMode }: { opacity?: number; color?: string; darkMode?: boolean }) => {
   return (
     <div
       className="absolute inset-0 w-full h-full pointer-events-none"
@@ -150,6 +150,7 @@ const WhatsAppDoodle = ({ darkMode }: { opacity?: number; color?: string; darkMo
           : 'url(/images/whatsapp-doodle-light.png)',
         backgroundRepeat: 'repeat',
         backgroundSize: '400px auto',
+        opacity: opacity,
       }}
     />
   )
