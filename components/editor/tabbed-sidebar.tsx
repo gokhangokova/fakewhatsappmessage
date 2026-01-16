@@ -1345,12 +1345,31 @@ export function TabbedSidebar({
                     </div>
                   )}
 
-                  {/* Doodle Settings - Info only since we use authentic WhatsApp doodle images */}
+                  {/* Doodle Settings - Opacity control only (color is fixed in authentic images) */}
                   {backgroundType === 'doodle' && (
-                    <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-                      <p className="font-medium text-gray-700 mb-1">✨ {t.settings.authenticPattern || 'Gerçek WhatsApp Deseni'}</p>
-                      <p>{t.settings.authenticPatternDesc || 'Orijinal WhatsApp desen görseli kullanılıyor. Karanlık modda otomatik olarak koyu tema deseni gösterilir.'}</p>
-                    </div>
+                    <>
+                      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg mb-3">
+                        <p>✨ {t.settings.authenticPattern || 'Orijinal WhatsApp desen görseli kullanılıyor.'}</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.patternOpacity}</Label>
+                          <span className="text-xs text-[#128C7E] font-medium">
+                            {Math.round((whatsappSettings.doodleOpacity || 1) * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.1"
+                          max="1"
+                          step="0.05"
+                          value={whatsappSettings.doodleOpacity || 1}
+                          onChange={(e) => setWhatsAppSettings({ doodleOpacity: parseFloat(e.target.value) })}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#25D366]"
+                        />
+                      </div>
+                    </>
                   )}
 
                   {/* Image Background */}
