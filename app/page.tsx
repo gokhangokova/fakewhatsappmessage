@@ -344,7 +344,7 @@ export default function Home() {
           {isPreviewMode ? (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0"
+              className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-36 sm:px-0 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 justify-center"
               onClick={handleStopPreview}
             >
               <Square className="w-5 h-5" />
@@ -353,7 +353,7 @@ export default function Home() {
           ) : (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0"
+              className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-36 sm:px-0 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 justify-center"
               onClick={handleStartPreview}
               disabled={isVideoMode || isExporting || messages.length === 0}
             >

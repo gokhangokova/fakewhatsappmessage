@@ -129,7 +129,7 @@ export function VideoExportPanel({
   const TriggerButton = (
     <Button 
       size="default" 
-      className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2 bg-violet-500 hover:bg-violet-600 text-white border-0"
+      className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-36 sm:px-0 gap-2 bg-violet-500 hover:bg-violet-600 text-white border-0 justify-center"
     >
       <Film className="w-5 h-5" />
       <span className="font-medium hidden sm:inline">Video</span>

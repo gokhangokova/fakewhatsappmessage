@@ -81,7 +81,7 @@ export function ImageExportPanel({
   const TriggerButton = (
     <Button
       size="default"
-      className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-auto sm:px-6 gap-2"
+      className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-36 sm:px-0 gap-2 justify-center"
       disabled={disabled}
     >
       {isExporting ? (
