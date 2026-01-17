@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { TabbedSidebar } from '@/components/editor/tabbed-sidebar'
 import { PhonePreview } from '@/components/preview/phone-preview'
 import { AnimatedChatPreview, AnimatedChatPreviewRef, VideoExportPanel, VideoExportSettings } from '@/components/video'
@@ -230,6 +230,22 @@ export default function Home() {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
+  // Merge groupSettings into whatsappSettings for preview
+  const mergedWhatsappSettings = useMemo(() => {
+    if (!groupSettings.isGroupChat) return whatsappSettings
+    
+    return {
+      ...whatsappSettings,
+      groupName: groupSettings.groupName,
+      groupParticipants: groupSettings.participants.map(p => ({
+        id: p.id,
+        name: p.name,
+        avatar: p.avatar || null,
+        color: p.color,
+      })),
+    }
+  }, [whatsappSettings, groupSettings])
+
   // TabbedSidebar props
   const sidebarProps = {
     platform,
@@ -303,7 +319,7 @@ export default function Home() {
                 messages={messages}
                 darkMode={darkMode}
                 timeFormat={timeFormat}
-                settings={whatsappSettings}
+                settings={mergedWhatsappSettings}
                 language={language}
                 fontFamily={fontFamily}
                 deviceType={deviceType}
@@ -325,7 +341,7 @@ export default function Home() {
                 mobileView={mobileView}
                 timeFormat={timeFormat}
                 transparentBg={transparentBg}
-                whatsappSettings={whatsappSettings}
+                whatsappSettings={mergedWhatsappSettings}
                 language={language}
                 fontFamily={fontFamily}
                 batteryLevel={batteryLevel}
