@@ -232,17 +232,17 @@ export default function Home() {
 
   // Merge groupSettings into whatsappSettings for preview
   const mergedWhatsappSettings = useMemo(() => {
-    if (!groupSettings.isGroupChat) return whatsappSettings
+    if (!groupSettings?.isGroupChat) return whatsappSettings
     
     return {
       ...whatsappSettings,
       groupName: groupSettings.groupName,
-      groupParticipants: groupSettings.participants.map(p => ({
+      groupParticipants: groupSettings.participants?.map(p => ({
         id: p.id,
         name: p.name,
         avatar: p.avatar || null,
         color: p.color,
-      })),
+      })) || [],
     }
   }, [whatsappSettings, groupSettings])
 
