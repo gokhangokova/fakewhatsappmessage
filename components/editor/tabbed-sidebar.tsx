@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language, WhatsAppSettings, WhatsAppBackgroundType, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, FontFamily, SUPPORTED_FONTS, SUPPORTED_LANGUAGES, DeviceType, GroupChatSettings } from '@/types'
+import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language, WhatsAppSettings, WhatsAppBackgroundType, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, FontFamily, SUPPORTED_FONTS, SUPPORTED_LANGUAGES, DeviceType, GroupChatSettings, GroupParticipant, GROUP_CHAT_COLORS } from '@/types'
 import { useTranslations } from '@/lib/i18n/translations'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -128,6 +128,9 @@ interface TabbedSidebarProps {
   groupSettings?: GroupChatSettings
   setGroupSettings?: (settings: Partial<GroupChatSettings>) => void
   toggleGroupChat?: (isGroupChat: boolean) => void
+  addParticipant?: (participant: GroupParticipant) => void
+  removeParticipant?: (participantId: string) => void
+  updateParticipant?: (participantId: string, updates: Partial<GroupParticipant>) => void
   onReset?: () => void
   // Mobile props
   isOpen?: boolean
@@ -790,6 +793,9 @@ export function TabbedSidebar({
   groupSettings,
   setGroupSettings,
   toggleGroupChat,
+  addParticipant,
+  removeParticipant,
+  updateParticipant,
   onReset,
   isOpen = false,
   onClose,
@@ -1062,7 +1068,7 @@ export function TabbedSidebar({
                     </div>
 
                     {/* Participants */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">
                         Katılımcılar ({groupSettings.participants.length})
                       </Label>
@@ -1072,22 +1078,88 @@ export function TabbedSidebar({
                             key={participant.id}
                             className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                           >
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                              style={{ backgroundColor: participant.color }}
-                            >
-                              {participant.name.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="flex-1 text-sm font-medium">{participant.name}</span>
-                            {participant.id === 'me' && (
-                              <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded">Sen</span>
+                            {/* Avatar */}
+                            <AvatarUpload
+                              value={participant.avatar || null}
+                              onChange={(avatar) => updateParticipant?.(participant.id, { avatar: avatar || undefined })}
+                              fallback={participant.name}
+                              size="sm"
+                              language={language}
+                              accentColor={participant.color}
+                            />
+                            
+                            {/* Name Input */}
+                            <DebouncedInput
+                              value={participant.name}
+                              onChange={(name) => updateParticipant?.(participant.id, { name })}
+                              placeholder="İsim..."
+                              className="flex-1 h-8 text-sm"
+                            />
+                            
+                            {/* Color Picker */}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  className="w-6 h-6 rounded-full border-2 border-white shadow-sm flex-shrink-0 hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: participant.color }}
+                                  title="Renk seç"
+                                />
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-2" align="end">
+                                <div className="grid grid-cols-4 gap-1">
+                                  {GROUP_CHAT_COLORS.map((color) => (
+                                    <button
+                                      key={color}
+                                      onClick={() => updateParticipant?.(participant.id, { color })}
+                                      className={cn(
+                                        "w-6 h-6 rounded-full transition-all",
+                                        participant.color === color
+                                          ? "ring-2 ring-offset-2 ring-gray-400 scale-110"
+                                          : "hover:scale-110"
+                                      )}
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                            
+                            {/* You badge or Delete button */}
+                            {participant.id === 'me' ? (
+                              <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded flex-shrink-0">Sen</span>
+                            ) : (
+                              <button
+                                onClick={() => removeParticipant?.(participant.id)}
+                                className="p-1 hover:bg-red-100 rounded text-red-500 flex-shrink-0 transition-colors"
+                                title="Katılımcıyı sil"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             )}
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-gray-400">
-                        💡 Katılımcı ekleme/çıkarma yakında...
-                      </p>
+                      
+                      {/* Add Participant Button */}
+                      <Button
+                        onClick={() => {
+                          const newId = `p${Date.now()}`
+                          const usedColors = groupSettings.participants.map(p => p.color)
+                          const availableColor = GROUP_CHAT_COLORS.find(c => !usedColors.includes(c)) || GROUP_CHAT_COLORS[groupSettings.participants.length % GROUP_CHAT_COLORS.length]
+                          addParticipant?.({
+                            id: newId,
+                            name: `Kişi ${groupSettings.participants.length}`,
+                            color: availableColor,
+                            isAdmin: false,
+                          })
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Katılımcı Ekle
+                      </Button>
                     </div>
                   </>
                 ) : (

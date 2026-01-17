@@ -51,6 +51,9 @@ export default function Home() {
     groupSettings,
     setGroupSettings,
     toggleGroupChat,
+    addParticipant,
+    removeParticipant,
+    updateParticipant,
     resetToDefaults,
     isHydrated,
   } = useChatState()
@@ -276,6 +279,9 @@ export default function Home() {
     groupSettings,
     setGroupSettings,
     toggleGroupChat,
+    addParticipant,
+    removeParticipant,
+    updateParticipant,
     onReset: resetToDefaults,
     // Mobile props
     isOpen: sidebarOpen,

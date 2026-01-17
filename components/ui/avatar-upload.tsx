@@ -17,6 +17,8 @@ interface AvatarUploadProps {
   className?: string
   variant?: 'primary' | 'secondary'
   language?: Language
+  size?: 'sm' | 'md' | 'lg'
+  accentColor?: string
 }
 
 // Preset avatar images - using reliable sources
@@ -57,6 +59,8 @@ export function AvatarUpload({
   className,
   variant = 'primary',
   language = 'en',
+  size = 'md',
+  accentColor,
 }: AvatarUploadProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [urlInput, setUrlInput] = React.useState('')
@@ -64,9 +68,22 @@ export function AvatarUpload({
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const t = useTranslations(language)
 
+  // Size classes
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+  }
+  
+  const textSizeClasses = {
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base',
+  }
+
   // Check if value is a color
   const isColorAvatar = value?.startsWith('color:')
-  const avatarColor = isColorAvatar && value ? value.replace('color:', '') : null
+  const avatarColor = isColorAvatar && value ? value.replace('color:', '') : accentColor
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -106,20 +123,21 @@ export function AvatarUpload({
           type="button"
           className={cn('relative group cursor-pointer', className)}
         >
-          <Avatar className="w-10 h-10 ring-2 ring-transparent hover:ring-primary/50 transition-all">
+          <Avatar className={cn(sizeClasses[size], "ring-2 ring-transparent hover:ring-primary/50 transition-all")}>
             {value && !isColorAvatar ? (
               <AvatarImage src={value} />
-            ) : isColorAvatar ? (
+            ) : avatarColor ? (
               <AvatarFallback
-                className="text-sm font-medium text-white"
-                style={{ backgroundColor: avatarColor || undefined }}
+                className={cn(textSizeClasses[size], "font-medium text-white")}
+                style={{ backgroundColor: avatarColor }}
               >
                 {fallback?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             ) : (
               <AvatarFallback
                 className={cn(
-                  'text-sm font-medium',
+                  textSizeClasses[size],
+                  'font-medium',
                   variant === 'primary'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-secondary-foreground'
@@ -130,7 +148,7 @@ export function AvatarUpload({
             )}
           </Avatar>
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="w-4 h-4 text-white" />
+            <Camera className={cn(size === 'sm' ? 'w-3 h-3' : 'w-4 h-4', "text-white")} />
           </div>
         </button>
       </PopoverTrigger>
