@@ -1014,45 +1014,53 @@ export function TabbedSidebar({
           {/* Editor Tab Content */}
           {activeTab === 'editor' && (
             <>
+              {/* Chat Type Section - Only for WhatsApp */}
+              {platform === 'whatsapp' && groupSettings && toggleGroupChat && (
+                <CollapsibleSection
+                  title="Chat Tipi"
+                  icon={Users2}
+                  defaultOpen={true}
+                  badge={
+                    <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
+                      {groupSettings.isGroupChat ? 'Grup' : '1-1'}
+                    </span>
+                  }
+                >
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => toggleGroupChat(false)}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        !groupSettings.isGroupChat
+                          ? 'bg-[#d4f5e2] text-[#128C7E]'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      )}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>1-1 Chat</span>
+                    </button>
+                    <button
+                      onClick={() => toggleGroupChat(true)}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        groupSettings.isGroupChat
+                          ? 'bg-[#d4f5e2] text-[#128C7E]'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      )}
+                    >
+                      <Users2 className="w-4 h-4" />
+                      <span>Group Chat</span>
+                    </button>
+                  </div>
+                </CollapsibleSection>
+              )}
+
               {/* People Section */}
               <CollapsibleSection
-                title={t.editor.people}
+                title={groupSettings?.isGroupChat ? 'Grup Bilgileri' : t.editor.people}
                 icon={Users}
                 defaultOpen={false}
               >
-                {/* Chat Type Toggle - Only for WhatsApp */}
-                {platform === 'whatsapp' && groupSettings && toggleGroupChat && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Chat Tipi</Label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => toggleGroupChat(false)}
-                        className={cn(
-                          'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                          !groupSettings.isGroupChat
-                            ? 'bg-[#d4f5e2] text-[#128C7E]'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        )}
-                      >
-                        <Users className="w-4 h-4" />
-                        <span>1-1</span>
-                      </button>
-                      <button
-                        onClick={() => toggleGroupChat(true)}
-                        className={cn(
-                          'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                          groupSettings.isGroupChat
-                            ? 'bg-[#d4f5e2] text-[#128C7E]'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        )}
-                      >
-                        <Users2 className="w-4 h-4" />
-                        <span>Grup</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {/* Group Chat Settings */}
                 {groupSettings?.isGroupChat && setGroupSettings ? (
                   <>
