@@ -121,19 +121,23 @@ export function useChatState() {
     setIsHydrated(true)
   }, [])
 
-  // Convert stored date strings back to Date objects
+  // Convert stored date strings back to Date objects and ensure groupSettings exists
   useEffect(() => {
     if (isHydrated && state.messages) {
       const hasStringDates = state.messages.some(
         (msg) => typeof msg.timestamp === 'string'
       )
-      if (hasStringDates) {
+      const needsGroupSettings = !state.groupSettings
+      
+      if (hasStringDates || needsGroupSettings) {
         setState((prev) => ({
           ...prev,
           messages: prev.messages.map((msg) => ({
             ...msg,
             timestamp: new Date(msg.timestamp),
           })),
+          // Ensure groupSettings exists for older localStorage data
+          groupSettings: prev.groupSettings || DEFAULT_GROUP_SETTINGS,
         }))
       }
     }
@@ -389,6 +393,8 @@ export function useChatState() {
 
   return {
     ...state,
+    // Ensure groupSettings has a fallback for older localStorage data
+    groupSettings: state.groupSettings || DEFAULT_GROUP_SETTINGS,
     setPlatform,
     setSender,
     setReceiver,
