@@ -135,6 +135,18 @@ export interface Message {
   isStarred?: boolean
   replyTo?: ReplyTo
   reactions?: MessageReaction[]
+  // Group chat specific
+  senderId?: string        // Which participant sent the message
+  senderName?: string      // Participant name (for quick access)
+  senderColor?: string     // Participant color
+  isSystemMessage?: boolean
+  systemMessageType?: SystemMessageType
+  systemMessageData?: {    // For system messages like "X added Y"
+    actorName?: string
+    targetName?: string
+    newValue?: string      // For name/description changes
+  }
+  mentions?: string[]      // Array of participant IDs mentioned (@mention)
 }
 
 // Emoji reaction
@@ -142,6 +154,37 @@ export interface MessageReaction {
   emoji: string
   count: number
   fromMe?: boolean
+}
+
+// System message types for group chat
+export type SystemMessageType = 
+  | 'created'
+  | 'joined'
+  | 'left'
+  | 'removed'
+  | 'changed_name'
+  | 'changed_icon'
+  | 'changed_description'
+
+// Group chat participant
+export interface GroupParticipant {
+  id: string
+  name: string
+  phone?: string
+  avatar?: string
+  isAdmin?: boolean
+  color: string
+}
+
+// Group chat settings
+export interface GroupChatSettings {
+  isGroupChat: boolean
+  groupName: string
+  groupIcon?: string
+  groupDescription?: string
+  participants: GroupParticipant[]
+  createdBy?: string
+  createdAt?: string
 }
 
 export interface ChatSettings {
@@ -262,6 +305,40 @@ export const GROUP_CHAT_COLORS = [
   '#1ABC9C', // Teal
   '#E91E63', // Pink
   '#3498DB', // Sky blue
+]
+
+// Default group participants (4 people)
+export const DEFAULT_GROUP_PARTICIPANTS: GroupParticipant[] = [
+  { id: 'me', name: 'Sen', isAdmin: true, color: GROUP_CHAT_COLORS[0] },
+  { id: 'p1', name: 'Ali', isAdmin: false, color: GROUP_CHAT_COLORS[1] },
+  { id: 'p2', name: 'Ayşe', isAdmin: false, color: GROUP_CHAT_COLORS[2] },
+  { id: 'p3', name: 'Mehmet', isAdmin: false, color: GROUP_CHAT_COLORS[3] },
+]
+
+// Default group settings
+export const DEFAULT_GROUP_SETTINGS: GroupChatSettings = {
+  isGroupChat: false,
+  groupName: 'Grup Sohbeti',
+  groupIcon: undefined,
+  groupDescription: '',
+  participants: DEFAULT_GROUP_PARTICIPANTS,
+  createdBy: 'me',
+}
+
+// Preset group icons
+export const PRESET_GROUP_ICONS = [
+  '👨‍👩‍👧‍👦', // Family
+  '👥',      // Group
+  '💼',      // Work
+  '🎉',      // Party
+  '⚽',      // Sports
+  '🎮',      // Gaming
+  '📚',      // Study
+  '🎵',      // Music
+  '✈️',      // Travel
+  '🍕',      // Food
+  '❤️',      // Love
+  '🏠',      // Home
 ]
 
 // Preset locations for quick selection
