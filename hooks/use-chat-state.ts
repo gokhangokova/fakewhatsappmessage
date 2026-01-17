@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction, Language, FontFamily, DeviceType } from '@/types'
+import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction, Language, FontFamily, DeviceType, GroupChatSettings, DEFAULT_GROUP_SETTINGS, GroupParticipant } from '@/types'
 import { useLocalStorage } from './use-local-storage'
 import { generateId } from '@/lib/utils'
 
@@ -92,6 +92,7 @@ interface ChatState {
   fontFamily: FontFamily
   batteryLevel: number
   deviceType: DeviceType
+  groupSettings: GroupChatSettings
 }
 
 const defaultState: ChatState = {
@@ -108,6 +109,7 @@ const defaultState: ChatState = {
   fontFamily: 'sf-pro',
   batteryLevel: 100,
   deviceType: 'ios',
+  groupSettings: DEFAULT_GROUP_SETTINGS,
 }
 
 export function useChatState() {
@@ -293,6 +295,57 @@ export function useChatState() {
     }))
   }, [setState])
 
+  // Group Settings
+  const setGroupSettings = useCallback((settings: Partial<GroupChatSettings>) => {
+    setState((prev) => ({
+      ...prev,
+      groupSettings: { ...prev.groupSettings, ...settings },
+    }))
+  }, [setState])
+
+  // Toggle group chat mode
+  const toggleGroupChat = useCallback((isGroupChat: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      groupSettings: { ...prev.groupSettings, isGroupChat },
+    }))
+  }, [setState])
+
+  // Add participant to group
+  const addParticipant = useCallback((participant: GroupParticipant) => {
+    setState((prev) => ({
+      ...prev,
+      groupSettings: {
+        ...prev.groupSettings,
+        participants: [...prev.groupSettings.participants, participant],
+      },
+    }))
+  }, [setState])
+
+  // Remove participant from group
+  const removeParticipant = useCallback((participantId: string) => {
+    setState((prev) => ({
+      ...prev,
+      groupSettings: {
+        ...prev.groupSettings,
+        participants: prev.groupSettings.participants.filter((p) => p.id !== participantId),
+      },
+    }))
+  }, [setState])
+
+  // Update participant
+  const updateParticipant = useCallback((participantId: string, updates: Partial<GroupParticipant>) => {
+    setState((prev) => ({
+      ...prev,
+      groupSettings: {
+        ...prev.groupSettings,
+        participants: prev.groupSettings.participants.map((p) =>
+          p.id === participantId ? { ...p, ...updates } : p
+        ),
+      },
+    }))
+  }, [setState])
+
   // Reset
   const resetToDefaults = useCallback(() => {
     setState(defaultState)
@@ -324,6 +377,11 @@ export function useChatState() {
       setFontFamily,
       setBatteryLevel,
       setDeviceType,
+      setGroupSettings,
+      toggleGroupChat,
+      addParticipant,
+      removeParticipant,
+      updateParticipant,
       resetToDefaults,
       isHydrated: false,
     }
@@ -353,6 +411,11 @@ export function useChatState() {
     setFontFamily,
     setBatteryLevel,
     setDeviceType,
+    setGroupSettings,
+    toggleGroupChat,
+    addParticipant,
+    removeParticipant,
+    updateParticipant,
     resetToDefaults,
     isHydrated: true,
   }
