@@ -63,6 +63,71 @@ const defaultMessages: Message[] = [
   },
 ]
 
+// Default group chat messages
+const defaultGroupMessages: Message[] = [
+  {
+    id: 'grp-msg-1',
+    userId: 'p1', // Emma
+    senderId: 'p1',
+    senderName: 'Emma',
+    senderColor: '#34B7F1',
+    content: 'Hey everyone! What\'s the plan for Saturday? 🎉',
+    timestamp: new Date(baseTime.getTime()),
+    type: 'text',
+  },
+  {
+    id: 'grp-msg-2',
+    userId: 'p2', // James
+    senderId: 'p2',
+    senderName: 'James',
+    senderColor: '#FF6B6B',
+    content: 'I was thinking we could go hiking 🥾',
+    timestamp: new Date(baseTime.getTime() + 60000),
+    type: 'text',
+  },
+  {
+    id: 'grp-msg-3',
+    userId: 'p3', // Sophie
+    senderId: 'p3',
+    senderName: 'Sophie',
+    senderColor: '#9B59B6',
+    content: 'Sounds fun! What time should we meet?',
+    timestamp: new Date(baseTime.getTime() + 120000),
+    type: 'text',
+  },
+  {
+    id: 'grp-msg-4',
+    userId: 'me', // You
+    senderId: 'me',
+    senderName: 'You',
+    senderColor: '#25D366',
+    content: 'How about 9am at the park entrance?',
+    timestamp: new Date(baseTime.getTime() + 180000),
+    type: 'text',
+    status: 'read',
+  },
+  {
+    id: 'grp-msg-5',
+    userId: 'p1', // Emma
+    senderId: 'p1',
+    senderName: 'Emma',
+    senderColor: '#34B7F1',
+    content: 'Perfect! I\'ll bring snacks 🍪',
+    timestamp: new Date(baseTime.getTime() + 240000),
+    type: 'text',
+  },
+  {
+    id: 'grp-msg-6',
+    userId: 'p2', // James  
+    senderId: 'p2',
+    senderName: 'James',
+    senderColor: '#FF6B6B',
+    content: 'Count me in 👍',
+    timestamp: new Date(baseTime.getTime() + 300000),
+    type: 'text',
+  },
+]
+
 const defaultWhatsAppSettings: WhatsAppSettings = {
   // Background
   backgroundType: 'doodle',
@@ -307,10 +372,11 @@ export function useChatState() {
     }))
   }, [setState])
 
-  // Toggle group chat mode
+  // Toggle group chat mode - also loads appropriate sample messages
   const toggleGroupChat = useCallback((isGroupChat: boolean) => {
     setState((prev) => ({
       ...prev,
+      messages: isGroupChat ? defaultGroupMessages : defaultMessages,
       groupSettings: { ...prev.groupSettings, isGroupChat },
     }))
   }, [setState])

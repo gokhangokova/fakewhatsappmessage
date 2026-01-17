@@ -307,18 +307,18 @@ export const GROUP_CHAT_COLORS = [
   '#3498DB', // Sky blue
 ]
 
-// Default group participants (4 people)
+// Default group participants (4 people) - with international names
 export const DEFAULT_GROUP_PARTICIPANTS: GroupParticipant[] = [
-  { id: 'me', name: 'Sen', isAdmin: true, color: GROUP_CHAT_COLORS[0] },
-  { id: 'p1', name: 'Ali', isAdmin: false, color: GROUP_CHAT_COLORS[1] },
-  { id: 'p2', name: 'Ayşe', isAdmin: false, color: GROUP_CHAT_COLORS[2] },
-  { id: 'p3', name: 'Mehmet', isAdmin: false, color: GROUP_CHAT_COLORS[3] },
+  { id: 'me', name: 'You', isAdmin: true, color: GROUP_CHAT_COLORS[0] },
+  { id: 'p1', name: 'Emma', isAdmin: false, color: GROUP_CHAT_COLORS[1] },
+  { id: 'p2', name: 'James', isAdmin: false, color: GROUP_CHAT_COLORS[2] },
+  { id: 'p3', name: 'Sophie', isAdmin: false, color: GROUP_CHAT_COLORS[3] },
 ]
 
 // Default group settings
 export const DEFAULT_GROUP_SETTINGS: GroupChatSettings = {
   isGroupChat: false,
-  groupName: 'Grup Sohbeti',
+  groupName: 'Weekend Plans 🎉',
   groupIcon: undefined,
   groupDescription: '',
   participants: DEFAULT_GROUP_PARTICIPANTS,
