@@ -1,6 +1,35 @@
+## 🗨️ Epic 12: WhatsApp Grup Chat
+
+### Yüksek Öncelik (MVP)
+- [x] Grup chat tip tanımlamaları (GroupParticipant, GroupChatSettings, SystemMessageType)
+- [x] State hook güncelleme (groupSettings, toggleGroupChat, participant CRUD)
+- [x] Chat tipi toggle (1-1 / Grup)
+- [x] Grup adı input alanı
+- [ ] Mesaj baloncuğunda sender ismi + renk gösterimi
+- [ ] Header'da grup adı gösterimi
+
+### Orta Öncelik
+- [ ] Katılımcı listesi görünümü (Editor panel)
+- [ ] Katılımcı ekleme/çıkarma UI
+- [ ] Katılımcı renk seçimi
+- [ ] Mesaj eklerken sender dropdown seçimi
+- [ ] Sistem mesajları (X gruba katıldı, vb.)
+- [ ] Grup ikonu seçimi (preset + yükleme)
+- [ ] Header'da katılımcı listesi
+
+### Düşük Öncelik
+- [ ] Mention özelliği (@Ali)
+- [ ] Grup açıklaması
+- [ ] Admin badge gösterimi
+- [ ] Katılımcı avatarları
+- [ ] Video export'ta grup desteği
+- [ ] Typing indicator'da isim gösterimi
+
+---
+
 # 📋 FakeSocialMessage - Product Backlog
 
-> Son güncelleme: 16 Ocak 2026
+> Son güncelleme: 17 Ocak 2026
 
 ---
 

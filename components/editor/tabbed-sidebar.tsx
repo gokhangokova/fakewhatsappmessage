@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language, WhatsAppSettings, WhatsAppBackgroundType, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, FontFamily, SUPPORTED_FONTS, SUPPORTED_LANGUAGES, DeviceType } from '@/types'
+import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language, WhatsAppSettings, WhatsAppBackgroundType, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, FontFamily, SUPPORTED_FONTS, SUPPORTED_LANGUAGES, DeviceType, GroupChatSettings } from '@/types'
 import { useTranslations } from '@/lib/i18n/translations'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -37,6 +37,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   MessageSquare,
   Users,
+  Users2,
   Plus,
   Trash2,
   GripVertical,
@@ -123,6 +124,10 @@ interface TabbedSidebarProps {
   setBatteryLevel: (level: number) => void
   deviceType: DeviceType
   setDeviceType: (deviceType: DeviceType) => void
+  // Group chat props
+  groupSettings?: GroupChatSettings
+  setGroupSettings?: (settings: Partial<GroupChatSettings>) => void
+  toggleGroupChat?: (isGroupChat: boolean) => void
   onReset?: () => void
   // Mobile props
   isOpen?: boolean
@@ -782,6 +787,9 @@ export function TabbedSidebar({
   setBatteryLevel,
   deviceType,
   setDeviceType,
+  groupSettings,
+  setGroupSettings,
+  toggleGroupChat,
   onReset,
   isOpen = false,
   onClose,
@@ -1300,6 +1308,55 @@ export function TabbedSidebar({
                   icon={Sparkles}
                   defaultOpen={false}
                 >
+                  {/* Chat Type Toggle */}
+                  {groupSettings && toggleGroupChat && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Chat Tipi</Label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleGroupChat(false)}
+                          className={cn(
+                            'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                            !groupSettings.isGroupChat
+                              ? 'bg-[#d4f5e2] text-[#128C7E]'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          )}
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>1-1</span>
+                        </button>
+                        <button
+                          onClick={() => toggleGroupChat(true)}
+                          className={cn(
+                            'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                            groupSettings.isGroupChat
+                              ? 'bg-[#d4f5e2] text-[#128C7E]'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          )}
+                        >
+                          <Users2 className="w-4 h-4" />
+                          <span>Grup</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Group Name Input (only when group chat is enabled) */}
+                  {groupSettings?.isGroupChat && setGroupSettings && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Grup Adı</Label>
+                      <DebouncedInput
+                        value={groupSettings.groupName}
+                        onChange={(groupName) => setGroupSettings({ groupName })}
+                        placeholder="Grup adını girin..."
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-400">
+                        👥 {groupSettings.participants.length} katılımcı
+                      </p>
+                    </div>
+                  )}
+
                   {/* Status */}
                   <div className="space-y-2">
                     <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.status}</Label>

@@ -48,6 +48,9 @@ export default function Home() {
     setBatteryLevel,
     deviceType,
     setDeviceType,
+    groupSettings,
+    setGroupSettings,
+    toggleGroupChat,
     resetToDefaults,
     isHydrated,
   } = useChatState()
@@ -254,6 +257,9 @@ export default function Home() {
     setBatteryLevel,
     deviceType,
     setDeviceType,
+    groupSettings,
+    setGroupSettings,
+    toggleGroupChat,
     onReset: resetToDefaults,
     // Mobile props
     isOpen: sidebarOpen,
