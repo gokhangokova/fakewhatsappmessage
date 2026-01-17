@@ -9,7 +9,7 @@ import { useChatState } from '@/hooks/use-chat-state'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Play, Square, Menu } from 'lucide-react'
+import { Play, Square, Menu, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
@@ -269,15 +269,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Mobile Menu Button - Fixed top left */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed top-[72px] left-4 z-40 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 active:scale-95 transition-transform"
-        aria-label="Open menu"
-      >
-        <Menu className="w-5 h-5 text-gray-700" />
-      </button>
-
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -295,7 +286,7 @@ export default function Home() {
         <div className={cn(
           "transform origin-center transition-transform",
           // Responsive scaling: maximize on mobile
-          "scale-[0.7] sm:scale-[0.75] md:scale-[0.8] lg:scale-[0.9] xl:scale-100"
+          "scale-[0.8] sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100"
         )}>
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
@@ -340,6 +331,15 @@ export default function Home() {
 
         {/* Floating Export Panel - Mobile: single row centered at bottom */}
         <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3">
+          {/* Settings Button - Mobile only */}
+          <Button
+            size="default"
+            className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
+
           {/* Preview Animation Button */}
           {isPreviewMode ? (
             <Button
