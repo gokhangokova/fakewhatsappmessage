@@ -1014,45 +1014,125 @@ export function TabbedSidebar({
                 icon={Users}
                 defaultOpen={false}
               >
-                {/* Sender */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.senderYou}</Label>
-                  <div className="flex items-center gap-3">
-                    <AvatarUpload
-                      value={sender.avatar}
-                      onChange={(avatar) => setSender({ ...sender, avatar })}
-                      fallback={sender.name}
-                      variant="primary"
-                      language={language}
-                    />
-                    <DebouncedInput
-                      value={sender.name}
-                      onChange={(name) => setSender({ ...sender, name })}
-                      className="flex-1"
-                      placeholder="Your name"
-                    />
+                {/* Chat Type Toggle - Only for WhatsApp */}
+                {platform === 'whatsapp' && groupSettings && toggleGroupChat && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Chat Tipi</Label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleGroupChat(false)}
+                        className={cn(
+                          'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                          !groupSettings.isGroupChat
+                            ? 'bg-[#d4f5e2] text-[#128C7E]'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        )}
+                      >
+                        <Users className="w-4 h-4" />
+                        <span>1-1</span>
+                      </button>
+                      <button
+                        onClick={() => toggleGroupChat(true)}
+                        className={cn(
+                          'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                          groupSettings.isGroupChat
+                            ? 'bg-[#d4f5e2] text-[#128C7E]'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        )}
+                      >
+                        <Users2 className="w-4 h-4" />
+                        <span>Grup</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Receiver */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.receiver}</Label>
-                  <div className="flex items-center gap-3">
-                    <AvatarUpload
-                      value={receiver.avatar}
-                      onChange={(avatar) => setReceiver({ ...receiver, avatar })}
-                      fallback={receiver.name}
-                      variant="secondary"
-                      language={language}
-                    />
-                    <DebouncedInput
-                      value={receiver.name}
-                      onChange={(name) => setReceiver({ ...receiver, name })}
-                      className="flex-1"
-                      placeholder="Their name"
-                    />
-                  </div>
-                </div>
+                {/* Group Chat Settings */}
+                {groupSettings?.isGroupChat && setGroupSettings ? (
+                  <>
+                    {/* Group Name */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Grup Adı</Label>
+                      <DebouncedInput
+                        value={groupSettings.groupName}
+                        onChange={(groupName) => setGroupSettings({ groupName })}
+                        placeholder="Grup adını girin..."
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Participants */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+                        Katılımcılar ({groupSettings.participants.length})
+                      </Label>
+                      <div className="space-y-2">
+                        {groupSettings.participants.map((participant) => (
+                          <div
+                            key={participant.id}
+                            className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                          >
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                              style={{ backgroundColor: participant.color }}
+                            >
+                              {participant.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="flex-1 text-sm font-medium">{participant.name}</span>
+                            {participant.id === 'me' && (
+                              <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded">Sen</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        💡 Katılımcı ekleme/çıkarma yakında...
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Sender */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.senderYou}</Label>
+                      <div className="flex items-center gap-3">
+                        <AvatarUpload
+                          value={sender.avatar}
+                          onChange={(avatar) => setSender({ ...sender, avatar })}
+                          fallback={sender.name}
+                          variant="primary"
+                          language={language}
+                        />
+                        <DebouncedInput
+                          value={sender.name}
+                          onChange={(name) => setSender({ ...sender, name })}
+                          className="flex-1"
+                          placeholder="Your name"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Receiver */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.receiver}</Label>
+                      <div className="flex items-center gap-3">
+                        <AvatarUpload
+                          value={receiver.avatar}
+                          onChange={(avatar) => setReceiver({ ...receiver, avatar })}
+                          fallback={receiver.name}
+                          variant="secondary"
+                          language={language}
+                        />
+                        <DebouncedInput
+                          value={receiver.name}
+                          onChange={(name) => setReceiver({ ...receiver, name })}
+                          className="flex-1"
+                          placeholder="Their name"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </CollapsibleSection>
 
               {/* Messages Section */}
@@ -1308,55 +1388,6 @@ export function TabbedSidebar({
                   icon={Sparkles}
                   defaultOpen={false}
                 >
-                  {/* Chat Type Toggle */}
-                  {groupSettings && toggleGroupChat && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Chat Tipi</Label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => toggleGroupChat(false)}
-                          className={cn(
-                            'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                            !groupSettings.isGroupChat
-                              ? 'bg-[#d4f5e2] text-[#128C7E]'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          )}
-                        >
-                          <Users className="w-4 h-4" />
-                          <span>1-1</span>
-                        </button>
-                        <button
-                          onClick={() => toggleGroupChat(true)}
-                          className={cn(
-                            'flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                            groupSettings.isGroupChat
-                              ? 'bg-[#d4f5e2] text-[#128C7E]'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          )}
-                        >
-                          <Users2 className="w-4 h-4" />
-                          <span>Grup</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Group Name Input (only when group chat is enabled) */}
-                  {groupSettings?.isGroupChat && setGroupSettings && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Grup Adı</Label>
-                      <DebouncedInput
-                        value={groupSettings.groupName}
-                        onChange={(groupName) => setGroupSettings({ groupName })}
-                        placeholder="Grup adını girin..."
-                        className="w-full"
-                      />
-                      <p className="text-xs text-gray-400">
-                        👥 {groupSettings.participants.length} katılımcı
-                      </p>
-                    </div>
-                  )}
-
                   {/* Status */}
                   <div className="space-y-2">
                     <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.status}</Label>
