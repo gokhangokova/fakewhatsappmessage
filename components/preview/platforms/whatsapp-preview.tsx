@@ -306,20 +306,38 @@ const AndroidWhatsAppHeader = ({
       
       {/* Avatar */}
       <Avatar className="w-[40px] h-[40px]">
-        {isGroupChat && groupIcon ? (
-          <AvatarImage src={groupIcon} />
-        ) : isImageAvatar(receiver.avatar) ? (
-          <AvatarImage src={receiver.avatar!} />
+        {isGroupChat ? (
+          // Group chat avatar
+          <>
+            {groupIcon && !groupIcon.startsWith('color:') && (
+              <AvatarImage src={groupIcon} />
+            )}
+            <AvatarFallback
+              className="text-[16px] font-medium text-white"
+              style={{
+                backgroundColor: groupIcon?.startsWith('color:') ? groupIcon.replace('color:', '') : '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {groupName?.charAt(0).toUpperCase() || 'G'}
+            </AvatarFallback>
+          </>
         ) : (
-          <AvatarFallback
-            className="text-[16px] font-medium text-white"
-            style={{
-              backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
-              color: '#FFFFFF',
-            }}
-          >
-            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
-          </AvatarFallback>
+          // 1-1 chat avatar
+          <>
+            {isImageAvatar(receiver.avatar) && (
+              <AvatarImage src={receiver.avatar!} />
+            )}
+            <AvatarFallback
+              className="text-[16px] font-medium text-white"
+              style={{
+                backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {receiver.name?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </>
         )}
       </Avatar>
 
@@ -410,20 +428,38 @@ const IOSWhatsAppHeader = ({
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
 
       <Avatar className="w-[36px] h-[36px]">
-        {isGroupChat && groupIcon ? (
-          <AvatarImage src={groupIcon} />
-        ) : isImageAvatar(receiver.avatar) ? (
-          <AvatarImage src={receiver.avatar!} />
+        {isGroupChat ? (
+          // Group chat avatar
+          <>
+            {groupIcon && !groupIcon.startsWith('color:') && (
+              <AvatarImage src={groupIcon} />
+            )}
+            <AvatarFallback
+              className="text-[14px] font-medium text-white"
+              style={{
+                backgroundColor: groupIcon?.startsWith('color:') ? groupIcon.replace('color:', '') : '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {groupName?.charAt(0).toUpperCase() || 'G'}
+            </AvatarFallback>
+          </>
         ) : (
-          <AvatarFallback
-            className="text-[14px] font-medium text-white"
-            style={{
-              backgroundColor: getAvatarColor(receiver.avatar) || (darkMode ? '#2A3942' : '#DFE5E7'),
-              color: getAvatarColor(receiver.avatar) ? '#FFFFFF' : (darkMode ? '#8696A0' : '#54656F'),
-            }}
-          >
-            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
-          </AvatarFallback>
+          // 1-1 chat avatar
+          <>
+            {isImageAvatar(receiver.avatar) && (
+              <AvatarImage src={receiver.avatar!} />
+            )}
+            <AvatarFallback
+              className="text-[14px] font-medium text-white"
+              style={{
+                backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {receiver.name?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </>
         )}
       </Avatar>
       

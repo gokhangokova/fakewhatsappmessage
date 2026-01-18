@@ -1271,8 +1271,8 @@ export function TabbedSidebar({
                           value={receiver.avatar}
                           onChange={(avatar) => setReceiver({ ...receiver, avatar })}
                           fallback={receiver.name}
-                          variant="secondary"
                           language={language}
+                          accentColor="#128C7E"
                         />
                         <DebouncedInput
                           value={receiver.name}
