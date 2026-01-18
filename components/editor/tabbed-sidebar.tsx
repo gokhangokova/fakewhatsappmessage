@@ -1741,7 +1741,12 @@ export function TabbedSidebar({
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-4 pt-0 h-[50vh] overflow-hidden">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl px-0 pb-4 pt-0 h-[50vh] overflow-hidden"
+          hideOverlay={true}
+          hideCloseButton={true}
+        >
           {/* Drag handle */}
           <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto my-3" />
 
