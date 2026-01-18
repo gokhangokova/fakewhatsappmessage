@@ -17,6 +17,9 @@ import { useTranslations } from '@/lib/i18n/translations'
 import { AnimatedChatPreview } from '@/components/video/animated-chat-preview'
 import type { AnimatedChatPreviewRef, VideoExportSettings } from '@/components/video'
 
+// Global session ID for video recording workflow (survives React StrictMode remounts)
+let globalWorkflowSessionId: string | null = null
+
 // Dynamic import for VideoExportPanel (doesn't need ref)
 const VideoExportPanel = dynamic(
   () => import('@/components/video/video-export-panel').then(mod => mod.VideoExportPanel),
@@ -98,7 +101,7 @@ export default function Home() {
   
   const animatedPreviewRef = useRef<AnimatedChatPreviewRef>(null)
   const videoPreviewContainerRef = useRef<HTMLDivElement>(null)
-  
+
   const {
     isRecording,
     isProcessing,
@@ -197,51 +200,62 @@ export default function Home() {
 
   // Video Export Handlers
   const handleStartVideoRecording = useCallback(async () => {
+    // Generate unique session ID for this workflow
+    const newSessionId = `workflow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // Guard: If there's already an active global session, skip this call (React StrictMode duplicate)
+    if (globalWorkflowSessionId !== null) {
+      console.log('Video workflow already in progress (session:', globalWorkflowSessionId, '), skipping duplicate call')
+      return
+    }
+
+    // Claim this session globally
+    globalWorkflowSessionId = newSessionId
+    console.log('Starting video workflow with session:', newSessionId)
+
     setIsRecordingMode(true)
     setIsVideoMode(true)
     setIsPreviewMode(false)
 
-    // Wait for component to mount and render with correct props
-    // This is important when switching between chat types (1-1 vs Group)
-    // We need to wait for React to complete the render cycle
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Wait for React to complete the render cycle (single frame)
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
 
     // Wait for ref to be available (component mounted)
     let attempts = 0
-    const maxAttempts = 20
+    const maxAttempts = 10
     while (!animatedPreviewRef.current && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await new Promise(resolve => setTimeout(resolve, 20))
       attempts++
     }
 
     if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
-      // Additional wait to ensure DOM is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 200))
-
+      // Start recording
       await startRecording(videoPreviewContainerRef.current, {
         format: videoSettings.format,
         quality: videoSettings.quality,
         frameRate: 30,
       })
 
-      // Additional wait to ensure recording has started before animation
-      await new Promise(resolve => setTimeout(resolve, 100))
-
+      // Start animation immediately after recording starts
       animatedPreviewRef.current.startAnimation()
     }
   }, [startRecording, videoSettings.format, videoSettings.quality])
 
   const handleStopVideoRecording = useCallback(() => {
+    console.log('Stopping video workflow')
     animatedPreviewRef.current?.stopAnimation()
     stopRecording()
     setIsVideoMode(false)
     setIsRecordingMode(false)
+    globalWorkflowSessionId = null  // Clear global session
   }, [stopRecording])
 
   const handleResetVideoAnimation = useCallback(() => {
+    console.log('Resetting video workflow')
     animatedPreviewRef.current?.resetAnimation()
     resetVideo()
     setIsVideoMode(false)
+    globalWorkflowSessionId = null  // Clear global session
     setIsRecordingMode(false)
   }, [resetVideo])
 
@@ -250,11 +264,13 @@ export default function Home() {
       handlePreviewComplete()
       return
     }
-    
+
     setTimeout(() => {
+      console.log('Animation complete, stopping recording')
       stopRecording()
       setIsVideoMode(false)
       setIsRecordingMode(false)
+      globalWorkflowSessionId = null  // Clear global session
     }, videoSettings.endPauseDuration)
   }, [stopRecording, videoSettings.endPauseDuration, isPreviewMode, handlePreviewComplete])
 

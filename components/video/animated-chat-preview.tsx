@@ -788,14 +788,17 @@ const AndroidWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnTy
 }
 
 // Animation state machine
-type AnimationPhase = 
-  | 'idle' 
+type AnimationPhase =
+  | 'idle'
   | 'waiting_before_typing'  // Mesajdan önce bekleme
   | 'typing'                  // Typing gösteriliyor
   | 'waiting_after_typing'    // Typing'den sonra kısa bekleme
   | 'showing_message'         // Mesaj gösteriliyor (animasyon)
   | 'waiting_after_message'   // Mesaj animasyonu bittikten sonra bekleme
   | 'complete'
+
+// Global animation session ID - prevents duplicate animations across React StrictMode remounts
+let globalAnimationSessionId: string | null = null
 
 // Main Animated Chat Preview Component
 export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedChatPreviewProps>(({
@@ -833,17 +836,14 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const [contentOffset, setContentOffset] = useState(0)
-  const [isReady, setIsReady] = useState(false)
+  const [isReady, setIsReady] = useState(true)
 
-  // Mark component as ready after initial render with correct props
+  // Mark component as ready after props change
+  // Only reset when critical props change (isGroupChat), not on every render
   useEffect(() => {
-    setIsReady(false)
-    // Short delay to ensure props are fully applied
-    const timer = setTimeout(() => {
-      setIsReady(true)
-    }, 50)
-    return () => clearTimeout(timer)
-  }, [isGroupChat, messages.length])
+    // Component is immediately ready - no artificial delay needed
+    setIsReady(true)
+  }, [isGroupChat])
 
   // Auto-scroll to bottom when new messages appear or typing indicator shows
   useEffect(() => {
@@ -869,31 +869,41 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     }
   }, [visibleMessageCount, showTyping, forVideoExport])
 
+  // Ref for animation session tracking
+  const animationSessionIdRef = useRef<string | null>(null)
+
   const startAnimation = useCallback(() => {
-    // Ensure component is ready before starting animation
-    if (!isReady) {
-      console.log('AnimatedChatPreview: Waiting for component to be ready...')
-      // Retry after a short delay
-      setTimeout(() => {
-        setVisibleMessageCount(0)
-        setShowTyping(false)
-        setIsAnimating(true)
-        setPhase('waiting_before_typing')
-        animationStoppedRef.current = false
-        onAnimationStart?.()
-      }, 100)
+    // Generate unique session ID for this animation
+    const newSessionId = `animation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // Guard: If there's already an active global session, skip this call (React StrictMode duplicate)
+    if (globalAnimationSessionId !== null) {
+      console.log('Animation already in progress (session:', globalAnimationSessionId, '), skipping duplicate call')
       return
     }
+
+    // Claim this session globally
+    globalAnimationSessionId = newSessionId
+    animationSessionIdRef.current = newSessionId
+
+    console.log('Starting animation with session:', newSessionId)
+
+    // Start animation immediately - component is always ready
     setVisibleMessageCount(0)
     setShowTyping(false)
+    setContentOffset(0)
     setIsAnimating(true)
     setPhase('waiting_before_typing')
     animationStoppedRef.current = false
     onAnimationStart?.()
-  }, [onAnimationStart, isReady])
+  }, [onAnimationStart])
 
   const stopAnimation = useCallback(() => {
+    console.log('Stopping animation, session:', animationSessionIdRef.current)
     animationStoppedRef.current = true
+    // Clear global session
+    globalAnimationSessionId = null
+    animationSessionIdRef.current = null
     setIsAnimating(false)
     setShowTyping(false)
     setTypingUserName(undefined)
@@ -901,11 +911,15 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   }, [])
 
   const resetAnimation = useCallback(() => {
+    console.log('Resetting animation')
     setShowTyping(false)
     setTypingUserName(undefined)
     setIsAnimating(false)
     setPhase('idle')
     animationStoppedRef.current = false
+    // Clear sessions
+    globalAnimationSessionId = null
+    animationSessionIdRef.current = null
     setVisibleMessageCount(0)
     setContentOffset(0)
   }, [])
@@ -931,6 +945,9 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         }
         setTimeout(() => {
           setIsAnimating(false)
+          // Clear sessions on complete
+          globalAnimationSessionId = null
+          animationSessionIdRef.current = null
           onAnimationComplete?.()
         }, 500)
       }, 500)

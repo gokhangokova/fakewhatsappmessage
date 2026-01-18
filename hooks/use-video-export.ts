@@ -7,6 +7,9 @@ import { useState, useRef, useCallback } from 'react'
 const loadHtmlToImage = () => import('html-to-image')
 const loadMp4Muxer = () => import('mp4-muxer')
 
+// Global recording session ID - prevents duplicate recordings across React StrictMode remounts
+let globalRecordingSessionId: string | null = null
+
 export type VideoFormat = 'mp4' | 'gif'
 export type VideoQuality = 'low' | 'medium' | 'high'
 
@@ -61,6 +64,8 @@ export function useVideoExport(): UseVideoExportReturn {
   const isStoppedRef = useRef(false)
   const dimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 })
   const captureLoopRef = useRef<number | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
+  const firstFrameCapturedRef = useRef(false)
 
   // Capture element to data URL with quality-based pixelRatio
   const captureFrame = useCallback(async (element: HTMLElement, pixelRatio: number): Promise<string | null> => {
@@ -314,6 +319,21 @@ export function useVideoExport(): UseVideoExportReturn {
     element: HTMLElement,
     options: Partial<VideoExportOptions> = {}
   ) => {
+    // Generate unique session ID for this recording
+    const newSessionId = `recording-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    // Guard: If there's already an active global session, skip this call (React StrictMode duplicate)
+    if (globalRecordingSessionId !== null) {
+      console.log('Recording already in progress (session:', globalRecordingSessionId, '), skipping duplicate call')
+      return
+    }
+
+    // Claim this session globally
+    globalRecordingSessionId = newSessionId
+    sessionIdRef.current = newSessionId
+
+    console.log('Starting recording with session:', newSessionId)
+
     const {
       format = 'mp4',
       quality = 'medium',
@@ -322,8 +342,8 @@ export function useVideoExport(): UseVideoExportReturn {
 
     const pixelRatio = QUALITY_SETTINGS[quality].pixelRatio
 
-    console.log('Starting recording with format:', format, 'quality:', quality, 'frameRate:', frameRate, 'pixelRatio:', pixelRatio)
-    
+    console.log('Recording config - format:', format, 'quality:', quality, 'frameRate:', frameRate, 'pixelRatio:', pixelRatio)
+
     setError(null)
     setVideoBlob(null)
     setProgress(0)
@@ -331,7 +351,7 @@ export function useVideoExport(): UseVideoExportReturn {
     setIsRecording(true)
     setCurrentFormat(format)
     framesRef.current = []
-    startTimeRef.current = Date.now()
+    firstFrameCapturedRef.current = false
     formatRef.current = format
     settingsRef.current = { quality, frameRate }
     elementRef.current = element
@@ -339,13 +359,13 @@ export function useVideoExport(): UseVideoExportReturn {
 
     try {
       const rect = element.getBoundingClientRect()
-      
+
       // Apply pixelRatio to dimensions for higher resolution
       const scaledWidth = Math.round(rect.width * pixelRatio)
       const scaledHeight = Math.round(rect.height * pixelRatio)
-      
+
       dimensionsRef.current = { width: scaledWidth, height: scaledHeight }
-      
+
       // Create canvas for dimensions
       const canvas = document.createElement('canvas')
       canvas.width = scaledWidth
@@ -360,8 +380,17 @@ export function useVideoExport(): UseVideoExportReturn {
       const targetFrameInterval = 1000 / frameRate // e.g., 33.33ms for 30fps
       let lastFrameTime = 0
 
+      // Store session ID for closure
+      const currentSessionId = newSessionId
+
       // Frame capture with rate limiting
       const captureVideoFrame = async (currentTime: number) => {
+        // Check if this session is still valid
+        if (sessionIdRef.current !== currentSessionId) {
+          console.log('Session mismatch, stopping capture loop for:', currentSessionId)
+          return
+        }
+
         if (isStoppedRef.current || !elementRef.current) {
           return
         }
@@ -370,12 +399,19 @@ export function useVideoExport(): UseVideoExportReturn {
         const elapsed = currentTime - lastFrameTime
 
         if (elapsed >= targetFrameInterval || lastFrameTime === 0) {
+          // Set start time on FIRST frame capture
+          if (!firstFrameCapturedRef.current) {
+            startTimeRef.current = Date.now()
+            firstFrameCapturedRef.current = true
+            console.log('First frame captured for session:', currentSessionId)
+          }
+
           const timestamp = Date.now() - startTimeRef.current
 
           try {
             const dataUrl = await captureFrame(elementRef.current, pixelRatio)
 
-            if (dataUrl && !isStoppedRef.current) {
+            if (dataUrl && !isStoppedRef.current && sessionIdRef.current === currentSessionId) {
               framesRef.current.push({
                 dataUrl,
                 timestamp
@@ -391,41 +427,51 @@ export function useVideoExport(): UseVideoExportReturn {
           setProgress(Math.min(8, elapsedSec * 0.3))
         }
 
-        // Continue capturing if not stopped
-        if (!isStoppedRef.current) {
+        // Continue capturing if not stopped and session is still valid
+        if (!isStoppedRef.current && sessionIdRef.current === currentSessionId) {
           captureLoopRef.current = requestAnimationFrame(captureVideoFrame)
         }
       }
 
       // Start capturing with requestAnimationFrame for smooth throttling
       captureLoopRef.current = requestAnimationFrame(captureVideoFrame)
-      
+
     } catch (err) {
       console.error('Start recording error:', err)
       setError(err instanceof Error ? err.message : 'Failed to start')
       setIsRecording(false)
+      // Clear global session on error
+      if (globalRecordingSessionId === newSessionId) {
+        globalRecordingSessionId = null
+      }
+      sessionIdRef.current = null
     }
   }, [captureFrame])
 
   const stopRecording = useCallback(async () => {
-    console.log('Stopping recording...')
+    console.log('Stopping recording, session:', sessionIdRef.current)
     isStoppedRef.current = true
-    
+
+    // Clear global session
+    globalRecordingSessionId = null
+    const currentSession = sessionIdRef.current
+    sessionIdRef.current = null
+
     // Cancel any pending capture
     if (captureLoopRef.current) {
       cancelAnimationFrame(captureLoopRef.current)
       captureLoopRef.current = null
     }
-    
+
     setIsProcessing(true)
-    
+
     try {
       const frames = framesRef.current
-      
+
       if (frames.length > 0 && dimensionsRef.current.width > 0) {
         const actualDuration = frames[frames.length - 1].timestamp / 1000 // Convert to seconds
         console.log('Creating video from', frames.length, 'frames at', dimensionsRef.current.width, 'x', dimensionsRef.current.height, 'duration:', actualDuration.toFixed(1), 's')
-        
+
         const blob = formatRef.current === 'gif'
           ? await createGIF(
               frames,
@@ -437,7 +483,7 @@ export function useVideoExport(): UseVideoExportReturn {
               dimensionsRef.current.width,
               dimensionsRef.current.height
             )
-        
+
         setVideoBlob(blob)
         setVideoDuration(actualDuration)
         setProgress(100)
@@ -449,7 +495,7 @@ export function useVideoExport(): UseVideoExportReturn {
       console.error('Video creation error:', err)
       setError(err instanceof Error ? err.message : 'Failed to create video')
     }
-    
+
     setIsProcessing(false)
     setIsRecording(false)
   }, [createMP4, createGIF])
@@ -477,13 +523,18 @@ export function useVideoExport(): UseVideoExportReturn {
 
   const reset = useCallback(() => {
     console.log('Resetting video export state')
-    
+
     // Cancel any pending capture
     if (captureLoopRef.current) {
       cancelAnimationFrame(captureLoopRef.current)
       captureLoopRef.current = null
     }
-    
+
+    // Clear sessions
+    globalRecordingSessionId = null
+    sessionIdRef.current = null
+    firstFrameCapturedRef.current = false
+
     setVideoBlob(null)
     setVideoDuration(0)
     setProgress(0)

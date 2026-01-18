@@ -16,6 +16,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 import {
   DndContext,
@@ -836,8 +842,17 @@ export function TabbedSidebar({
   const [activeTab, setActiveTab] = useState<TabType>('editor')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
-  
+  const [isMobile, setIsMobile] = useState(false)
+
   const backgroundType = whatsappSettings?.backgroundType || 'doodle'
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024) // lg breakpoint
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Close sidebar on escape key
   useEffect(() => {
@@ -853,15 +868,15 @@ export function TabbedSidebar({
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
-    
+
     const handleScroll = () => {
       scrollPositionRef.current = container.scrollTop
     }
-    
+
     container.addEventListener('scroll', handleScroll, { passive: true })
     return () => container.removeEventListener('scroll', handleScroll)
   }, [])
-  
+
   useEffect(() => {
     requestAnimationFrame(() => {
       if (scrollContainerRef.current && scrollPositionRef.current > 0) {
@@ -1004,70 +1019,47 @@ export function TabbedSidebar({
     }
   }
 
-  return (
-    <div className={cn(
-      // Mobile: Full-screen slide-in panel
-      "lg:fixed lg:left-4 lg:top-20 lg:z-50 lg:w-80",
-      // Mobile positioning
-      "fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[340px]",
-      // Mobile animation
-      "transform transition-transform duration-300 ease-in-out",
-      isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-      // Hide on mobile when closed (but always show on lg+)
-      !isOpen && "lg:block"
-    )}>
-      <div className={cn(
-        "bg-white shadow-2xl border border-gray-200 overflow-hidden h-full lg:h-auto",
-        "lg:rounded-2xl rounded-r-2xl"
-      )}>
-        {/* Tab Header */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('editor')}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
-              activeTab === 'editor'
-                ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
-                : 'text-gray-600 hover:bg-gray-50'
-            )}
-          >
-            <Edit3 className="w-4 h-4" />
-            <span>{t.common.editor}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
-              activeTab === 'settings'
-                ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
-                : 'text-gray-600 hover:bg-gray-50'
-            )}
-          >
-            <FlaskConical className="w-4 h-4" />
-            <span>{t.common.settings}</span>
-          </button>
-          {/* Mobile Close Button */}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="lg:hidden flex items-center justify-center w-12 border-l border-gray-200 text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+  // Shared content that will be used in both mobile Sheet and desktop sidebar
+  const SidebarContent = (
+    <>
+      {/* Tab Header */}
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('editor')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
+            activeTab === 'editor'
+              ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
+              : 'text-gray-600 hover:bg-gray-50'
           )}
-        </div>
+        >
+          <Edit3 className="w-4 h-4" />
+          <span>{t.common.editor}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
+            activeTab === 'settings'
+              ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
+              : 'text-gray-600 hover:bg-gray-50'
+          )}
+        >
+          <FlaskConical className="w-4 h-4" />
+          <span>{t.common.settings}</span>
+        </button>
+      </div>
 
-        {/* Content */}
-        <div ref={scrollContainerRef} className={cn(
-          "p-3 space-y-2 overflow-y-auto",
-          // Mobile: full height minus header and footer
-          "h-[calc(100vh-120px)] lg:h-auto",
-          // Desktop: max height
-          activeTab === 'settings' && onReset 
-            ? "lg:max-h-[calc(100vh-240px)]" 
-            : "lg:max-h-[calc(100vh-180px)]"
-        )}>
+      {/* Content */}
+      <div ref={scrollContainerRef} className={cn(
+        "p-3 space-y-2 overflow-y-auto",
+        // Mobile: full height minus header and footer (in sheet)
+        isMobile ? "max-h-[60vh]" : "",
+        // Desktop: max height
+        !isMobile && activeTab === 'settings' && onReset
+          ? "lg:max-h-[calc(100vh-240px)]"
+          : !isMobile ? "lg:max-h-[calc(100vh-180px)]" : ""
+      )}>
           {/* Editor Tab Content */}
           {activeTab === 'editor' && (
             <>
@@ -1742,6 +1734,32 @@ export function TabbedSidebar({
             </Button>
           </div>
         )}
+      </>
+    )
+
+  // Mobile: Bottom Sheet
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+        <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-8 pt-0 max-h-[85vh] overflow-hidden">
+          {/* Drag handle */}
+          <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto my-3" />
+
+          <SheetHeader className="sr-only">
+            <SheetTitle>{t.common.editor}</SheetTitle>
+          </SheetHeader>
+
+          {SidebarContent}
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  // Desktop: Fixed sidebar
+  return (
+    <div className="fixed left-4 top-20 z-50 w-80">
+      <div className="bg-white shadow-2xl border border-gray-200 overflow-hidden rounded-2xl">
+        {SidebarContent}
       </div>
     </div>
   )
