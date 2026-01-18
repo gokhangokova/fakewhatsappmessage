@@ -249,6 +249,7 @@ export default function Home() {
     return {
       ...whatsappSettings,
       groupName: groupSettings.groupName,
+      groupIcon: groupSettings.groupIcon,
       groupParticipants: groupSettings.participants?.map(p => ({
         id: p.id,
         name: p.name,

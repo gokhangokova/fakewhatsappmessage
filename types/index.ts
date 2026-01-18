@@ -218,6 +218,7 @@ export interface WhatsAppSettings {
   lastSeenTime?: Date
   // Group chat
   groupName?: string
+  groupIcon?: string
   groupParticipants?: User[]
 }
 
@@ -326,7 +327,7 @@ export const DEFAULT_GROUP_SETTINGS: GroupChatSettings = {
   createdBy: 'sender-1',
 }
 
-// Preset group icons
+// Preset group icons (emoji)
 export const PRESET_GROUP_ICONS = [
   '👨‍👩‍👧‍👦', // Family
   '👥',      // Group
@@ -340,6 +341,22 @@ export const PRESET_GROUP_ICONS = [
   '🍕',      // Food
   '❤️',      // Love
   '🏠',      // Home
+]
+
+// Preset group avatar illustrations (DiceBear API - bottts style for groups)
+export const GROUP_AVATAR_ILLUSTRATIONS = [
+  'https://api.dicebear.com/7.x/bottts/svg?seed=group1&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=group2&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=group3&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=group4&backgroundColor=ffd5dc',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=group5&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=group6&backgroundColor=c1f0c1',
+  'https://api.dicebear.com/7.x/shapes/svg?seed=team1&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/7.x/shapes/svg?seed=team2&backgroundColor=c0aede',
+  'https://api.dicebear.com/7.x/shapes/svg?seed=team3&backgroundColor=ffd5dc',
+  'https://api.dicebear.com/7.x/icons/svg?seed=work1&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/7.x/icons/svg?seed=work2&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/7.x/icons/svg?seed=work3&backgroundColor=c1f0c1',
 ]
 
 // Preset locations for quick selection
