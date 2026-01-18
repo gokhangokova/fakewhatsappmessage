@@ -1053,8 +1053,8 @@ export function TabbedSidebar({
       {/* Content */}
       <div ref={scrollContainerRef} className={cn(
         "p-3 space-y-2 overflow-y-auto",
-        // Mobile: full height minus header and footer (in sheet)
-        isMobile ? "max-h-[60vh]" : "",
+        // Mobile: content scrolls within the 50vh sheet (minus header ~60px and footer ~60px)
+        isMobile ? "max-h-[calc(50vh-120px)]" : "",
         // Desktop: max height
         !isMobile && activeTab === 'settings' && onReset
           ? "lg:max-h-[calc(100vh-240px)]"
@@ -1737,11 +1737,11 @@ export function TabbedSidebar({
       </>
     )
 
-  // Mobile: Bottom Sheet
+  // Mobile: Bottom Sheet - 50% of screen height
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-8 pt-0 max-h-[85vh] overflow-hidden">
+        <SheetContent side="bottom" className="rounded-t-2xl px-0 pb-4 pt-0 h-[50vh] overflow-hidden">
           {/* Drag handle */}
           <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto my-3" />
 
