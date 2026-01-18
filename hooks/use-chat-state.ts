@@ -372,14 +372,20 @@ export function useChatState() {
     }))
   }, [setState])
 
-  // Toggle group chat mode - also loads appropriate sample messages and resets participants
+  // Toggle group chat mode - also loads appropriate sample messages
   const toggleGroupChat = useCallback((isGroupChat: boolean) => {
     setState((prev) => ({
       ...prev,
       messages: isGroupChat ? defaultGroupMessages : defaultMessages,
-      groupSettings: isGroupChat
-        ? { ...DEFAULT_GROUP_SETTINGS, isGroupChat: true }
-        : { ...prev.groupSettings, isGroupChat: false },
+      groupSettings: {
+        ...prev.groupSettings,
+        isGroupChat,
+        // Only reset to defaults if switching TO group chat AND no participants exist yet
+        ...(isGroupChat && prev.groupSettings.participants.length === 0 ? {
+          groupName: DEFAULT_GROUP_SETTINGS.groupName,
+          participants: DEFAULT_GROUP_SETTINGS.participants,
+        } : {}),
+      },
     }))
   }, [setState])
 

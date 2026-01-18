@@ -128,26 +128,17 @@ export function AvatarUpload({
           <Avatar className={cn(sizeClasses[size], "ring-2 ring-transparent hover:ring-primary/50 transition-all")}>
             {value && !isColorAvatar ? (
               <AvatarImage src={value} />
-            ) : avatarColor ? (
-              <AvatarFallback
-                className={cn(textSizeClasses[size], "font-medium text-white")}
-                style={{ backgroundColor: avatarColor }}
-              >
-                {fallback?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            ) : (
-              <AvatarFallback
-                className={cn(
-                  textSizeClasses[size],
-                  'font-medium',
-                  variant === 'primary'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground'
-                )}
-              >
-                {fallback?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            )}
+            ) : null}
+            <AvatarFallback
+              className={cn(
+                textSizeClasses[size],
+                'font-medium',
+                avatarColor || accentColor ? 'text-white' : (variant === 'primary' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground')
+              )}
+              style={avatarColor || accentColor ? { backgroundColor: avatarColor || accentColor } : undefined}
+            >
+              {fallback?.charAt(0).toUpperCase() || 'U'}
+            </AvatarFallback>
           </Avatar>
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <Camera className={cn(size === 'sm' ? 'w-3 h-3' : 'w-4 h-4', "text-white")} />
@@ -172,23 +163,23 @@ export function AvatarUpload({
           </div>
           
           {/* Current Avatar Preview */}
-          {value && (
-            <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
-              <Avatar className="w-12 h-12">
-                {isColorAvatar ? (
-                  <AvatarFallback
-                    className="text-lg font-medium text-white"
-                    style={{ backgroundColor: avatarColor || undefined }}
-                  >
-                    {fallback?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                ) : (
-                  <AvatarImage src={value} />
+          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+            <Avatar className="w-12 h-12">
+              {value && !isColorAvatar ? (
+                <AvatarImage src={value} />
+              ) : null}
+              <AvatarFallback
+                className={cn(
+                  "text-lg font-medium",
+                  avatarColor || accentColor ? "text-white" : "bg-muted-foreground/20"
                 )}
-              </Avatar>
-              <span className="text-xs text-muted-foreground">{t.avatar.currentAvatar}</span>
-            </div>
-          )}
+                style={avatarColor || accentColor ? { backgroundColor: avatarColor || accentColor } : undefined}
+              >
+                {fallback?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-muted-foreground">{t.avatar.currentAvatar}</span>
+          </div>
 
           {/* Upload Button */}
           <input
