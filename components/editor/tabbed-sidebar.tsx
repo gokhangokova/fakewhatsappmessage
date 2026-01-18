@@ -1347,53 +1347,6 @@ export function TabbedSidebar({
                   </div>
                 </div>
 
-                {/* Toggles */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
-                    <span className="text-sm text-gray-700">{t.settings.darkMode}</span>
-                    <Switch 
-                      checked={darkMode} 
-                      onCheckedChange={setDarkMode}
-                      className="data-[state=checked]:bg-[#25D366]"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
-                    <span className="text-sm text-gray-700">{t.settings.transparentBg}</span>
-                    <Switch 
-                      checked={transparentBg} 
-                      onCheckedChange={setTransparentBg}
-                      className="data-[state=checked]:bg-[#25D366]"
-                    />
-                  </div>
-                </div>
-
-                {/* Font Family */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.fontFamily}</Label>
-                  <select
-                    value={fontFamily}
-                    onChange={(e) => setFontFamily(e.target.value as FontFamily)}
-                    className="w-full px-3 py-2.5 rounded-lg text-sm bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] focus:outline-none cursor-pointer appearance-none transition-colors"
-                    style={{ 
-                      fontFamily: SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style,
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      paddingRight: '36px',
-                    }}
-                  >
-                    {SUPPORTED_FONTS.map((font) => (
-                      <option 
-                        key={font.code} 
-                        value={font.code}
-                        style={{ fontFamily: font.style }}
-                      >
-                        {font.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* Battery Level */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -1468,6 +1421,53 @@ export function TabbedSidebar({
                   icon={Sparkles}
                   defaultOpen={false}
                 >
+                  {/* Dark Mode & Transparent Bg Toggles */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                      <span className="text-sm text-gray-700">{t.settings.darkMode}</span>
+                      <Switch
+                        checked={darkMode}
+                        onCheckedChange={setDarkMode}
+                        className="data-[state=checked]:bg-[#25D366]"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                      <span className="text-sm text-gray-700">{t.settings.transparentBg}</span>
+                      <Switch
+                        checked={transparentBg}
+                        onCheckedChange={setTransparentBg}
+                        className="data-[state=checked]:bg-[#25D366]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Font Family */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.fontFamily}</Label>
+                    <select
+                      value={fontFamily}
+                      onChange={(e) => setFontFamily(e.target.value as FontFamily)}
+                      className="w-full px-3 py-2.5 rounded-lg text-sm bg-gray-50 border border-gray-200 hover:border-gray-300 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] focus:outline-none cursor-pointer appearance-none transition-colors"
+                      style={{
+                        fontFamily: SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 12px center',
+                        paddingRight: '36px',
+                      }}
+                    >
+                      {SUPPORTED_FONTS.map((font) => (
+                        <option
+                          key={font.code}
+                          value={font.code}
+                          style={{ fontFamily: font.style }}
+                        >
+                          {font.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Status */}
                   <div className="space-y-2">
                     <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.status}</Label>
