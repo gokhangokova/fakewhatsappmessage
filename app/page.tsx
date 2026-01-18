@@ -344,6 +344,7 @@ export default function Home() {
     // Mobile props
     isOpen: sidebarOpen,
     onClose: handleSidebarClose,
+    onOpenChange: setSidebarOpen,
   }), [
     platform, sender, setSender, receiver, setReceiver, messages, setMessages,
     darkMode, setDarkMode, mobileView, setMobileView, timeFormat, setTimeFormat,
@@ -351,7 +352,7 @@ export default function Home() {
     language, setLanguage, fontFamily, setFontFamily, batteryLevel, setBatteryLevel,
     deviceType, setDeviceType, groupSettings, setGroupSettings, toggleGroupChat,
     addParticipant, removeParticipant, updateParticipant, resetToDefaults,
-    sidebarOpen, handleSidebarClose
+    sidebarOpen, handleSidebarClose, setSidebarOpen
   ])
 
   return (
@@ -363,15 +364,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Tabbed Sidebar - Responsive */}
+      {/* Tabbed Sidebar - Responsive (Sheet on mobile, fixed on desktop) */}
       <TabbedSidebar {...sidebarProps} />
 
       {/* Preview Panel - Full width on mobile */}

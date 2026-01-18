@@ -18,7 +18,9 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - `components/preview/phone-preview.tsx` - Genel telefon çerçevesi
 
 ### Editor
-- `components/editor/tabbed-sidebar.tsx` - Sol panel (Editor, Settings, Export sekmeleri)
+- `components/editor/tabbed-sidebar.tsx` - Sol panel (Editor, Settings sekmeleri)
+  - Desktop: Fixed sidebar (sol taraf)
+  - Mobil: Bottom sheet (shadcn Sheet component)
 
 ### UI Components
 - `components/ui/avatar.tsx` - Radix Avatar wrapper (delayMs={0} ile)
