@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { toPng } from 'html-to-image'
-import { Muxer, ArrayBufferTarget } from 'mp4-muxer'
+
+// Dynamic imports to reduce initial bundle size
+// html-to-image: ~50KB, mp4-muxer: ~120KB
+const loadHtmlToImage = () => import('html-to-image')
+const loadMp4Muxer = () => import('mp4-muxer')
 
 export type VideoFormat = 'mp4' | 'gif'
 export type VideoQuality = 'low' | 'medium' | 'high'
@@ -62,6 +65,8 @@ export function useVideoExport(): UseVideoExportReturn {
   // Capture element to data URL with quality-based pixelRatio
   const captureFrame = useCallback(async (element: HTMLElement, pixelRatio: number): Promise<string | null> => {
     try {
+      // Lazy load html-to-image
+      const { toPng } = await loadHtmlToImage()
       const dataUrl = await toPng(element, {
         pixelRatio: pixelRatio,
         cacheBust: true,
@@ -115,6 +120,9 @@ export function useVideoExport(): UseVideoExportReturn {
     if (typeof VideoEncoder === 'undefined') {
       throw new Error('WebCodecs API is not supported in this browser. Please use Chrome 94+ or Edge 94+.')
     }
+
+    // Lazy load mp4-muxer
+    const { Muxer, ArrayBufferTarget } = await loadMp4Muxer()
 
     // Create muxer
     const target = new ArrayBufferTarget()
@@ -347,45 +355,50 @@ export function useVideoExport(): UseVideoExportReturn {
       console.log('Recording dimensions:', scaledWidth, 'x', scaledHeight)
 
       setProgressText('Capturing frames...')
-      
-      // Continuous frame capture - capture as fast as possible
-      const captureVideoFrame = async () => {
+
+      // Calculate target frame interval for throttling
+      const targetFrameInterval = 1000 / frameRate // e.g., 33.33ms for 30fps
+      let lastFrameTime = 0
+
+      // Frame capture with rate limiting
+      const captureVideoFrame = async (currentTime: number) => {
         if (isStoppedRef.current || !elementRef.current) {
           return
         }
-        
-        const captureStartTime = Date.now()
-        const timestamp = captureStartTime - startTimeRef.current
-        
-        try {
-          const dataUrl = await captureFrame(elementRef.current, pixelRatio)
-          
-          if (dataUrl && !isStoppedRef.current) {
-            framesRef.current.push({
-              dataUrl,
-              timestamp
-            })
+
+        // Throttle: only capture if enough time has passed since last frame
+        const elapsed = currentTime - lastFrameTime
+
+        if (elapsed >= targetFrameInterval || lastFrameTime === 0) {
+          const timestamp = Date.now() - startTimeRef.current
+
+          try {
+            const dataUrl = await captureFrame(elementRef.current, pixelRatio)
+
+            if (dataUrl && !isStoppedRef.current) {
+              framesRef.current.push({
+                dataUrl,
+                timestamp
+              })
+              lastFrameTime = currentTime
+            }
+          } catch (err) {
+            console.error('Frame capture error:', err)
           }
-        } catch (err) {
-          console.error('Frame capture error:', err)
+
+          // Update progress
+          const elapsedSec = (Date.now() - startTimeRef.current) / 1000
+          setProgress(Math.min(8, elapsedSec * 0.3))
         }
-        
-        // Update progress
-        const elapsed = (Date.now() - startTimeRef.current) / 1000
-        setProgress(Math.min(8, elapsed * 0.3))
-        
+
         // Continue capturing if not stopped
         if (!isStoppedRef.current) {
-          // Use requestAnimationFrame for next capture to allow UI updates
-          captureLoopRef.current = requestAnimationFrame(() => {
-            // Small delay to prevent overwhelming the system
-            setTimeout(captureVideoFrame, 0)
-          })
+          captureLoopRef.current = requestAnimationFrame(captureVideoFrame)
         }
       }
-      
-      // Start capturing
-      captureVideoFrame()
+
+      // Start capturing with requestAnimationFrame for smooth throttling
+      captureLoopRef.current = requestAnimationFrame(captureVideoFrame)
       
     } catch (err) {
       console.error('Start recording error:', err)

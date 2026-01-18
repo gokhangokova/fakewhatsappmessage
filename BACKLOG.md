@@ -5,8 +5,8 @@
 - [x] State hook güncelleme (groupSettings, toggleGroupChat, participant CRUD)
 - [x] Chat tipi toggle (1-1 / Grup)
 - [x] Grup adı input alanı
-- [ ] Mesaj baloncuğunda sender ismi + renk gösterimi
-- [ ] Header'da grup adı gösterimi
+- [x] Mesaj baloncuğunda sender ismi + renk gösterimi
+- [x] Header'da grup adı gösterimi
 
 ### Orta Öncelik
 - [ ] Katılımcı listesi görünümü (Editor panel)

@@ -1017,12 +1017,12 @@ export function TabbedSidebar({
               {/* Chat Type Section - Only for WhatsApp */}
               {platform === 'whatsapp' && groupSettings && toggleGroupChat && (
                 <CollapsibleSection
-                  title="Chat Tipi"
+                  title={t.editor.chatType}
                   icon={Users2}
                   defaultOpen={true}
                   badge={
                     <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
-                      {groupSettings.isGroupChat ? 'Grup' : '1-1'}
+                      {groupSettings.isGroupChat ? t.editor.groupChat : t.editor.oneToOne}
                     </span>
                   }
                 >
@@ -1037,7 +1037,7 @@ export function TabbedSidebar({
                       )}
                     >
                       <Users className="w-4 h-4" />
-                      <span>1-1 Chat</span>
+                      <span>{t.editor.oneToOne}</span>
                     </button>
                     <button
                       onClick={() => toggleGroupChat(true)}
@@ -1049,7 +1049,7 @@ export function TabbedSidebar({
                       )}
                     >
                       <Users2 className="w-4 h-4" />
-                      <span>Group Chat</span>
+                      <span>{t.editor.groupChat}</span>
                     </button>
                   </div>
                 </CollapsibleSection>
@@ -1057,7 +1057,7 @@ export function TabbedSidebar({
 
               {/* People Section */}
               <CollapsibleSection
-                title={groupSettings?.isGroupChat ? 'Grup Bilgileri' : t.editor.people}
+                title={groupSettings?.isGroupChat ? t.editor.groupInfo : t.editor.people}
                 icon={Users}
                 defaultOpen={false}
               >
@@ -1066,11 +1066,11 @@ export function TabbedSidebar({
                   <>
                     {/* Group Name */}
                     <div className="space-y-2">
-                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">Grup Adı</Label>
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.groupName}</Label>
                       <DebouncedInput
                         value={groupSettings.groupName}
                         onChange={(groupName) => setGroupSettings({ groupName })}
-                        placeholder="Grup adını girin..."
+                        placeholder={t.editor.groupNamePlaceholder}
                         className="w-full"
                       />
                     </div>
@@ -1078,7 +1078,7 @@ export function TabbedSidebar({
                     {/* Participants */}
                     <div className="space-y-3">
                       <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">
-                        Katılımcılar ({groupSettings.participants.length})
+                        {t.editor.participants} ({groupSettings.participants.length})
                       </Label>
                       <div className="space-y-2">
                         {groupSettings.participants.map((participant) => (
@@ -1100,7 +1100,7 @@ export function TabbedSidebar({
                             <DebouncedInput
                               value={participant.name}
                               onChange={(name) => updateParticipant?.(participant.id, { name })}
-                              placeholder="İsim..."
+                              placeholder={t.editor.participantName}
                               className="flex-1 h-8 text-sm"
                             />
                             
@@ -1110,7 +1110,7 @@ export function TabbedSidebar({
                                 <button
                                   className="w-6 h-6 rounded-full border-2 border-white shadow-sm flex-shrink-0 hover:scale-110 transition-transform"
                                   style={{ backgroundColor: participant.color }}
-                                  title="Renk seç"
+                                  title={t.editor.participantColor}
                                 />
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-2" align="end">
@@ -1134,12 +1134,12 @@ export function TabbedSidebar({
                             
                             {/* You badge or Delete button */}
                             {participant.id === 'me' ? (
-                              <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded flex-shrink-0">Sen</span>
+                              <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded flex-shrink-0">{language === 'tr' ? 'Sen' : 'You'}</span>
                             ) : (
                               <button
                                 onClick={() => removeParticipant?.(participant.id)}
                                 className="p-1 hover:bg-red-100 rounded text-red-500 flex-shrink-0 transition-colors"
-                                title="Katılımcıyı sil"
+                                title={t.common.delete}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1156,7 +1156,7 @@ export function TabbedSidebar({
                           const availableColor = GROUP_CHAT_COLORS.find(c => !usedColors.includes(c)) || GROUP_CHAT_COLORS[groupSettings.participants.length % GROUP_CHAT_COLORS.length]
                           addParticipant?.({
                             id: newId,
-                            name: `Kişi ${groupSettings.participants.length}`,
+                            name: language === 'tr' ? `Kişi ${groupSettings.participants.length}` : `Person ${groupSettings.participants.length}`,
                             color: availableColor,
                             isAdmin: false,
                           })
@@ -1166,7 +1166,7 @@ export function TabbedSidebar({
                         className="w-full"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Katılımcı Ekle
+                        {t.editor.addParticipant}
                       </Button>
                     </div>
                   </>
@@ -1559,7 +1559,7 @@ export function TabbedSidebar({
                   {backgroundType === 'doodle' && (
                     <>
                       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg mb-3">
-                        <p>✨ Orijinal WhatsApp desen görseli kullanılıyor.</p>
+                        <p>✨ {language === 'tr' ? 'Orijinal WhatsApp desen görseli kullanılıyor.' : 'Using authentic WhatsApp pattern image.'}</p>
                       </div>
                       
                       <div className="space-y-2">
