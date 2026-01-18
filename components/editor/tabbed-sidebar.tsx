@@ -1127,6 +1127,7 @@ export function TabbedSidebar({
                       <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                         {/* Group Avatar */}
                         <AvatarUpload
+                          key={`group-${groupSettings.groupIcon}`}
                           value={groupSettings.groupIcon || null}
                           onChange={(icon) => setGroupSettings({ groupIcon: icon || undefined })}
                           fallback={groupSettings.groupName || 'G'}
@@ -1159,6 +1160,7 @@ export function TabbedSidebar({
                           >
                             {/* Avatar */}
                             <AvatarUpload
+                              key={`participant-${participant.id}-${participant.avatar}`}
                               value={participant.avatar || null}
                               onChange={(avatar) => updateParticipant?.(participant.id, { avatar: avatar || undefined })}
                               fallback={participant.name}
@@ -1248,6 +1250,7 @@ export function TabbedSidebar({
                       <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.senderYou}</Label>
                       <div className="flex items-center gap-3">
                         <AvatarUpload
+                          key={`sender-${sender.avatar}`}
                           value={sender.avatar}
                           onChange={(avatar) => setSender({ ...sender, avatar })}
                           fallback={sender.name}
@@ -1268,6 +1271,7 @@ export function TabbedSidebar({
                       <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.receiver}</Label>
                       <div className="flex items-center gap-3">
                         <AvatarUpload
+                          key={`receiver-${receiver.avatar}`}
                           value={receiver.avatar}
                           onChange={(avatar) => setReceiver({ ...receiver, avatar })}
                           fallback={receiver.name}

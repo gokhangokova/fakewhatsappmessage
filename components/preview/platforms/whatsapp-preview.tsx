@@ -63,6 +63,8 @@ interface WhatsAppPreviewProps {
   // Animation props for video export
   visibleMessageCount?: number // If set, only shows this many messages
   showTypingIndicator?: boolean // If true, shows typing indicator at the end
+  // Export mode - removes phone frame and uses sharp corners
+  forExport?: boolean
 }
 
 // Theme colors
@@ -304,8 +306,8 @@ const AndroidWhatsAppHeader = ({
         </svg>
       </button>
       
-      {/* Avatar */}
-      <Avatar className="w-[40px] h-[40px]">
+      {/* Avatar - key forces remount when chat type changes */}
+      <Avatar key={isGroupChat ? `group-${groupIcon}` : `single-${receiver.avatar}`} className="w-[40px] h-[40px]">
         {isGroupChat ? (
           // Group chat avatar
           <>
@@ -427,7 +429,8 @@ const IOSWhatsAppHeader = ({
     >
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
 
-      <Avatar className="w-[36px] h-[36px]">
+      {/* Avatar - key forces remount when chat type changes */}
+      <Avatar key={isGroupChat ? `group-${groupIcon}` : `single-${receiver.avatar}`} className="w-[36px] h-[36px]">
         {isGroupChat ? (
           // Group chat avatar
           <>
@@ -462,7 +465,7 @@ const IOSWhatsAppHeader = ({
           </>
         )}
       </Avatar>
-      
+
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-[16px] truncate leading-[20px]" style={{ color: theme.headerText }}>
           {isGroupChat ? groupName : receiver.name}
@@ -1289,6 +1292,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
   deviceType = 'ios',
   visibleMessageCount,
   showTypingIndicator,
+  forExport = false,
 }: WhatsAppPreviewProps) {
   // Memoize theme to avoid recreating object on every render
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode])
@@ -1475,18 +1479,35 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
   // Mobile view - phone frame with status bar
   return (
     <div
-      className="transition-all duration-300 overflow-hidden w-[375px]"
-      style={{
+      className={cn(
+        "transition-all duration-300 overflow-hidden w-[375px]",
+        forExport && "!rounded-none !shadow-none !bg-transparent !p-0"
+      )}
+      style={forExport ? {
+        borderRadius: '0px',
+        boxShadow: 'none',
+        background: 'transparent',
+        padding: '0px',
+        fontFamily: fontStyle,
+      } : {
         borderRadius: isAndroid ? '24px' : '44px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.1)',
         background: '#000',
         padding: '2px',
         fontFamily: fontStyle,
       }}
+      data-export-mode={forExport ? 'true' : 'false'}
     >
       <div
-        className="flex flex-col overflow-hidden antialiased"
-        style={{ 
+        className={cn(
+          "flex flex-col overflow-hidden antialiased",
+          forExport && "!rounded-none"
+        )}
+        style={forExport ? {
+          height: '812px',
+          borderRadius: '0px',
+          backgroundColor: darkMode ? '#000000' : '#FFFFFF',
+        } : {
           height: '812px',
           borderRadius: isAndroid ? '22px' : '42px',
           backgroundColor: darkMode ? '#000000' : '#FFFFFF',

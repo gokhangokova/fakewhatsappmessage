@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { TabbedSidebar } from '@/components/editor/tabbed-sidebar'
 import { PhonePreview } from '@/components/preview/phone-preview'
@@ -162,10 +162,21 @@ export default function Home() {
   const handleStartPreview = useCallback(async () => {
     setIsPreviewMode(true)
     setIsVideoMode(true)
-    
+
+    // Wait for component to mount
     await new Promise(resolve => setTimeout(resolve, 100))
-    
+
+    // Wait for ref to be available (component mounted)
+    let attempts = 0
+    const maxAttempts = 20
+    while (!animatedPreviewRef.current && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      attempts++
+    }
+
     if (animatedPreviewRef.current) {
+      // Additional wait to ensure DOM is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 100))
       animatedPreviewRef.current.startAnimation()
     }
   }, [])
@@ -189,16 +200,33 @@ export default function Home() {
     setIsRecordingMode(true)
     setIsVideoMode(true)
     setIsPreviewMode(false)
-    
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
+
+    // Wait for component to mount and render with correct props
+    // This is important when switching between chat types (1-1 vs Group)
+    // We need to wait for React to complete the render cycle
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Wait for ref to be available (component mounted)
+    let attempts = 0
+    const maxAttempts = 20
+    while (!animatedPreviewRef.current && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+      attempts++
+    }
+
     if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
+      // Additional wait to ensure DOM is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 200))
+
       await startRecording(videoPreviewContainerRef.current, {
         format: videoSettings.format,
         quality: videoSettings.quality,
         frameRate: 30,
       })
-      
+
+      // Additional wait to ensure recording has started before animation
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       animatedPreviewRef.current.startAnimation()
     }
   }, [startRecording, videoSettings.format, videoSettings.quality])
@@ -242,22 +270,39 @@ export default function Home() {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
-  // Merge groupSettings into whatsappSettings for preview
-  const mergedWhatsappSettings = useMemo(() => {
-    if (!groupSettings?.isGroupChat) return whatsappSettings
-    
-    return {
-      ...whatsappSettings,
-      groupName: groupSettings.groupName,
-      groupIcon: groupSettings.groupIcon,
-      groupParticipants: groupSettings.participants?.map(p => ({
-        id: p.id,
-        name: p.name,
-        avatar: p.avatar || null,
-        color: p.color,
-      })) || [],
+  // Reset video and animation state when chat type changes (1-1 <-> Group)
+  useEffect(() => {
+    // Stop any ongoing recording/animation
+    if (isRecording || isVideoMode) {
+      animatedPreviewRef.current?.stopAnimation()
+      animatedPreviewRef.current?.resetAnimation()
+      stopRecording()
+      setIsVideoMode(false)
+      setIsRecordingMode(false)
+      setIsPreviewMode(false)
     }
-  }, [whatsappSettings, groupSettings])
+    // Reset video export state
+    if (videoBlob) {
+      resetVideo()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupSettings?.isGroupChat])
+
+  // Merge groupSettings into whatsappSettings for preview
+  // Computed on every render to ensure correct values when switching chat types
+  const mergedWhatsappSettings = groupSettings?.isGroupChat
+    ? {
+        ...whatsappSettings,
+        groupName: groupSettings.groupName,
+        groupIcon: groupSettings.groupIcon,
+        groupParticipants: groupSettings.participants?.map(p => ({
+          id: p.id,
+          name: p.name,
+          avatar: p.avatar || null,
+          color: p.color,
+        })) || [],
+      }
+    : whatsappSettings
 
   // Memoize sidebar close handler
   const handleSidebarClose = useCallback(() => setSidebarOpen(false), [])
@@ -340,6 +385,7 @@ export default function Home() {
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
               <AnimatedChatPreview
+                key={`animated-${groupSettings?.isGroupChat ? 'group' : 'single'}`}
                 ref={animatedPreviewRef}
                 sender={sender}
                 receiver={receiver}
@@ -373,6 +419,7 @@ export default function Home() {
                 fontFamily={fontFamily}
                 batteryLevel={batteryLevel}
                 deviceType={deviceType}
+                forExport={isExporting}
               />
             </div>
           )}

@@ -8,6 +8,7 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - **UI:** React, TailwindCSS, shadcn/ui
 - **Dil Desteği:** Türkçe (tr) ve İngilizce (en)
 - **State:** React hooks, localStorage persistence
+- **Export:** html-to-image (PNG/JPG/WebP), mp4-muxer (video), gif.js (GIF)
 
 ## Önemli Dosyalar
 
@@ -25,10 +26,160 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 
 ### Hooks
 - `hooks/use-video-export.ts` - Video kayıt ve export
+- `hooks/use-export.ts` - Image export (PNG/JPG/WebP, clipboard)
 - `hooks/use-chat-state.ts` - Sohbet durumu yönetimi
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
+
+### CSS
+- `app/globals.css` - Global stiller, export mode CSS kuralları
+
+---
+
+## Export Sistemi (Ocak 2025)
+
+### Image Export - Keskin Köşeler
+
+**Sorun:** Image export'ta telefon çerçevesi (oval köşeler, gölge) dahil ediliyordu.
+
+**Çözüm:** `forExport` prop'u eklendi. Export sırasında:
+- `borderRadius: 0` (keskin köşeler)
+- `boxShadow: none` (gölge yok)
+- `padding: 0` (çerçeve yok)
+- `background: transparent`
+
+**Dosyalar:**
+
+1. **`hooks/use-export.ts`** - Render bekleme mekanizması:
+```tsx
+// setIsExporting(true) sonrası React'in yeniden render etmesini bekle
+await new Promise<void>((resolve) => {
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(resolve, 50)  // Ek bekleme
+      })
+    })
+  }, 150)
+})
+```
+
+2. **`components/preview/platforms/whatsapp-preview.tsx`** - forExport stilleri:
+```tsx
+<div
+  className={cn(
+    "transition-all duration-300 overflow-hidden w-[375px]",
+    forExport && "!rounded-none !shadow-none !bg-transparent !p-0"
+  )}
+  style={forExport ? {
+    borderRadius: '0px',
+    boxShadow: 'none',
+    background: 'transparent',
+    padding: '0px',
+    fontFamily: fontStyle,
+  } : {
+    borderRadius: isAndroid ? '24px' : '44px',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), ...',
+    background: '#000',
+    padding: '2px',
+    fontFamily: fontStyle,
+  }}
+  data-export-mode={forExport ? 'true' : 'false'}
+>
+```
+
+3. **`app/globals.css`** - CSS !important kuralları:
+```css
+/* Export mode - sharp corners, no frame */
+[data-export-mode="true"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+[data-export-mode="true"] > * {
+  border-radius: 0 !important;
+}
+```
+
+4. **`app/page.tsx`** - forExport prop geçirme:
+```tsx
+<PhonePreview
+  platform={platform}
+  // ... diğer proplar
+  forExport={isExporting}
+/>
+```
+
+### Video Export - Grup Chat Gecikmesi Fix
+
+**Sorun:** Grup chat video export'u başlatıldığında uzun bekleme süresi oluyordu.
+
+**Çözüm:** `isReady` state ve polling mekanizması eklendi.
+
+**`components/video/animated-chat-preview.tsx`:**
+```tsx
+const [isReady, setIsReady] = useState(false)
+
+// Props değiştiğinde hazırlık durumunu sıfırla
+useEffect(() => {
+  setIsReady(false)
+  const timer = setTimeout(() => {
+    setIsReady(true)
+  }, 50)
+  return () => clearTimeout(timer)
+}, [isGroupChat, messages.length])
+
+const startAnimation = useCallback(() => {
+  if (!isReady) {
+    // Bileşen hazır değilse bekle ve tekrar dene
+    setTimeout(() => {
+      setVisibleMessageCount(0)
+      setShowTyping(false)
+      setIsAnimating(true)
+      setPhase('waiting_before_typing')
+      animationStoppedRef.current = false
+      onAnimationStart?.()
+    }, 100)
+    return
+  }
+  // Normal başlatma
+  setVisibleMessageCount(0)
+  // ...
+}, [onAnimationStart, isReady])
+```
+
+**`app/page.tsx`** - Ref polling:
+```tsx
+const handleStartVideoRecording = useCallback(async () => {
+  setIsRecordingMode(true)
+  setIsVideoMode(true)
+
+  // Bileşen mount beklemesi
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  // Ref hazır olana kadar polling
+  let attempts = 0
+  const maxAttempts = 20
+  while (!animatedPreviewRef.current && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 50))
+    attempts++
+  }
+
+  if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
+    // DOM tamamen render olduktan sonra ek bekleme
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    await startRecording(videoPreviewContainerRef.current, {...})
+
+    // Kayıt başladıktan sonra animasyonu başlat
+    await new Promise(resolve => setTimeout(resolve, 100))
+    animatedPreviewRef.current.startAnimation()
+  }
+}, [startRecording, videoSettings])
+```
 
 ---
 
@@ -312,6 +463,8 @@ chatBg: '#0B141A'
 6. **Kuyruk ve Avatar:** `isLastInGroup` kullan, `isFirstInGroup` değil
 7. **AvatarFallback:** Her zaman `AvatarImage` ile birlikte render et
 8. **delayMs={0}:** Avatar fallback'in hemen görünmesi için gerekli
+9. **Export timing:** `forExport` prop değişikliği için yeterli bekleme süresi gerekli (200ms+)
+10. **data-export-mode:** CSS !important kuralları için attribute selector kullan
 
 ---
 
@@ -354,6 +507,20 @@ const isSent = message.userId === sender.id || message.userId === 'me' || messag
 **Sebep:** Varsayılan renk tutarsızlığı
 **Çözüm:** Her iki header'da da `#128C7E` varsayılan kullan
 
+### Sorun: Image export'ta kenarlar oval geliyor
+**Sebep:** `forExport` prop uygulanmadan önce görüntü yakalanıyor
+**Çözüm:**
+1. `hooks/use-export.ts`'te render bekleme süresi ekle (150ms + 50ms)
+2. `app/globals.css`'te `[data-export-mode="true"]` CSS kuralları
+3. Hem inline style hem Tailwind `!important` class'ları kullan
+
+### Sorun: Grup chat video export başlatıldığında uzun bekleme
+**Sebep:** Bileşen hazır değilken animasyon başlatılıyor
+**Çözüm:**
+1. `animated-chat-preview.tsx`'te `isReady` state ekle
+2. `app/page.tsx`'te ref polling mekanizması ekle
+3. DOM render tamamlanana kadar bekle (200ms+)
+
 ---
 
 ## Gelecek Geliştirmeler İçin Notlar
@@ -361,3 +528,5 @@ const isSent = message.userId === sender.id || message.userId === 'me' || messag
 - Grup sohbet katılımcı yönetimi tam çalışıyor (ekle/sil/düzenle)
 - Mesaj sürükle-bırak ile sıralama çalışıyor (dnd-kit)
 - Grup icon seçimi illüstrasyon avatarlarla çalışıyor (DiceBear API)
+- Image export keskin köşelerle çalışıyor (forExport prop)
+- Video export grup chat gecikmesi düzeltildi (isReady state)
