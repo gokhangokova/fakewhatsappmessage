@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language, WhatsAppSettings, WhatsAppBackgroundType, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, FontFamily, SUPPORTED_FONTS, SUPPORTED_LANGUAGES, DeviceType, GroupChatSettings, GroupParticipant, GROUP_CHAT_COLORS } from '@/types'
+import { Platform, Message, User, MessageStatus, ReplyTo, MessageReaction, Language, WhatsAppSettings, WhatsAppBackgroundType, WHATSAPP_BG_COLORS, WHATSAPP_BG_IMAGES, FontFamily, SUPPORTED_FONTS, SUPPORTED_LANGUAGES, DeviceType, GroupChatSettings, GroupParticipant, GROUP_CHAT_COLORS, GROUP_AVATAR_ILLUSTRATIONS } from '@/types'
 import { useTranslations } from '@/lib/i18n/translations'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -1121,6 +1121,63 @@ export function TabbedSidebar({
                 {/* Group Chat Settings */}
                 {groupSettings?.isGroupChat && setGroupSettings ? (
                   <>
+                    {/* Group Avatar */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+                        {language === 'tr' ? 'Grup Simgesi' : 'Group Icon'}
+                      </Label>
+                      <div className="flex flex-col gap-3">
+                        {/* Current Avatar Preview */}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border-2 border-gray-200"
+                          >
+                            {groupSettings.groupIcon ? (
+                              <img
+                                src={groupSettings.groupIcon}
+                                alt="Group"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-2xl text-gray-400">
+                                {groupSettings.groupName?.charAt(0)?.toUpperCase() || 'G'}
+                              </span>
+                            )}
+                          </div>
+                          {groupSettings.groupIcon && (
+                            <button
+                              onClick={() => setGroupSettings({ groupIcon: undefined })}
+                              className="text-xs text-red-500 hover:text-red-600 transition-colors"
+                            >
+                              {language === 'tr' ? 'Kaldır' : 'Remove'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Avatar Grid */}
+                        <div className="grid grid-cols-6 gap-2">
+                          {GROUP_AVATAR_ILLUSTRATIONS.map((avatar, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setGroupSettings({ groupIcon: avatar })}
+                              className={cn(
+                                "w-10 h-10 rounded-full overflow-hidden border-2 transition-all hover:scale-110",
+                                groupSettings.groupIcon === avatar
+                                  ? "border-[#128C7E] ring-2 ring-[#128C7E] ring-offset-1"
+                                  : "border-gray-200 hover:border-gray-300"
+                              )}
+                            >
+                              <img
+                                src={avatar}
+                                alt={`Avatar ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Group Name */}
                     <div className="space-y-2">
                       <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.editor.groupName}</Label>

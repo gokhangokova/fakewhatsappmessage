@@ -258,6 +258,7 @@ const AndroidWhatsAppHeader = ({
   darkMode,
   isGroupChat,
   groupName,
+  groupIcon,
   participantCount,
   t,
 }: {
@@ -267,6 +268,7 @@ const AndroidWhatsAppHeader = ({
   darkMode: boolean
   isGroupChat?: boolean
   groupName?: string
+  groupIcon?: string
   participantCount?: number
   t: ReturnType<typeof useTranslations>
 }) => {
@@ -304,12 +306,14 @@ const AndroidWhatsAppHeader = ({
       
       {/* Avatar */}
       <Avatar className="w-[40px] h-[40px]">
-        {isImageAvatar(receiver.avatar) ? (
+        {isGroupChat && groupIcon ? (
+          <AvatarImage src={groupIcon} />
+        ) : isImageAvatar(receiver.avatar) ? (
           <AvatarImage src={receiver.avatar!} />
         ) : (
-          <AvatarFallback 
+          <AvatarFallback
             className="text-[16px] font-medium text-white"
-            style={{ 
+            style={{
               backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
               color: '#FFFFFF',
             }}
@@ -318,11 +322,11 @@ const AndroidWhatsAppHeader = ({
           </AvatarFallback>
         )}
       </Avatar>
-      
+
       {/* Name and Status */}
       <div className="flex-1 min-w-0 ml-[4px]">
-        <p 
-          className="font-medium text-[16px] truncate leading-[20px]" 
+        <p
+          className="font-medium text-[16px] truncate leading-[20px]"
           style={{ color: '#FFFFFF', fontFamily: 'Roboto, sans-serif' }}
         >
           {isGroupChat ? groupName : receiver.name}
@@ -359,6 +363,7 @@ const IOSWhatsAppHeader = ({
   darkMode,
   isGroupChat,
   groupName,
+  groupIcon,
   participantCount,
   t,
 }: {
@@ -368,17 +373,18 @@ const IOSWhatsAppHeader = ({
   darkMode: boolean
   isGroupChat?: boolean
   groupName?: string
+  groupIcon?: string
   participantCount?: number
   t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  
+
   const getStatusText = () => {
     if (isGroupChat && participantCount) {
       if (lastSeen === 'typing') return 'Sarah ' + t.preview.typing
       return `${participantCount} ${t.preview.participants}`
     }
-    
+
     switch (lastSeen) {
       case 'online':
         return t.preview.online
@@ -394,22 +400,24 @@ const IOSWhatsAppHeader = ({
   }
 
   return (
-    <div 
+    <div
       className="flex items-center gap-[10px] px-[8px] py-[6px] border-b"
-      style={{ 
+      style={{
         backgroundColor: theme.header,
         borderColor: theme.headerBorder,
       }}
     >
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
-      
+
       <Avatar className="w-[36px] h-[36px]">
-        {isImageAvatar(receiver.avatar) ? (
+        {isGroupChat && groupIcon ? (
+          <AvatarImage src={groupIcon} />
+        ) : isImageAvatar(receiver.avatar) ? (
           <AvatarImage src={receiver.avatar!} />
         ) : (
-          <AvatarFallback 
+          <AvatarFallback
             className="text-[14px] font-medium text-white"
-            style={{ 
+            style={{
               backgroundColor: getAvatarColor(receiver.avatar) || (darkMode ? '#2A3942' : '#DFE5E7'),
               color: getAvatarColor(receiver.avatar) ? '#FFFFFF' : (darkMode ? '#8696A0' : '#54656F'),
             }}
@@ -1310,6 +1318,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
             darkMode={darkMode}
             isGroupChat={isGroupChat}
             groupName={settings.groupName}
+            groupIcon={settings.groupIcon}
             participantCount={settings.groupParticipants?.length}
             t={t}
           />
@@ -1317,7 +1326,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
           {/* Chat Area Container */}
           <div className="flex-1 relative overflow-hidden">
             {/* Fixed Background Layer */}
-            <div 
+            <div
               className="absolute inset-0 w-full h-full"
               style={{ 
                 backgroundColor: settings.backgroundType === 'solid'
@@ -1463,6 +1472,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
             darkMode={darkMode}
             isGroupChat={isGroupChat}
             groupName={settings.groupName}
+            groupIcon={settings.groupIcon}
             participantCount={settings.groupParticipants?.length}
             t={t}
           />
@@ -1474,6 +1484,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
             darkMode={darkMode}
             isGroupChat={isGroupChat}
             groupName={settings.groupName}
+            groupIcon={settings.groupIcon}
             participantCount={settings.groupParticipants?.length}
             t={t}
           />
