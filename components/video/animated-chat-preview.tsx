@@ -215,6 +215,7 @@ const IOSWhatsAppHeader = ({
   lastSeenTime,
   isGroupChat,
   groupName,
+  groupIcon,
   participantCount,
   typingUserName,
   t,
@@ -225,6 +226,7 @@ const IOSWhatsAppHeader = ({
   lastSeenTime?: Date
   isGroupChat?: boolean
   groupName?: string
+  groupIcon?: string
   participantCount?: number
   typingUserName?: string
   t: ReturnType<typeof useTranslations>
@@ -252,18 +254,38 @@ const IOSWhatsAppHeader = ({
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
 
       <Avatar className="w-[36px] h-[36px]">
-        {isImageAvatar(receiver.avatar) ? (
-          <AvatarImage src={receiver.avatar!} />
+        {isGroupChat ? (
+          // Group chat avatar
+          <>
+            {groupIcon && !groupIcon.startsWith('color:') && (
+              <AvatarImage src={groupIcon} />
+            )}
+            <AvatarFallback
+              className="text-[14px] font-medium text-white"
+              style={{
+                backgroundColor: groupIcon?.startsWith('color:') ? groupIcon.replace('color:', '') : '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {groupName?.charAt(0).toUpperCase() || 'G'}
+            </AvatarFallback>
+          </>
         ) : (
-          <AvatarFallback
-            className="text-[14px] font-medium text-white"
-            style={{
-              backgroundColor: getAvatarColor(receiver.avatar) || (darkMode ? '#2A3942' : '#DFE5E7'),
-              color: getAvatarColor(receiver.avatar) ? '#FFFFFF' : (darkMode ? '#8696A0' : '#54656F'),
-            }}
-          >
-            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
-          </AvatarFallback>
+          // 1-1 chat avatar
+          <>
+            {isImageAvatar(receiver.avatar) && (
+              <AvatarImage src={receiver.avatar!} />
+            )}
+            <AvatarFallback
+              className="text-[14px] font-medium text-white"
+              style={{
+                backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {receiver.name?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </>
         )}
       </Avatar>
 
@@ -291,6 +313,7 @@ const AndroidWhatsAppHeader = ({
   showTyping,
   isGroupChat,
   groupName,
+  groupIcon,
   participantCount,
   typingUserName,
   t,
@@ -300,6 +323,7 @@ const AndroidWhatsAppHeader = ({
   showTyping: boolean
   isGroupChat?: boolean
   groupName?: string
+  groupIcon?: string
   participantCount?: number
   typingUserName?: string
   t: ReturnType<typeof useTranslations>
@@ -325,18 +349,38 @@ const AndroidWhatsAppHeader = ({
       </button>
 
       <Avatar className="w-[40px] h-[40px]">
-        {isImageAvatar(receiver.avatar) ? (
-          <AvatarImage src={receiver.avatar!} />
+        {isGroupChat ? (
+          // Group chat avatar
+          <>
+            {groupIcon && !groupIcon.startsWith('color:') && (
+              <AvatarImage src={groupIcon} />
+            )}
+            <AvatarFallback
+              className="text-[16px] font-medium text-white"
+              style={{
+                backgroundColor: groupIcon?.startsWith('color:') ? groupIcon.replace('color:', '') : '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {groupName?.charAt(0).toUpperCase() || 'G'}
+            </AvatarFallback>
+          </>
         ) : (
-          <AvatarFallback
-            className="text-[16px] font-medium text-white"
-            style={{
-              backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
-              color: '#FFFFFF',
-            }}
-          >
-            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
-          </AvatarFallback>
+          // 1-1 chat avatar
+          <>
+            {isImageAvatar(receiver.avatar) && (
+              <AvatarImage src={receiver.avatar!} />
+            )}
+            <AvatarFallback
+              className="text-[16px] font-medium text-white"
+              style={{
+                backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
+                color: '#FFFFFF',
+              }}
+            >
+              {receiver.name?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </>
         )}
       </Avatar>
 
@@ -789,6 +833,17 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const [contentOffset, setContentOffset] = useState(0)
+  const [isReady, setIsReady] = useState(false)
+
+  // Mark component as ready after initial render with correct props
+  useEffect(() => {
+    setIsReady(false)
+    // Short delay to ensure props are fully applied
+    const timer = setTimeout(() => {
+      setIsReady(true)
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [isGroupChat, messages.length])
 
   // Auto-scroll to bottom when new messages appear or typing indicator shows
   useEffect(() => {
@@ -815,13 +870,27 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   }, [visibleMessageCount, showTyping, forVideoExport])
 
   const startAnimation = useCallback(() => {
+    // Ensure component is ready before starting animation
+    if (!isReady) {
+      console.log('AnimatedChatPreview: Waiting for component to be ready...')
+      // Retry after a short delay
+      setTimeout(() => {
+        setVisibleMessageCount(0)
+        setShowTyping(false)
+        setIsAnimating(true)
+        setPhase('waiting_before_typing')
+        animationStoppedRef.current = false
+        onAnimationStart?.()
+      }, 100)
+      return
+    }
     setVisibleMessageCount(0)
     setShowTyping(false)
     setIsAnimating(true)
     setPhase('waiting_before_typing')
     animationStoppedRef.current = false
     onAnimationStart?.()
-  }, [onAnimationStart])
+  }, [onAnimationStart, isReady])
 
   const stopAnimation = useCallback(() => {
     animationStoppedRef.current = true
@@ -993,6 +1062,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             showTyping={showTyping}
             isGroupChat={isGroupChat}
             groupName={settings.groupName}
+            groupIcon={settings.groupIcon}
             participantCount={settings.groupParticipants?.length}
             typingUserName={typingUserName}
             t={t}
@@ -1005,6 +1075,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             lastSeenTime={settings.lastSeenTime}
             isGroupChat={isGroupChat}
             groupName={settings.groupName}
+            groupIcon={settings.groupIcon}
             participantCount={settings.groupParticipants?.length}
             typingUserName={typingUserName}
             t={t}

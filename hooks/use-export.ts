@@ -109,8 +109,25 @@ export function useExport(): UseExportReturn {
       setIsExporting(true)
       setError(null)
 
+      // React'in yeniden render etmesini bekle (forExport prop'unun uygulanması için)
+      // setTimeout + multiple requestAnimationFrame ile DOM'un tamamen güncellenmesini garanti et
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // Ek bekleme - CSS'in tamamen uygulanması için
+              setTimeout(resolve, 50)
+            })
+          })
+        }, 150)
+      })
+
       try {
         const element = exportRef.current
+
+        if (!element) {
+          throw new Error('Export element not found after render')
+        }
 
         // Lazy load html-to-image
         const { toPng, toJpeg } = await loadHtmlToImage()
@@ -124,6 +141,7 @@ export function useExport(): UseExportReturn {
             pixelRatio: mergedOptions.pixelRatio,
             backgroundColor: mergedOptions.backgroundColor || '#ffffff', // JPG needs solid bg
             cacheBust: true,
+            skipFonts: true,
             filter: (node) => {
               if (node instanceof HTMLElement && node.dataset.exportIgnore) {
                 return false
@@ -137,6 +155,7 @@ export function useExport(): UseExportReturn {
             pixelRatio: mergedOptions.pixelRatio,
             backgroundColor: mergedOptions.backgroundColor,
             cacheBust: true,
+            skipFonts: true,
             filter: (node) => {
               if (node instanceof HTMLElement && node.dataset.exportIgnore) {
                 return false
@@ -210,8 +229,25 @@ export function useExport(): UseExportReturn {
       setIsExporting(true)
       setError(null)
 
+      // React'in yeniden render etmesini bekle (forExport prop'unun uygulanması için)
+      // setTimeout + multiple requestAnimationFrame ile DOM'un tamamen güncellenmesini garanti et
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // Ek bekleme - CSS'in tamamen uygulanması için
+              setTimeout(resolve, 50)
+            })
+          })
+        }, 150)
+      })
+
       try {
         const element = exportRef.current
+
+        if (!element) {
+          throw new Error('Export element not found after render')
+        }
 
         // Lazy load html-to-image
         const { toBlob } = await loadHtmlToImage()
@@ -222,6 +258,7 @@ export function useExport(): UseExportReturn {
           pixelRatio: mergedOptions.pixelRatio,
           backgroundColor: mergedOptions.backgroundColor,
           cacheBust: true,
+          skipFonts: true,
         })
 
         if (!blob) {

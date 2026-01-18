@@ -347,6 +347,18 @@
     );
 }
 
+/* Export mode - sharp corners, no frame */
+[data-export-mode="true"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+[data-export-mode="true"] > * {
+  border-radius: 0 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .phone-frame {

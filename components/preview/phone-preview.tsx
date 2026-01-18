@@ -38,6 +38,8 @@ interface PhonePreviewProps {
   // Animation props for video export
   visibleMessageCount?: number
   showTypingIndicator?: boolean
+  // Export mode - removes phone frame and uses sharp corners
+  forExport?: boolean
 }
 
 export function PhonePreview({
@@ -56,6 +58,7 @@ export function PhonePreview({
   deviceType = 'ios',
   visibleMessageCount,
   showTypingIndicator,
+  forExport = false,
 }: PhonePreviewProps) {
   // Use WhatsApp specific preview
   if (platform === 'whatsapp') {
@@ -83,6 +86,7 @@ export function PhonePreview({
         }}
         visibleMessageCount={visibleMessageCount}
         showTypingIndicator={showTypingIndicator}
+        forExport={forExport}
       />
     )
   }
