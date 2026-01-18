@@ -491,6 +491,7 @@ function SortableMessageItem({
   receiver,
   platform,
   messages,
+  groupSettings,
   onUpdateContent,
   onUpdateTimestamp,
   onUpdateStatus,
@@ -506,6 +507,7 @@ function SortableMessageItem({
   receiver: User
   platform: Platform
   messages: Message[]
+  groupSettings?: GroupChatSettings
   onUpdateContent: (content: string) => void
   onUpdateTimestamp: (timestamp: Date) => void
   onUpdateStatus?: (status: MessageStatus) => void
@@ -536,18 +538,44 @@ function SortableMessageItem({
     transition,
   }
 
-  const timestamp = message.timestamp instanceof Date 
-    ? message.timestamp 
+  const timestamp = message.timestamp instanceof Date
+    ? message.timestamp
     : new Date(message.timestamp)
 
-  const isSent = message.userId === sender.id
+  // For group chat, check if user is 'sender-1' (You) or find in participants
+  const isGroupChat = groupSettings?.isGroupChat && groupSettings.participants.length > 0
+  const isSent = message.userId === sender.id || message.userId === 'sender-1'
   const isWhatsApp = platform === 'whatsapp'
-  
+
+  // Get the display name for the message sender
+  const getMessageSenderName = () => {
+    if (isGroupChat) {
+      // First check message's own senderName, then lookup in participants
+      if (message.senderName) return message.senderName
+      const participant = groupSettings?.participants.find(p => p.id === message.userId)
+      return participant?.name || (isSent ? sender.name : receiver.name)
+    }
+    return isSent ? sender.name : receiver.name
+  }
+
+  // Get the color for the message sender (for group chat)
+  const getMessageSenderColor = () => {
+    if (isGroupChat) {
+      if (message.senderColor) return message.senderColor
+      const participant = groupSettings?.participants.find(p => p.id === message.userId)
+      return participant?.color || '#128C7E'
+    }
+    return undefined
+  }
+
   const handleBlur = () => {
     if (localContent !== message.content) {
       onUpdateContent(localContent)
     }
   }
+
+  const senderName = getMessageSenderName()
+  const senderColor = getMessageSenderColor()
 
   return (
     <div
@@ -575,9 +603,13 @@ function SortableMessageItem({
               ? 'bg-[#d4f5e2] text-[#128C7E]'
               : 'bg-gray-200 text-gray-700'
           )}
+          style={isGroupChat && senderColor ? { backgroundColor: `${senderColor}20`, color: senderColor } : undefined}
         >
-          <span className="w-4 h-4 rounded-full bg-current opacity-20" />
-          {isSent ? sender.name : receiver.name}
+          <span
+            className="w-4 h-4 rounded-full"
+            style={{ backgroundColor: senderColor || (isSent ? '#128C7E' : '#6B7280'), opacity: 0.4 }}
+          />
+          {senderName}
         </button>
         <DateTimePicker
           value={timestamp}
@@ -938,13 +970,38 @@ export function TabbedSidebar({
   }
 
   const toggleMessageUser = (id: string) => {
-    setMessages(
-      messages.map((msg) =>
-        msg.id === id
-          ? { ...msg, userId: msg.userId === sender.id ? receiver.id : sender.id }
-          : msg
+    // For group chat, cycle through all participants
+    if (groupSettings?.isGroupChat && groupSettings.participants.length > 0) {
+      setMessages(
+        messages.map((msg) => {
+          if (msg.id !== id) return msg
+
+          const participants = groupSettings.participants
+          const currentIndex = participants.findIndex(p => p.id === msg.userId)
+          const nextIndex = (currentIndex + 1) % participants.length
+          const nextParticipant = participants[nextIndex]
+
+          return {
+            ...msg,
+            userId: nextParticipant.id,
+            senderId: nextParticipant.id,
+            senderName: nextParticipant.name,
+            senderColor: nextParticipant.color,
+            // Only sent messages (from 'sender-1' / 'You') should have status
+            status: nextParticipant.id === 'sender-1' ? (msg.status || 'read') : undefined,
+          }
+        })
       )
-    )
+    } else {
+      // For 1-1 chat, toggle between sender and receiver
+      setMessages(
+        messages.map((msg) =>
+          msg.id === id
+            ? { ...msg, userId: msg.userId === sender.id ? receiver.id : sender.id }
+            : msg
+        )
+      )
+    }
   }
 
   return (
@@ -1252,6 +1309,7 @@ export function TabbedSidebar({
                           receiver={receiver}
                           platform={platform}
                           messages={messages}
+                          groupSettings={groupSettings}
                           onUpdateContent={(content) => updateMessageContent(message.id, content)}
                           onUpdateTimestamp={(timestamp) => updateMessageTimestamp(message.id, timestamp)}
                           onUpdateStatus={platform === 'whatsapp' ? (status) => updateMessageStatus(message.id, status) : undefined}
