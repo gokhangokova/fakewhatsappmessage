@@ -19,6 +19,7 @@ interface AvatarUploadProps {
   language?: Language
   size?: 'sm' | 'md' | 'lg'
   accentColor?: string
+  customPresets?: string[] // Custom preset avatars (overrides default)
 }
 
 // Preset avatar images - using reliable sources
@@ -61,6 +62,7 @@ export function AvatarUpload({
   language = 'en',
   size = 'md',
   accentColor,
+  customPresets,
 }: AvatarUploadProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [urlInput, setUrlInput] = React.useState('')
@@ -237,7 +239,7 @@ export function AvatarUpload({
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground font-medium">{t.avatar.selectPhoto}</div>
             <div className="grid grid-cols-4 gap-2">
-              {presetAvatars.map((url, index) => (
+              {(customPresets || presetAvatars).map((url, index) => (
                 <button
                   key={index}
                   type="button"
@@ -247,9 +249,9 @@ export function AvatarUpload({
                     value === url ? 'border-primary ring-2 ring-primary' : 'border-muted hover:border-primary/50'
                   )}
                 >
-                  <img 
-                    src={url} 
-                    alt={`Avatar ${index + 1}`} 
+                  <img
+                    src={url}
+                    alt={`Avatar ${index + 1}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
