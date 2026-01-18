@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Header } from '@/components/layout/header'
 import { Toaster } from '@/components/ui/toaster'
+import { ChatProvider } from '@/contexts/chat-context'
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -23,11 +24,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${jakarta.variable} font-sans antialiased h-screen overflow-hidden`}>
-        <Header />
-        <main>
-          {children}
-        </main>
-        <Toaster />
+        <ChatProvider>
+          <Header />
+          <main>
+            {children}
+          </main>
+          <Toaster />
+        </ChatProvider>
       </body>
     </html>
   )

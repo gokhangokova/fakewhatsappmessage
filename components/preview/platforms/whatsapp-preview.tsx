@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, memo } from 'react'
 import { Message, User, MessageStatus, WhatsAppSettings, ReplyTo, MessageReaction, VoiceMessageData, DocumentData, VideoData, LocationData, ContactData, FontFamily, SUPPORTED_FONTS, DeviceType } from '@/types'
 import { formatTime, cn } from '@/lib/utils'
 import {
@@ -833,7 +834,7 @@ const ContactMessage = ({
 
 // Group Chat Sender Name
 const GroupSenderName = ({ name, color }: { name: string; color?: string }) => (
-  <p className="text-[12px] font-semibold mb-[2px]" style={{ color: color || '#25D366' }}>
+  <p className="text-[12px] font-semibold" style={{ color: color || '#25D366' }}>
     {name}
   </p>
 )
@@ -861,7 +862,8 @@ const IOSMessageBubble = ({
   t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  const isSent = message.userId === sender.id
+  // Check if message is from current user - supports both sender.id and legacy 'me' value
+  const isSent = message.userId === sender.id || message.userId === 'me'
   const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
   const time = formatTime(timestamp, timeFormat)
   const status = message.status || 'read'
@@ -872,15 +874,22 @@ const IOSMessageBubble = ({
   const hasVideo = message.type === 'video' && message.videoData
   const hasLocation = message.type === 'location' && message.locationData
   const hasContact = message.type === 'contact' && message.contactData
-  
+
   // Get sender info for group chat
-  const messageSender = isGroupChat && !isSent 
-    ? participants?.find(p => p.id === message.userId) || receiver
+  // First check message's own sender info (senderName, senderColor), then fallback to participants lookup
+  const participantData = participants?.find(p => p.id === message.userId)
+  const messageSender = isGroupChat && !isSent
+    ? (message.senderName
+        ? { id: message.senderId || message.userId, name: message.senderName, color: message.senderColor, avatar: participantData?.avatar || null }
+        : participantData || receiver)
     : null
 
   const bubbleBg = isSent ? theme.sentBubble : theme.receivedBubble
   const textColor = isSent ? theme.sentText : theme.receivedText
   const timeColor = isSent ? theme.sentTimeText : theme.timeText
+
+  // Check if we should show avatar (group chat, received message, first in group)
+  const showGroupAvatar = isGroupChat && !isSent && isFirstInGroup && messageSender
 
   return (
     <div className={cn(
@@ -889,15 +898,43 @@ const IOSMessageBubble = ({
       isFirstInGroup ? "mt-[8px]" : "mt-[2px]",
       hasReactions ? "mb-[16px]" : ""
     )}>
+      {/* Group chat avatar */}
+      {showGroupAvatar && (
+        <div className="flex-shrink-0 mr-[6px] self-end mb-[2px]">
+          <Avatar className="w-[28px] h-[28px]">
+            {isImageAvatar(messageSender.avatar) ? (
+              <AvatarImage src={messageSender.avatar!} alt={messageSender.name} />
+            ) : isColorAvatar(messageSender.avatar) ? (
+              <AvatarFallback
+                style={{ backgroundColor: getAvatarColor(messageSender.avatar) || '#128C7E' }}
+                className="text-white text-[11px] font-medium"
+              >
+                {messageSender.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            ) : (
+              <AvatarFallback
+                style={{ backgroundColor: messageSender.color || '#128C7E' }}
+                className="text-white text-[11px] font-medium"
+              >
+                {messageSender.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            )}
+          </Avatar>
+        </div>
+      )}
+      {/* Spacer for non-first messages in group to align with avatar */}
+      {isGroupChat && !isSent && !isFirstInGroup && (
+        <div className="w-[34px] flex-shrink-0" />
+      )}
       <div className="relative max-w-[75%]">
         <div
           className={cn(
             "relative",
             isFirstInGroup
               ? isSent
-                ? "rounded-[18px] rounded-br-[4px]"
-                : "rounded-[18px] rounded-bl-[4px]"
-              : "rounded-[18px]"
+                ? "rounded-[8px] rounded-br-[2px]"
+                : "rounded-[8px] rounded-bl-[2px]"
+              : "rounded-[8px]"
           )}
           style={{
             backgroundColor: bubbleBg,
@@ -917,7 +954,7 @@ const IOSMessageBubble = ({
               />
             </svg>
           )}
-          
+
           {/* Group sender name */}
           {isGroupChat && !isSent && isFirstInGroup && messageSender && (
             <div className="px-[12px] pt-[6px]">
@@ -985,40 +1022,63 @@ const IOSMessageBubble = ({
           {/* Message Content */}
           <div className={cn(
             "relative",
-            (hasImage || hasVideo || hasLocation) ? "px-[8px] pb-[6px] pt-[4px]" : 
-            (hasVoice || hasDocument || hasContact) ? "px-[12px] pb-[8px]" : "px-[12px] py-[8px]"
+            (hasImage || hasVideo || hasLocation) ? "px-[8px] pb-[6px] pt-[4px]" :
+            (hasVoice || hasDocument || hasContact) ? "px-[12px] pb-[8px]" :
+            (isGroupChat && !isSent && isFirstInGroup && messageSender) ? "px-[12px] pt-[2px] pb-[8px]" : "px-[12px] py-[8px]"
           )}>
+            {/* Image/Video without text - absolute time overlay */}
+            {(hasImage || hasVideo) && !message.content && (
+              <span
+                className="absolute bottom-[8px] right-[10px] inline-flex items-center gap-[3px] whitespace-nowrap text-[11px] bg-black/40 px-[6px] py-[2px] rounded-full text-white/90"
+              >
+                {time}
+                {isSent && (
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                    <path
+                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
+                      fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
+                    />
+                    <path
+                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
+                      fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
+                    />
+                  </svg>
+                )}
+              </span>
+            )}
+
+            {/* Text content with inline time */}
             {message.content && (
               <span className="text-[17px] leading-[22px] whitespace-pre-wrap break-words" style={{ color: textColor }}>
                 {message.content}
-                {/* Invisible spacer for time/status */}
-                <span className="invisible text-[11px]">
-                  {'  '}{time}{isSent ? ' ✓✓' : ''}
+                {/* Invisible spacer to reserve space for time */}
+                <span className="inline-block opacity-0 text-[11px] ml-[6px]" aria-hidden="true">
+                  {time}{isSent ? ' ✓✓' : ''}
                 </span>
               </span>
             )}
-            
-            {/* Time and Status - absolute positioned */}
-            <span className={cn(
-              "flex items-center gap-[3px] whitespace-nowrap text-[11px]",
-              (hasImage || hasVideo) && !message.content 
-                ? "absolute bottom-[8px] right-[10px] bg-black/40 px-[6px] py-[2px] rounded-full text-white/90" 
-                : "absolute bottom-[8px] right-[12px]"
-            )} style={{ color: (hasImage || hasVideo) && !message.content ? undefined : timeColor }}>
-              {time}
-              {isSent && (
-                <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                  <path 
-                    d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z" 
-                    fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
-                  />
-                  <path 
-                    d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z" 
-                    fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
-                  />
-                </svg>
-              )}
-            </span>
+
+            {/* Visible time - absolute positioned over the spacer */}
+            {message.content && (
+              <span
+                className="absolute bottom-[8px] right-[12px] inline-flex items-center gap-[3px] whitespace-nowrap text-[11px]"
+                style={{ color: timeColor }}
+              >
+                {time}
+                {isSent && (
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                    <path
+                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
+                      fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
+                    />
+                    <path
+                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
+                      fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
+                    />
+                  </svg>
+                )}
+              </span>
+            )}
           </div>
         </div>
         
@@ -1167,7 +1227,7 @@ const groupMessagesByDate = (messages: Message[]): { date: string; messages: Mes
 }
 
 // Main Component
-export function WhatsAppPreview({
+export const WhatsAppPreview = memo(function WhatsAppPreview({
   sender,
   receiver,
   messages,
@@ -1183,30 +1243,47 @@ export function WhatsAppPreview({
   visibleMessageCount,
   showTypingIndicator,
 }: WhatsAppPreviewProps) {
-  const theme = darkMode ? themes.dark : themes.light
+  // Memoize theme to avoid recreating object on every render
+  const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode])
   const t = useTranslations(language)
-  
-  // Get font style from SUPPORTED_FONTS
-  const fontStyle = SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style || SUPPORTED_FONTS[0].style
-  
-  // Filter messages based on visibleMessageCount for animation
-  const visibleMessages = visibleMessageCount !== undefined 
-    ? messages.slice(0, visibleMessageCount) 
-    : messages
-  
-  const messageGroups = groupMessagesByDate(visibleMessages)
+
+  // Memoize font style lookup
+  const fontStyle = useMemo(
+    () => SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style || SUPPORTED_FONTS[0].style,
+    [fontFamily]
+  )
+
+  // Memoize visible messages slice
+  const visibleMessages = useMemo(
+    () => visibleMessageCount !== undefined ? messages.slice(0, visibleMessageCount) : messages,
+    [messages, visibleMessageCount]
+  )
+
+  // Memoize message groups
+  const messageGroups = useMemo(
+    () => groupMessagesByDate(visibleMessages),
+    [visibleMessages]
+  )
+
+  // Check if group chat mode is enabled AND there are participants
   const isGroupChat = settings.groupParticipants && settings.groupParticipants.length > 0
-  
+
+  // Create a lookup map for participants by ID for efficient access
+  const participantsMap = useMemo(() => {
+    if (!settings.groupParticipants) return new Map<string, User>()
+    return new Map(settings.groupParticipants.map(p => [p.id, p]))
+  }, [settings.groupParticipants])
+
   // Show typing indicator either from settings or from animation prop
   const showTyping = showTypingIndicator || settings.lastSeen === 'typing'
 
-  // Get background color based on dark mode
-  const getBgColor = () => {
+  // Memoize background color calculation
+  const bgColor = useMemo(() => {
     if (transparentBg) return 'transparent'
     if (settings.backgroundType === 'image' && settings.backgroundImage) return 'transparent'
     if (darkMode) return themes.dark.chatBg
     return settings.backgroundColor || themes.light.chatBg
-  }
+  }, [transparentBg, settings.backgroundType, settings.backgroundImage, darkMode, settings.backgroundColor])
 
   // Desktop view - wider chat window without phone frame
   if (!mobileView) {
@@ -1259,9 +1336,9 @@ export function WhatsAppPreview({
               )}
               
               {/* Doodle Background - Fixed */}
-              {!transparentBg && settings.backgroundType === 'doodle' && settings.showDoodle && (
-                <WhatsAppDoodle 
-                  opacity={settings.doodleOpacity || 0.06} 
+              {!transparentBg && settings.backgroundType === 'doodle' && (settings.showDoodle !== false) && (
+                <WhatsAppDoodle
+                  opacity={settings.doodleOpacity || 0.06}
                   color={darkMode ? theme.doodleColor : '#C8C4BA'}
                   darkMode={darkMode}
                 />
@@ -1399,9 +1476,9 @@ export function WhatsAppPreview({
         {/* Chat Area Container */}
         <div className="flex-1 relative overflow-hidden">
           {/* Fixed Background Layer */}
-          <div 
+          <div
             className="absolute inset-0 w-full h-full"
-            style={{ 
+            style={{
               backgroundColor: settings.backgroundType === 'solid'
                 ? (settings.backgroundColor || theme.chatBg)
                 : theme.chatBg
@@ -1421,9 +1498,9 @@ export function WhatsAppPreview({
             )}
             
             {/* Doodle Background - Fixed */}
-            {!transparentBg && settings.backgroundType === 'doodle' && settings.showDoodle && (
-              <WhatsAppDoodle 
-                opacity={settings.doodleOpacity || 0.06} 
+            {!transparentBg && settings.backgroundType === 'doodle' && (settings.showDoodle !== false) && (
+              <WhatsAppDoodle
+                opacity={settings.doodleOpacity || 0.06}
                 color={darkMode ? theme.doodleColor : '#C8C4BA'}
                 darkMode={darkMode}
               />
@@ -1478,4 +1555,4 @@ export function WhatsAppPreview({
       </div>
     </div>
   )
-}
+})

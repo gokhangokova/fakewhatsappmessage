@@ -1,18 +1,27 @@
 'use client'
 
 import { useState, useRef, useCallback, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { TabbedSidebar } from '@/components/editor/tabbed-sidebar'
 import { PhonePreview } from '@/components/preview/phone-preview'
-import { AnimatedChatPreview, AnimatedChatPreviewRef, VideoExportPanel, VideoExportSettings } from '@/components/video'
 import { ImageExportPanel } from '@/components/export'
-import { useChatState } from '@/hooks/use-chat-state'
+import { useChatState } from '@/contexts/chat-context'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Play, Square, Menu, Settings } from 'lucide-react'
+import { Play, Square, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
+// AnimatedChatPreview uses forwardRef, so we import it directly (dynamic breaks ref forwarding)
+import { AnimatedChatPreview } from '@/components/video/animated-chat-preview'
+import type { AnimatedChatPreviewRef, VideoExportSettings } from '@/components/video'
+
+// Dynamic import for VideoExportPanel (doesn't need ref)
+const VideoExportPanel = dynamic(
+  () => import('@/components/video/video-export-panel').then(mod => mod.VideoExportPanel),
+  { ssr: false }
+)
 
 const FORMAT_INFO = {
   png: { name: 'PNG' },
@@ -104,7 +113,7 @@ export default function Home() {
     currentFormat,
   } = useVideoExport()
 
-  const handleDownload = async () => {
+  const handleDownload = useCallback(async () => {
     await exportToFormat(`${platform}-chat`, {
       pixelRatio: exportScale,
       addWatermark: showWatermark,
@@ -112,7 +121,7 @@ export default function Home() {
       format: exportFormat,
       jpgQuality: jpgQuality,
     })
-    
+
     if (!error) {
       toast({
         title: '✅ Screenshot downloaded!',
@@ -125,14 +134,14 @@ export default function Home() {
         description: error,
       })
     }
-  }
+  }, [exportToFormat, platform, exportScale, showWatermark, transparentBg, exportFormat, jpgQuality, error, toast])
 
-  const handleCopyToClipboard = async () => {
+  const handleCopyToClipboard = useCallback(async () => {
     const success = await exportToClipboard({
       pixelRatio: exportScale,
       backgroundColor: transparentBg ? 'transparent' : '#ffffff',
     })
-    
+
     if (success) {
       setCopied(true)
       toast({
@@ -147,7 +156,7 @@ export default function Home() {
         description: 'Could not copy to clipboard. Try downloading instead.',
       })
     }
-  }
+  }, [exportToClipboard, exportScale, transparentBg, toast])
 
   // Preview Animation Handlers
   const handleStartPreview = useCallback(async () => {
@@ -249,8 +258,11 @@ export default function Home() {
     }
   }, [whatsappSettings, groupSettings])
 
-  // TabbedSidebar props
-  const sidebarProps = {
+  // Memoize sidebar close handler
+  const handleSidebarClose = useCallback(() => setSidebarOpen(false), [])
+
+  // Memoize TabbedSidebar props to prevent unnecessary re-renders
+  const sidebarProps = useMemo(() => ({
     platform,
     sender,
     setSender,
@@ -285,8 +297,16 @@ export default function Home() {
     onReset: resetToDefaults,
     // Mobile props
     isOpen: sidebarOpen,
-    onClose: () => setSidebarOpen(false),
-  }
+    onClose: handleSidebarClose,
+  }), [
+    platform, sender, setSender, receiver, setReceiver, messages, setMessages,
+    darkMode, setDarkMode, mobileView, setMobileView, timeFormat, setTimeFormat,
+    transparentBg, setTransparentBg, whatsappSettings, setWhatsAppSettings,
+    language, setLanguage, fontFamily, setFontFamily, batteryLevel, setBatteryLevel,
+    deviceType, setDeviceType, groupSettings, setGroupSettings, toggleGroupChat,
+    addParticipant, removeParticipant, updateParticipant, resetToDefaults,
+    sidebarOpen, handleSidebarClose
+  ])
 
   return (
     <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] bg-gray-100 relative overflow-hidden">

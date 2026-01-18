@@ -213,57 +213,69 @@ const IOSWhatsAppHeader = ({
   darkMode,
   showTyping,
   lastSeenTime,
+  isGroupChat,
+  groupName,
+  participantCount,
+  typingUserName,
   t,
 }: {
   receiver: User
   darkMode: boolean
   showTyping: boolean
   lastSeenTime?: Date
+  isGroupChat?: boolean
+  groupName?: string
+  participantCount?: number
+  typingUserName?: string
   t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  
+
   const getStatusText = () => {
+    if (isGroupChat && participantCount) {
+      if (showTyping && typingUserName) return `${typingUserName} ${t.preview.isTyping}`
+      return `${participantCount} ${t.preview.participants}`
+    }
     if (showTyping) return t.preview.typing
     // Always show 'online' to avoid hydration issues with date comparisons
     return t.preview.online
   }
 
   return (
-    <div 
+    <div
       className="flex items-center gap-[10px] px-[8px] py-[6px] border-b"
-      style={{ 
+      style={{
         backgroundColor: theme.header,
         borderColor: theme.headerBorder,
       }}
     >
       <ChevronLeft className="w-[28px] h-[28px]" style={{ color: theme.headerIcon }} strokeWidth={2.5} />
-      
+
       <Avatar className="w-[36px] h-[36px]">
         {isImageAvatar(receiver.avatar) ? (
           <AvatarImage src={receiver.avatar!} />
         ) : (
-          <AvatarFallback 
+          <AvatarFallback
             className="text-[14px] font-medium text-white"
-            style={{ 
+            style={{
               backgroundColor: getAvatarColor(receiver.avatar) || (darkMode ? '#2A3942' : '#DFE5E7'),
               color: getAvatarColor(receiver.avatar) ? '#FFFFFF' : (darkMode ? '#8696A0' : '#54656F'),
             }}
           >
-            {receiver.name?.charAt(0).toUpperCase()}
+            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
           </AvatarFallback>
         )}
       </Avatar>
-      
+
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-[16px] truncate leading-[20px]" style={{ color: theme.headerText }}>
-          {receiver.name}
+          {isGroupChat ? groupName : receiver.name}
         </p>
         <p className="text-[12px] truncate leading-[16px]" style={{ color: theme.headerSubtext }}>
           {getStatusText()}
         </p>
       </div>
-      
+
       <div className="flex items-center gap-[20px] pr-[4px]">
         <Video className="w-[24px] h-[24px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
         <Phone className="w-[22px] h-[22px]" style={{ color: theme.headerIcon }} strokeWidth={1.5} />
@@ -277,20 +289,32 @@ const AndroidWhatsAppHeader = ({
   receiver,
   darkMode,
   showTyping,
+  isGroupChat,
+  groupName,
+  participantCount,
+  typingUserName,
   t,
 }: {
   receiver: User
   darkMode: boolean
   showTyping: boolean
+  isGroupChat?: boolean
+  groupName?: string
+  participantCount?: number
+  typingUserName?: string
   t: ReturnType<typeof useTranslations>
 }) => {
   const getStatusText = () => {
+    if (isGroupChat && participantCount) {
+      if (showTyping && typingUserName) return `${typingUserName} ${t.preview.isTyping}`
+      return `${participantCount} ${t.preview.participants}`
+    }
     if (showTyping) return t.preview.typing
     return t.preview.online
   }
 
   return (
-    <div 
+    <div
       className="flex items-center gap-[6px] px-[4px] py-[8px]"
       style={{ backgroundColor: '#075E54' }}
     >
@@ -299,38 +323,38 @@ const AndroidWhatsAppHeader = ({
           <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z" fill="#FFFFFF"/>
         </svg>
       </button>
-      
+
       <Avatar className="w-[40px] h-[40px]">
         {isImageAvatar(receiver.avatar) ? (
           <AvatarImage src={receiver.avatar!} />
         ) : (
-          <AvatarFallback 
+          <AvatarFallback
             className="text-[16px] font-medium text-white"
-            style={{ 
+            style={{
               backgroundColor: getAvatarColor(receiver.avatar) || '#128C7E',
               color: '#FFFFFF',
             }}
           >
-            {receiver.name?.charAt(0).toUpperCase()}
+            {(isGroupChat ? groupName : receiver.name)?.charAt(0).toUpperCase()}
           </AvatarFallback>
         )}
       </Avatar>
-      
+
       <div className="flex-1 min-w-0 ml-[4px]">
-        <p 
-          className="font-medium text-[16px] truncate leading-[20px]" 
+        <p
+          className="font-medium text-[16px] truncate leading-[20px]"
           style={{ color: '#FFFFFF', fontFamily: 'Roboto, sans-serif' }}
         >
-          {receiver.name}
+          {isGroupChat ? groupName : receiver.name}
         </p>
-        <p 
-          className="text-[13px] truncate leading-[16px]" 
+        <p
+          className="text-[13px] truncate leading-[16px]"
           style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'Roboto, sans-serif' }}
         >
           {getStatusText()}
         </p>
       </div>
-      
+
       <div className="flex items-center">
         <button className="p-[8px]">
           <Video className="w-[22px] h-[22px]" style={{ color: '#FFFFFF' }} strokeWidth={1.5} />
@@ -416,6 +440,13 @@ const TypingIndicator = ({ darkMode }: { darkMode: boolean }) => {
   )
 }
 
+// Group Chat Sender Name
+const GroupSenderName = ({ name, color }: { name: string; color?: string }) => (
+  <p className="text-[12px] font-semibold" style={{ color: color || '#25D366' }}>
+    {name}
+  </p>
+)
+
 // Animated Message Bubble
 const AnimatedMessageBubble = ({
   message,
@@ -426,6 +457,8 @@ const AnimatedMessageBubble = ({
   darkMode,
   isVisible,
   appearDuration = 400,
+  isGroupChat,
+  participants,
 }: {
   message: Message
   sender: User
@@ -435,12 +468,27 @@ const AnimatedMessageBubble = ({
   darkMode: boolean
   isVisible: boolean
   appearDuration?: number
+  isGroupChat?: boolean
+  participants?: User[]
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  const isSent = message.userId === sender.id
+  // Check if message is from current user - supports both sender.id and legacy 'me' value
+  const isSent = message.userId === sender.id || message.userId === 'me'
   const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
   const time = formatTime(timestamp, timeFormat)
   const status = message.status || 'read'
+
+  // Get sender info for group chat
+  // First check message's own sender info (senderName, senderColor), then fallback to participants lookup
+  const participantData = participants?.find(p => p.id === message.userId)
+  const messageSender = isGroupChat && !isSent
+    ? (message.senderName
+        ? { id: message.senderId || message.userId, name: message.senderName, color: message.senderColor, avatar: participantData?.avatar || null }
+        : participantData || receiver)
+    : null
+
+  // Check if we should show avatar (group chat, received message, first in group)
+  const showGroupAvatar = isGroupChat && !isSent && isFirstInGroup && messageSender
 
   const bubbleBg = isSent ? theme.sentBubble : theme.receivedBubble
   const textColor = isSent ? theme.sentText : theme.receivedText
@@ -452,7 +500,7 @@ const AnimatedMessageBubble = ({
   if (!isVisible) return null
 
   return (
-    <div 
+    <div
       className={cn(
         "flex px-[12px]",
         isSent ? "justify-end" : "justify-start",
@@ -462,15 +510,43 @@ const AnimatedMessageBubble = ({
         animation: `slideUp ${appearDuration}ms ease-out`,
       }}
     >
+      {/* Group chat avatar */}
+      {showGroupAvatar && (
+        <div className="flex-shrink-0 mr-[6px] self-end mb-[2px]">
+          <Avatar className="w-[28px] h-[28px]">
+            {isImageAvatar(messageSender.avatar) ? (
+              <AvatarImage src={messageSender.avatar!} alt={messageSender.name} />
+            ) : isColorAvatar(messageSender.avatar) ? (
+              <AvatarFallback
+                style={{ backgroundColor: getAvatarColor(messageSender.avatar) || '#128C7E' }}
+                className="text-white text-[11px] font-medium"
+              >
+                {messageSender.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            ) : (
+              <AvatarFallback
+                style={{ backgroundColor: messageSender.color || '#128C7E' }}
+                className="text-white text-[11px] font-medium"
+              >
+                {messageSender.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            )}
+          </Avatar>
+        </div>
+      )}
+      {/* Spacer for non-first messages in group to align with avatar */}
+      {isGroupChat && !isSent && !isFirstInGroup && (
+        <div className="w-[34px] flex-shrink-0" />
+      )}
       <div className="relative max-w-[75%]">
         <div
           className={cn(
             "relative overflow-hidden",
             isFirstInGroup
               ? isSent
-                ? "rounded-[18px] rounded-br-[4px]"
-                : "rounded-[18px] rounded-bl-[4px]"
-              : "rounded-[18px]"
+                ? "rounded-[8px] rounded-br-[2px]"
+                : "rounded-[8px] rounded-bl-[2px]"
+              : "rounded-[8px]"
           )}
           style={{
             backgroundColor: bubbleBg,
@@ -489,32 +565,39 @@ const AnimatedMessageBubble = ({
               />
             </svg>
           )}
-          
+
+          {/* Group sender name */}
+          {isGroupChat && !isSent && isFirstInGroup && messageSender && (
+            <div className="px-[12px] pt-[6px]">
+              <GroupSenderName name={messageSender.name} color={messageSender.color} />
+            </div>
+          )}
+
           {/* Image Content */}
           {hasImage && (
             <div className="relative">
-              <img 
-                src={message.imageUrl} 
-                alt="" 
+              <img
+                src={message.imageUrl}
+                alt=""
                 className="w-full max-w-[260px] object-cover"
                 style={{ display: 'block' }}
                 crossOrigin="anonymous"
               />
               {/* Image overlay for time/status when no text */}
               {!hasText && (
-                <div 
+                <div
                   className="absolute bottom-[6px] right-[8px] flex items-center gap-[3px] px-[6px] py-[2px] rounded-[10px]"
                   style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
                 >
                   <span className="text-[11px] text-white italic">{time}</span>
                   {isSent && (
                     <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                      <path 
-                        d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z" 
+                      <path
+                        d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
                         fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
                       />
-                      <path 
-                        d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z" 
+                      <path
+                        d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
                         fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
                       />
                     </svg>
@@ -523,32 +606,36 @@ const AnimatedMessageBubble = ({
               )}
             </div>
           )}
-          
+
           {/* Text Content */}
           {hasText && (
-            <div className="relative px-[12px] py-[8px]">
+            <div className={cn(
+              "relative px-[12px]",
+              isGroupChat && !isSent && isFirstInGroup && messageSender ? "pt-[2px] pb-[8px]" : "py-[8px]"
+            )}>
+              {/* Text content with inline time spacer */}
               <span className="text-[17px] leading-[22px] whitespace-pre-wrap break-words" style={{ color: textColor }}>
                 {message.content}
-                {/* Invisible spacer for time/status */}
-                <span className="invisible text-[11px]">
-                  {'  '}{time}{isSent ? ' ✓✓' : ''}
+                {/* Invisible spacer to reserve space for time */}
+                <span className="inline-block opacity-0 text-[11px] ml-[6px]" aria-hidden="true">
+                  {time}{isSent ? ' ✓✓' : ''}
                 </span>
               </span>
-              
-              {/* Time and Status - absolute positioned */}
-              <span 
-                className="absolute bottom-[8px] right-[12px] flex items-center gap-[3px] whitespace-nowrap text-[11px]" 
+
+              {/* Visible time - absolute positioned over the spacer */}
+              <span
+                className="absolute bottom-[8px] right-[12px] inline-flex items-center gap-[3px] whitespace-nowrap text-[11px]"
                 style={{ color: timeColor }}
               >
                 {time}
                 {isSent && (
                   <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                    <path 
-                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z" 
+                    <path
+                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
                       fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
                     />
-                    <path 
-                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z" 
+                    <path
+                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
                       fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
                     />
                   </svg>
@@ -684,11 +771,15 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
   const theme = darkMode ? themes.dark : themes.light
   const t = useTranslations(language)
   const isAndroid = deviceType === 'android'
-  
+
+  // Check if group chat mode is enabled
+  const isGroupChat = settings.groupParticipants && settings.groupParticipants.length > 0
+
   // Get font style from SUPPORTED_FONTS
   const fontStyle = SUPPORTED_FONTS.find(f => f.code === fontFamily)?.style || SUPPORTED_FONTS[0].style
   const [visibleMessageCount, setVisibleMessageCount] = useState(0)
   const [showTyping, setShowTyping] = useState(false)
+  const [typingUserName, setTypingUserName] = useState<string | undefined>(undefined)
   const [isAnimating, setIsAnimating] = useState(false)
   const [phase, setPhase] = useState<AnimationPhase>('idle')
   const animationStoppedRef = useRef(false)
@@ -733,11 +824,13 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     animationStoppedRef.current = true
     setIsAnimating(false)
     setShowTyping(false)
+    setTypingUserName(undefined)
     setPhase('idle')
   }, [])
 
   const resetAnimation = useCallback(() => {
     setShowTyping(false)
+    setTypingUserName(undefined)
     setIsAnimating(false)
     setPhase('idle')
     animationStoppedRef.current = false
@@ -777,7 +870,10 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     const currentMessage = messages[visibleMessageCount]
     if (!currentMessage) return
 
-    const isReceiverMessage = currentMessage.userId !== sender.id
+    // Check if message is from receiver (not from current user)
+    // Supports both sender.id and legacy 'me' value
+    const isSenderMessage = currentMessage.userId === sender.id || currentMessage.userId === 'me'
+    const isReceiverMessage = !isSenderMessage
 
     // State machine transitions
     switch (phase) {
@@ -786,9 +882,16 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         const waitTime = visibleMessageCount === 0 ? 300 : messageDelay
         const timer = setTimeout(() => {
           if (animationStoppedRef.current) return
-          
+
           if (isReceiverMessage) {
             // Receiver mesajı: typing göster
+            // Grup chat için kimin yazdığını bul
+            if (isGroupChat) {
+              const senderName = currentMessage.senderName ||
+                settings.groupParticipants?.find(p => p.id === currentMessage.userId)?.name ||
+                receiver.name
+              setTypingUserName(senderName)
+            }
             setShowTyping(true)
             setPhase('typing')
           } else {
@@ -804,6 +907,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         const timer = setTimeout(() => {
           if (animationStoppedRef.current) return
           setShowTyping(false)
+          setTypingUserName(undefined)
           setPhase('waiting_after_typing')
         }, typingDuration)
         return () => clearTimeout(timer)
@@ -835,7 +939,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
         return () => clearTimeout(timer)
       }
     }
-  }, [isAnimating, phase, visibleMessageCount, messages, sender.id, typingDuration, messageDelay, messageAppearDuration, onAnimationComplete])
+  }, [isAnimating, phase, visibleMessageCount, messages, sender.id, typingDuration, messageDelay, messageAppearDuration, onAnimationComplete, isGroupChat, settings.groupParticipants, receiver.name])
 
   return (
     <div
@@ -884,6 +988,10 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             receiver={receiver}
             darkMode={darkMode}
             showTyping={showTyping}
+            isGroupChat={isGroupChat}
+            groupName={settings.groupName}
+            participantCount={settings.groupParticipants?.length}
+            typingUserName={typingUserName}
             t={t}
           />
         ) : (
@@ -892,6 +1000,10 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             darkMode={darkMode}
             showTyping={showTyping}
             lastSeenTime={settings.lastSeenTime}
+            isGroupChat={isGroupChat}
+            groupName={settings.groupName}
+            participantCount={settings.groupParticipants?.length}
+            typingUserName={typingUserName}
             t={t}
           />
         )}
@@ -968,6 +1080,8 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
                   darkMode={darkMode}
                   isVisible={true}
                   appearDuration={messageAppearDuration}
+                  isGroupChat={isGroupChat}
+                  participants={settings.groupParticipants}
                 />
               )
             })}

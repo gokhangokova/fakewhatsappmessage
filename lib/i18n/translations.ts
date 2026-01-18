@@ -68,6 +68,18 @@ export interface Translations {
     forwardedMessage: string
     replyingTo: string
     reactions: string
+    // Group Chat
+    chatType: string
+    oneToOne: string
+    groupChat: string
+    groupInfo: string
+    groupName: string
+    groupNamePlaceholder: string
+    participants: string
+    addParticipant: string
+    participantName: string
+    participantColor: string
+    admin: string
   }
   
   // Avatar Upload
@@ -173,6 +185,7 @@ export interface Translations {
     yesterday: string
     online: string
     typing: string
+    isTyping: string  // "{name} is typing..."
     lastSeenToday: string
     lastSeenYesterday: string
     tapForContactInfo: string
@@ -259,6 +272,18 @@ export const en: Translations = {
     forwardedMessage: 'Forwarded message',
     replyingTo: 'Replying to',
     reactions: 'Reactions',
+    // Group Chat
+    chatType: 'Chat Type',
+    oneToOne: '1-1 Chat',
+    groupChat: 'Group Chat',
+    groupInfo: 'Group Info',
+    groupName: 'Group Name',
+    groupNamePlaceholder: 'Enter group name...',
+    participants: 'Participants',
+    addParticipant: 'Add Participant',
+    participantName: 'Name',
+    participantColor: 'Color',
+    admin: 'Admin',
   },
   
   avatar: {
@@ -357,6 +382,7 @@ export const en: Translations = {
     yesterday: 'Yesterday',
     online: 'online',
     typing: 'typing...',
+    isTyping: 'is typing...',
     lastSeenToday: 'last seen today at',
     lastSeenYesterday: 'last seen yesterday at',
     tapForContactInfo: 'tap here for contact info',
@@ -442,6 +468,18 @@ export const tr: Translations = {
     forwardedMessage: 'İletilen mesaj',
     replyingTo: 'Yanıtlanan',
     reactions: 'Tepkiler',
+    // Group Chat
+    chatType: 'Chat Tipi',
+    oneToOne: '1-1 Chat',
+    groupChat: 'Group Chat',
+    groupInfo: 'Grup Bilgileri',
+    groupName: 'Grup Adı',
+    groupNamePlaceholder: 'Grup adını girin...',
+    participants: 'Katılımcılar',
+    addParticipant: 'Katılımcı Ekle',
+    participantName: 'İsim',
+    participantColor: 'Renk',
+    admin: 'Yönetici',
   },
   
   avatar: {
@@ -540,6 +578,7 @@ export const tr: Translations = {
     yesterday: 'Dün',
     online: 'çevrimiçi',
     typing: 'yazıyor...',
+    isTyping: 'yazıyor...',
     lastSeenToday: 'bugün görüldü, saat',
     lastSeenYesterday: 'dün görüldü, saat',
     tapForContactInfo: 'kişi bilgisi için dokunun',

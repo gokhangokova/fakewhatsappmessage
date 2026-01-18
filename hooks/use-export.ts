@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useState, useRef } from 'react'
-import { toPng, toBlob, toJpeg } from 'html-to-image'
+
+// Dynamic import for html-to-image to reduce initial bundle size (~50KB)
+const loadHtmlToImage = () => import('html-to-image')
 
 export type ExportFormat = 'png' | 'jpg' | 'webp'
 
@@ -110,6 +112,9 @@ export function useExport(): UseExportReturn {
       try {
         const element = exportRef.current
 
+        // Lazy load html-to-image
+        const { toPng, toJpeg } = await loadHtmlToImage()
+
         // Generate image based on format
         let dataUrl: string
 
@@ -207,6 +212,9 @@ export function useExport(): UseExportReturn {
 
       try {
         const element = exportRef.current
+
+        // Lazy load html-to-image
+        const { toBlob } = await loadHtmlToImage()
 
         // Generate PNG blob (clipboard only supports PNG)
         const blob = await toBlob(element, {
