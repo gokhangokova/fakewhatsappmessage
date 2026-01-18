@@ -454,6 +454,7 @@ const AnimatedMessageBubble = ({
   receiver,
   timeFormat,
   isFirstInGroup,
+  isLastInGroup,
   darkMode,
   isVisible,
   appearDuration = 400,
@@ -465,6 +466,7 @@ const AnimatedMessageBubble = ({
   receiver: User
   timeFormat: '12h' | '24h'
   isFirstInGroup: boolean
+  isLastInGroup: boolean
   darkMode: boolean
   isVisible: boolean
   appearDuration?: number
@@ -472,8 +474,8 @@ const AnimatedMessageBubble = ({
   participants?: User[]
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  // Check if message is from current user - supports both sender.id and legacy 'me' value
-  const isSent = message.userId === sender.id || message.userId === 'me'
+  // Check if message is from current user - supports sender.id, 'me', and 'sender-1' (group chat default)
+  const isSent = message.userId === sender.id || message.userId === 'me' || message.userId === 'sender-1'
   const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
   const time = formatTime(timestamp, timeFormat)
   const status = message.status || 'read'
@@ -487,8 +489,8 @@ const AnimatedMessageBubble = ({
         : participantData || receiver)
     : null
 
-  // Check if we should show avatar (group chat, received message, first in group)
-  const showGroupAvatar = isGroupChat && !isSent && isFirstInGroup && messageSender
+  // Check if we should show avatar (group chat, received message, last in group - next to tail)
+  const showGroupAvatar = isGroupChat && !isSent && isLastInGroup && messageSender
 
   const bubbleBg = isSent ? theme.sentBubble : theme.receivedBubble
   const textColor = isSent ? theme.sentText : theme.receivedText
@@ -510,7 +512,7 @@ const AnimatedMessageBubble = ({
         animation: `slideUp ${appearDuration}ms ease-out`,
       }}
     >
-      {/* Group chat avatar */}
+      {/* Group chat avatar - shown on last message (next to tail) */}
       {showGroupAvatar && (
         <div className="flex-shrink-0 mr-[6px] self-end mb-[2px]">
           <Avatar className="w-[28px] h-[28px]">
@@ -534,15 +536,16 @@ const AnimatedMessageBubble = ({
           </Avatar>
         </div>
       )}
-      {/* Spacer for non-first messages in group to align with avatar */}
-      {isGroupChat && !isSent && !isFirstInGroup && (
+      {/* Spacer for non-last messages in group to align with avatar */}
+      {isGroupChat && !isSent && !isLastInGroup && (
         <div className="w-[34px] flex-shrink-0" />
       )}
       <div className="relative max-w-[75%]">
         <div
           className={cn(
-            "relative overflow-hidden",
-            isFirstInGroup
+            "relative",
+            // Tail appears on last message of group, so bottom corner should be small on last message
+            isLastInGroup
               ? isSent
                 ? "rounded-[8px] rounded-br-[2px]"
                 : "rounded-[8px] rounded-bl-[2px]"
@@ -553,8 +556,8 @@ const AnimatedMessageBubble = ({
             boxShadow: darkMode ? 'none' : '0 1px 0.5px rgba(0, 0, 0, 0.13)',
           }}
         >
-          {/* Tail */}
-          {isFirstInGroup && (
+          {/* Tail - shown on last message in a group from same sender */}
+          {isLastInGroup && (
             <svg
               className={cn("absolute bottom-0 z-10", isSent ? "-right-[8px]" : "-left-[8px]")}
               width="12" height="19" viewBox="0 0 12 19"
@@ -1065,9 +1068,11 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             
             <DateSeparator date={t.preview.today} darkMode={darkMode} />
             
-            {messages.slice(0, visibleMessageCount).map((message, index) => {
-              const prevMessage = index > 0 ? messages[index - 1] : null
+            {messages.slice(0, visibleMessageCount).map((message, index, visibleMessages) => {
+              const prevMessage = index > 0 ? visibleMessages[index - 1] : null
+              const nextMessage = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : null
               const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
+              const isLastInGroup = !nextMessage || nextMessage.userId !== message.userId
 
               return (
                 <AnimatedMessageBubble
@@ -1077,6 +1082,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
                   receiver={receiver}
                   timeFormat={timeFormat}
                   isFirstInGroup={isFirstInGroup}
+                  isLastInGroup={isLastInGroup}
                   darkMode={darkMode}
                   isVisible={true}
                   appearDuration={messageAppearDuration}

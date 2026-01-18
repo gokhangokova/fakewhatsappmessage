@@ -846,6 +846,7 @@ const IOSMessageBubble = ({
   receiver,
   timeFormat,
   isFirstInGroup,
+  isLastInGroup,
   darkMode,
   isGroupChat,
   participants,
@@ -856,14 +857,15 @@ const IOSMessageBubble = ({
   receiver: User
   timeFormat: '12h' | '24h'
   isFirstInGroup: boolean
+  isLastInGroup: boolean
   darkMode: boolean
   isGroupChat?: boolean
   participants?: User[]
   t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  // Check if message is from current user - supports both sender.id and legacy 'me' value
-  const isSent = message.userId === sender.id || message.userId === 'me'
+  // Check if message is from current user - supports sender.id, 'me', and 'sender-1' (group chat default)
+  const isSent = message.userId === sender.id || message.userId === 'me' || message.userId === 'sender-1'
   const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
   const time = formatTime(timestamp, timeFormat)
   const status = message.status || 'read'
@@ -888,8 +890,8 @@ const IOSMessageBubble = ({
   const textColor = isSent ? theme.sentText : theme.receivedText
   const timeColor = isSent ? theme.sentTimeText : theme.timeText
 
-  // Check if we should show avatar (group chat, received message, first in group)
-  const showGroupAvatar = isGroupChat && !isSent && isFirstInGroup && messageSender
+  // Check if we should show avatar (group chat, received message, last in group - next to tail)
+  const showGroupAvatar = isGroupChat && !isSent && isLastInGroup && messageSender
 
   return (
     <div className={cn(
@@ -898,7 +900,7 @@ const IOSMessageBubble = ({
       isFirstInGroup ? "mt-[8px]" : "mt-[2px]",
       hasReactions ? "mb-[16px]" : ""
     )}>
-      {/* Group chat avatar */}
+      {/* Group chat avatar - shown on last message (next to tail) */}
       {showGroupAvatar && (
         <div className="flex-shrink-0 mr-[6px] self-end mb-[2px]">
           <Avatar className="w-[28px] h-[28px]">
@@ -922,15 +924,16 @@ const IOSMessageBubble = ({
           </Avatar>
         </div>
       )}
-      {/* Spacer for non-first messages in group to align with avatar */}
-      {isGroupChat && !isSent && !isFirstInGroup && (
+      {/* Spacer for non-last messages in group to align with avatar */}
+      {isGroupChat && !isSent && !isLastInGroup && (
         <div className="w-[34px] flex-shrink-0" />
       )}
       <div className="relative max-w-[75%]">
         <div
           className={cn(
             "relative",
-            isFirstInGroup
+            // Tail appears on last message of group, so bottom corner should be small on last message
+            isLastInGroup
               ? isSent
                 ? "rounded-[8px] rounded-br-[2px]"
                 : "rounded-[8px] rounded-bl-[2px]"
@@ -942,8 +945,8 @@ const IOSMessageBubble = ({
             padding: (hasImage || hasVideo || hasLocation) ? '3px' : undefined,
           }}
         >
-          {/* Tail */}
-          {isFirstInGroup && (
+          {/* Tail - shown on last message in a group from same sender */}
+          {isLastInGroup && (
             <svg
               className={cn("absolute bottom-0", isSent ? "-right-[8px]" : "-left-[8px]")}
               width="12" height="19" viewBox="0 0 12 19"
@@ -1358,7 +1361,9 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                     <DateSeparator date={t.preview.today} darkMode={darkMode} />
                     {group.messages.map((message, index) => {
                       const prevMessage = index > 0 ? group.messages[index - 1] : null
+                      const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
                       const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
+                      const isLastInGroup = !nextMessage || nextMessage.userId !== message.userId
 
                       return (
                         <IOSMessageBubble
@@ -1368,6 +1373,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                           receiver={receiver}
                           timeFormat={timeFormat}
                           isFirstInGroup={isFirstInGroup}
+                          isLastInGroup={isLastInGroup}
                           darkMode={darkMode}
                           isGroupChat={isGroupChat}
                           participants={settings.groupParticipants}
@@ -1520,7 +1526,9 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                   <DateSeparator date={t.preview.today} darkMode={darkMode} />
                   {group.messages.map((message, index) => {
                     const prevMessage = index > 0 ? group.messages[index - 1] : null
+                    const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
                     const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
+                    const isLastInGroup = !nextMessage || nextMessage.userId !== message.userId
 
                     return (
                       <IOSMessageBubble
@@ -1530,6 +1538,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                         receiver={receiver}
                         timeFormat={timeFormat}
                         isFirstInGroup={isFirstInGroup}
+                        isLastInGroup={isLastInGroup}
                         darkMode={darkMode}
                         isGroupChat={isGroupChat}
                         participants={settings.groupParticipants}
@@ -1539,7 +1548,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                   })}
                 </div>
               ))}
-              
+
               {/* Typing Indicator */}
               {showTyping && <TypingIndicator darkMode={darkMode} />}
             </div>
