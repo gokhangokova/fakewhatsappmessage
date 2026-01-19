@@ -162,6 +162,7 @@ interface ChatState {
   fontFamily: FontFamily
   batteryLevel: number
   deviceType: DeviceType
+  mobilePreviewScale: number
   // Active chat type
   isGroupChat: boolean
   // Separate sessions for 1-1 and group chat
@@ -196,6 +197,7 @@ const defaultState: ChatState = {
   fontFamily: 'sf-pro',
   batteryLevel: 100,
   deviceType: 'ios',
+  mobilePreviewScale: 50,
   isGroupChat: false,
   directChatSession: defaultDirectChatSession,
   groupChatSession: defaultGroupChatSession,
@@ -535,6 +537,11 @@ export function useChatState() {
     }))
   }, [setState])
 
+  // Mobile Preview Scale (10-100%)
+  const setMobilePreviewScale = useCallback((mobilePreviewScale: number) => {
+    setState((prev) => ({ ...prev, mobilePreviewScale: Math.min(100, Math.max(10, mobilePreviewScale)) }))
+  }, [setState])
+
   // Group Settings - updates active session's groupSettings
   const setGroupSettings = useCallback((settings: Partial<GroupChatSettings>) => {
     setState((prev) => {
@@ -628,6 +635,7 @@ export function useChatState() {
       fontFamily: defaultState.fontFamily,
       batteryLevel: defaultState.batteryLevel,
       deviceType: defaultState.deviceType,
+      mobilePreviewScale: defaultState.mobilePreviewScale,
       groupSettings: defaultActiveSession.groupSettings,
       setPlatform,
       setSender,
@@ -651,6 +659,7 @@ export function useChatState() {
       setFontFamily,
       setBatteryLevel,
       setDeviceType,
+      setMobilePreviewScale,
       setGroupSettings,
       toggleGroupChat,
       addParticipant,
@@ -675,6 +684,7 @@ export function useChatState() {
     fontFamily: state.fontFamily,
     batteryLevel: state.batteryLevel,
     deviceType: state.deviceType,
+    mobilePreviewScale: state.mobilePreviewScale ?? 50,
     groupSettings: activeSession.groupSettings,
     setPlatform,
     setSender,
@@ -698,6 +708,7 @@ export function useChatState() {
     setFontFamily,
     setBatteryLevel,
     setDeviceType,
+    setMobilePreviewScale,
     setGroupSettings,
     toggleGroupChat,
     addParticipant,

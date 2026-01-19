@@ -32,6 +32,7 @@ export interface Translations {
     transparentBg: string
     fontFamily: string
     batteryLevel: string
+    previewScale: string
     device: string
     ios: string
     android: string
@@ -240,6 +241,7 @@ export const en: Translations = {
     transparentBg: 'Transparent BG',
     fontFamily: 'Font',
     batteryLevel: 'Battery',
+    previewScale: 'Preview Scale',
     device: 'Device',
     ios: 'iOS',
     android: 'Android',
@@ -438,6 +440,7 @@ export const tr: Translations = {
     transparentBg: 'Şeffaf Arka Plan',
     fontFamily: 'Yazı Tipi',
     batteryLevel: 'Şarj',
+    previewScale: 'Önizleme Ölçeği',
     device: 'Cihaz',
     ios: 'iOS',
     android: 'Android',
