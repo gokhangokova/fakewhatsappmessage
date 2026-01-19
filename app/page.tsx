@@ -413,8 +413,8 @@ export default function Home() {
             // Desktop scaling
             "sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
             "sm:origin-center",
-            // Mobile: dynamic scaling via CSS class
-            "max-sm:mobile-phone-preview"
+            // Mobile: dynamic scaling via CSS class (media query handles responsive)
+            "mobile-phone-preview"
           )}
           style={{ '--mobile-preview-scale': mobilePreviewScale / 100 } as React.CSSProperties}
         >
