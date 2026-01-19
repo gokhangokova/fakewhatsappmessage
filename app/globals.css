@@ -372,3 +372,17 @@
     transform: scale(0.75);
   }
 }
+
+/* Mobile phone preview - dynamic scaling based on viewport */
+@media (max-width: 639px) {
+  .mobile-phone-preview {
+    /* Scale to fit available height (viewport - header - padding) */
+    /* Phone is 812px tall, we want it to fit in available space */
+    --available-height: calc(100vh - 56px - 32px);
+    --available-width: calc(100vw - 64px - 16px); /* subtract button area (64px) and padding */
+    --scale-by-height: calc(var(--available-height) / 812);
+    --scale-by-width: calc(var(--available-width) / 375);
+    transform: scale(min(var(--scale-by-height), var(--scale-by-width), 1));
+    transform-origin: center center;
+  }
+}

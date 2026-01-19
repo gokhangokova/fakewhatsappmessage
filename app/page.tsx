@@ -399,16 +399,19 @@ export default function Home() {
       {/* Tabbed Sidebar - Responsive */}
       <TabbedSidebar {...sidebarProps} />
 
-      {/* Preview Panel - Full width on mobile */}
-      <div className="w-full h-full flex items-center justify-start sm:justify-center pl-2 pr-16 sm:px-4 md:p-8 overflow-auto">
-        {/* Phone Preview - Responsive scaling */}
-        <div className={cn(
-          "transform origin-center transition-transform",
-          // Responsive scaling: maximize on mobile, shift left for button space
-          "scale-[0.75] sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
-          // On mobile, origin from left to maximize preview size
-          "origin-left sm:origin-center"
-        )}>
+      {/* Preview Panel - Full width on mobile, centered between left edge and buttons */}
+      <div className="w-full h-full flex items-center justify-center px-2 sm:px-4 md:p-8 overflow-hidden">
+        {/* Phone Preview - Responsive scaling with dynamic fit */}
+        <div
+          className={cn(
+            "transition-transform flex items-center justify-center",
+            // Desktop scaling
+            "sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
+            "sm:origin-center",
+            // Mobile: dynamic scaling via CSS class, offset for buttons
+            "max-sm:mobile-phone-preview max-sm:mr-16"
+          )}
+        >
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
               <AnimatedChatPreview
@@ -454,49 +457,49 @@ export default function Home() {
         </div>
 
         {/* Floating Export Panel - Mobile: vertical on right side, Desktop: bottom right */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:top-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-col sm:flex-col items-center sm:items-end gap-2 sm:gap-3">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:top-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-col sm:flex-col items-center sm:items-end gap-2.5 sm:gap-3">
           {/* Editor Button - Mobile only */}
           <Button
             size="default"
-            className="rounded-full shadow-lg h-11 w-11 sm:hidden bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+            className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300"
             onClick={() => {
               setSidebarTab('editor')
               setSidebarOpen(true)
             }}
           >
-            <Edit3 className="w-4 h-4" />
+            <Edit3 className="w-5 h-5" strokeWidth={2.5} />
           </Button>
 
           {/* Settings Button - Mobile only */}
           <Button
             size="default"
-            className="rounded-full shadow-lg h-11 w-11 sm:hidden bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+            className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300"
             onClick={() => {
               setSidebarTab('settings')
               setSidebarOpen(true)
             }}
           >
-            <FlaskConical className="w-4 h-4" />
+            <FlaskConical className="w-5 h-5" strokeWidth={2.5} />
           </Button>
 
           {/* Preview Animation Button */}
           {isPreviewMode ? (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-11 w-11 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 justify-center"
+              className="rounded-full shadow-lg h-12 w-12 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-500 hover:bg-orange-600 text-white border-0 justify-center"
               onClick={handleStopPreview}
             >
-              <Square className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Square className="w-5 h-5 sm:w-5 sm:h-5" strokeWidth={2.5} />
               <span className="font-medium hidden sm:inline">{t.export.stop}</span>
             </Button>
           ) : (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-11 w-11 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-400 hover:bg-orange-500 text-white border-0 justify-center"
+              className="rounded-full shadow-lg h-12 w-12 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-500 hover:bg-orange-600 text-white border-0 justify-center"
               onClick={handleStartPreview}
               disabled={isVideoMode || isExporting || messages.length === 0}
             >
-              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Play className="w-5 h-5 sm:w-5 sm:h-5" strokeWidth={2.5} />
               <span className="font-medium hidden sm:inline">{t.export.preview}</span>
             </Button>
           )}
