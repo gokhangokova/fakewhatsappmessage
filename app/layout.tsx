@@ -11,9 +11,9 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'FakeSocialMessage - Create Fake Chat Screenshots',
+  title: 'memesocial.app - Create Fake Chat Screenshots',
   description: 'Generate realistic fake chat screenshots for WhatsApp, iMessage, Instagram and more. Perfect for content creators, designers, and marketers.',
-  keywords: ['fake chat', 'mockup', 'whatsapp', 'imessage', 'instagram', 'screenshot generator'],
+  keywords: ['fake chat', 'mockup', 'whatsapp', 'imessage', 'instagram', 'screenshot generator', 'meme'],
 }
 
 export default function RootLayout({

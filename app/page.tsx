@@ -188,11 +188,12 @@ export default function Home() {
   }, [])
 
   const handlePreviewComplete = useCallback(() => {
+    // Preview always uses normal end pause (2 seconds)
     setTimeout(() => {
       setIsPreviewMode(false)
       setIsVideoMode(false)
-    }, videoSettings.endPauseDuration)
-  }, [videoSettings.endPauseDuration])
+    }, 2000)
+  }, [])
 
   // Video Export Handlers
   const handleStartVideoRecording = useCallback(async () => {
@@ -238,13 +239,15 @@ export default function Home() {
   }, [startRecording, videoSettings.format, videoSettings.quality])
 
   const handleStopVideoRecording = useCallback(() => {
-    console.log('Stopping video workflow')
+    console.log('Cancelling video workflow')
     animatedPreviewRef.current?.stopAnimation()
-    stopRecording()
+    animatedPreviewRef.current?.resetAnimation()
+    // Use resetVideo instead of stopRecording to discard any captured frames
+    resetVideo()
     setIsVideoMode(false)
     setIsRecordingMode(false)
     globalWorkflowSessionId = null  // Clear global session
-  }, [stopRecording])
+  }, [resetVideo])
 
   const handleResetVideoAnimation = useCallback(() => {
     console.log('Resetting video workflow')
@@ -281,6 +284,15 @@ export default function Home() {
   const handleVideoSettingsChange = useCallback((newSettings: Partial<VideoExportSettings>) => {
     setVideoSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
+
+  // Handle export menu open/close - reset video state when opening
+  const handleExportMenuOpenChange = useCallback((open: boolean) => {
+    if (open && videoBlob) {
+      // Reset video state when opening menu if there's an existing video
+      resetVideo()
+    }
+    setExportMenuOpen(open)
+  }, [videoBlob, resetVideo])
 
   // Reset video and animation state when chat type changes (1-1 <-> Group)
   useEffect(() => {
@@ -409,9 +421,10 @@ export default function Home() {
                 language={language}
                 fontFamily={fontFamily}
                 deviceType={deviceType}
-                typingDuration={videoSettings.typingDuration}
-                messageDelay={videoSettings.messageDelay}
-                messageAppearDuration={videoSettings.messageAppearDuration}
+                // Preview always uses normal speed, video export uses custom settings
+                typingDuration={isPreviewMode ? 2000 : videoSettings.typingDuration}
+                messageDelay={isPreviewMode ? 1200 : videoSettings.messageDelay}
+                messageAppearDuration={isPreviewMode ? 400 : videoSettings.messageAppearDuration}
                 onAnimationComplete={handleAnimationComplete}
                 forVideoExport={isRecordingMode}
               />
@@ -489,7 +502,7 @@ export default function Home() {
           {/* Unified Export Menu */}
           <ExportMenu
             isOpen={exportMenuOpen}
-            onOpenChange={setExportMenuOpen}
+            onOpenChange={handleExportMenuOpenChange}
             language={language}
             disabled={isVideoMode && !isRecording && !isProcessing && !videoBlob}
             // Image export props

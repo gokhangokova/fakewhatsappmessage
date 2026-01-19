@@ -383,8 +383,12 @@ export function useVideoExport(): UseVideoExportReturn {
       // Store session ID for closure
       const currentSessionId = newSessionId
 
-      // Frame capture with rate limiting
-      const captureVideoFrame = async (currentTime: number) => {
+      // Pending frame captures queue (to maintain order with timestamps)
+      const pendingCaptures: Promise<void>[] = []
+      let frameIndex = 0
+
+      // Frame capture with rate limiting - NON-BLOCKING
+      const captureVideoFrame = (currentTime: number) => {
         // Check if this session is still valid
         if (sessionIdRef.current !== currentSessionId) {
           console.log('Session mismatch, stopping capture loop for:', currentSessionId)
@@ -407,20 +411,24 @@ export function useVideoExport(): UseVideoExportReturn {
           }
 
           const timestamp = Date.now() - startTimeRef.current
+          lastFrameTime = currentTime
+          const currentFrameIndex = frameIndex++
 
-          try {
-            const dataUrl = await captureFrame(elementRef.current, pixelRatio)
-
+          // Non-blocking frame capture - start capture and continue immediately
+          const element = elementRef.current
+          const capturePromise = captureFrame(element, pixelRatio).then(dataUrl => {
             if (dataUrl && !isStoppedRef.current && sessionIdRef.current === currentSessionId) {
-              framesRef.current.push({
+              // Store with index to maintain order
+              framesRef.current[currentFrameIndex] = {
                 dataUrl,
                 timestamp
-              })
-              lastFrameTime = currentTime
+              }
             }
-          } catch (err) {
+          }).catch(err => {
             console.error('Frame capture error:', err)
-          }
+          })
+
+          pendingCaptures.push(capturePromise)
 
           // Update progress
           const elapsedSec = (Date.now() - startTimeRef.current) / 1000
@@ -464,9 +472,14 @@ export function useVideoExport(): UseVideoExportReturn {
     }
 
     setIsProcessing(true)
+    setProgressText('Processing frames...')
+
+    // Wait a bit for any pending frame captures to complete
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     try {
-      const frames = framesRef.current
+      // Filter out any undefined/null frames (sparse array from index-based insertion)
+      const frames = framesRef.current.filter(f => f && f.dataUrl)
 
       if (frames.length > 0 && dimensionsRef.current.width > 0) {
         const actualDuration = frames[frames.length - 1].timestamp / 1000 // Convert to seconds

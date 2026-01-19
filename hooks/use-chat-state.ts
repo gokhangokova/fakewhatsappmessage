@@ -143,11 +143,16 @@ const defaultWhatsAppSettings: WhatsAppSettings = {
   lastSeenTime: new Date(baseTime.getTime()), // Use fixed time to avoid hydration mismatch
 }
 
-interface ChatState {
-  platform: Platform
+// Session data for each chat type (1-1 and group)
+interface ChatSessionData {
   sender: User
   receiver: User
   messages: Message[]
+  groupSettings: GroupChatSettings
+}
+
+interface ChatState {
+  platform: Platform
   darkMode: boolean
   mobileView: boolean
   timeFormat: '12h' | '24h'
@@ -157,14 +162,31 @@ interface ChatState {
   fontFamily: FontFamily
   batteryLevel: number
   deviceType: DeviceType
-  groupSettings: GroupChatSettings
+  // Active chat type
+  isGroupChat: boolean
+  // Separate sessions for 1-1 and group chat
+  directChatSession: ChatSessionData
+  groupChatSession: ChatSessionData
+}
+
+// Default session for 1-1 chat
+const defaultDirectChatSession: ChatSessionData = {
+  sender: defaultSender,
+  receiver: defaultReceiver,
+  messages: defaultMessages,
+  groupSettings: { ...DEFAULT_GROUP_SETTINGS, isGroupChat: false },
+}
+
+// Default session for group chat
+const defaultGroupChatSession: ChatSessionData = {
+  sender: defaultSender,
+  receiver: defaultReceiver,
+  messages: defaultGroupMessages,
+  groupSettings: { ...DEFAULT_GROUP_SETTINGS, isGroupChat: true },
 }
 
 const defaultState: ChatState = {
   platform: 'whatsapp',
-  sender: defaultSender,
-  receiver: defaultReceiver,
-  messages: defaultMessages,
   darkMode: false,
   mobileView: true,
   timeFormat: '24h', // WhatsApp iOS uses 24h format
@@ -174,7 +196,9 @@ const defaultState: ChatState = {
   fontFamily: 'sf-pro',
   batteryLevel: 100,
   deviceType: 'ios',
-  groupSettings: DEFAULT_GROUP_SETTINGS,
+  isGroupChat: false,
+  directChatSession: defaultDirectChatSession,
+  groupChatSession: defaultGroupChatSession,
 }
 
 export function useChatState() {
@@ -186,23 +210,82 @@ export function useChatState() {
     setIsHydrated(true)
   }, [])
 
-  // Convert stored date strings back to Date objects and ensure groupSettings exists
+  // Get active session based on chat type
+  const getActiveSession = useCallback((s: ChatState): ChatSessionData => {
+    return s.isGroupChat ? s.groupChatSession : s.directChatSession
+  }, [])
+
+  // Update active session
+  const updateActiveSession = useCallback((updates: Partial<ChatSessionData>) => {
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          ...updates,
+        },
+      }
+    })
+  }, [setState])
+
+  // Convert stored date strings back to Date objects and migrate old state structure
   useEffect(() => {
-    if (isHydrated && state.messages) {
-      const hasStringDates = state.messages.some(
-        (msg) => typeof msg.timestamp === 'string'
-      )
-      const needsGroupSettings = !state.groupSettings
-      
-      if (hasStringDates || needsGroupSettings) {
+    if (isHydrated) {
+      // Check if we need to migrate from old state structure
+      const needsMigration = !state.directChatSession || !state.groupChatSession
+
+      if (needsMigration) {
+        // Migrate from old structure to new session-based structure
+        const oldMessages = (state as unknown as { messages?: Message[] }).messages || defaultMessages
+        const oldSender = (state as unknown as { sender?: User }).sender || defaultSender
+        const oldReceiver = (state as unknown as { receiver?: User }).receiver || defaultReceiver
+        const oldGroupSettings = (state as unknown as { groupSettings?: GroupChatSettings }).groupSettings || DEFAULT_GROUP_SETTINGS
+
         setState((prev) => ({
           ...prev,
-          messages: prev.messages.map((msg) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-          })),
-          // Ensure groupSettings exists for older localStorage data
-          groupSettings: prev.groupSettings || DEFAULT_GROUP_SETTINGS,
+          isGroupChat: oldGroupSettings.isGroupChat || false,
+          directChatSession: {
+            sender: oldSender,
+            receiver: oldReceiver,
+            messages: oldGroupSettings.isGroupChat ? defaultMessages : oldMessages,
+            groupSettings: { ...DEFAULT_GROUP_SETTINGS, isGroupChat: false },
+          },
+          groupChatSession: {
+            sender: oldSender,
+            receiver: oldReceiver,
+            messages: oldGroupSettings.isGroupChat ? oldMessages : defaultGroupMessages,
+            groupSettings: oldGroupSettings.isGroupChat ? oldGroupSettings : { ...DEFAULT_GROUP_SETTINGS, isGroupChat: true },
+          },
+        }))
+        return
+      }
+
+      // Convert date strings in both sessions
+      const directHasStringDates = state.directChatSession?.messages?.some(
+        (msg) => typeof msg.timestamp === 'string'
+      )
+      const groupHasStringDates = state.groupChatSession?.messages?.some(
+        (msg) => typeof msg.timestamp === 'string'
+      )
+
+      if (directHasStringDates || groupHasStringDates) {
+        setState((prev) => ({
+          ...prev,
+          directChatSession: {
+            ...prev.directChatSession,
+            messages: prev.directChatSession.messages.map((msg) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            })),
+          },
+          groupChatSession: {
+            ...prev.groupChatSession,
+            messages: prev.groupChatSession.messages.map((msg) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            })),
+          },
         }))
       }
     }
@@ -213,104 +296,192 @@ export function useChatState() {
     setState((prev) => ({ ...prev, platform }))
   }, [setState])
 
-  // Sender
+  // Sender - updates active session
   const setSender = useCallback((sender: User) => {
-    setState((prev) => ({ ...prev, sender }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          sender,
+        },
+      }
+    })
   }, [setState])
 
-  // Receiver
+  // Receiver - updates active session
   const setReceiver = useCallback((receiver: User) => {
-    setState((prev) => ({ ...prev, receiver }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          receiver,
+        },
+      }
+    })
   }, [setState])
 
-  // Messages
+  // Messages - updates active session
   const setMessages = useCallback((messages: Message[]) => {
-    setState((prev) => ({ ...prev, messages }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages,
+        },
+      }
+    })
   }, [setState])
+
+  // Get current sender from active session
+  const currentSender = state.isGroupChat
+    ? state.groupChatSession?.sender
+    : state.directChatSession?.sender
 
   const addMessage = useCallback(() => {
+    const senderId = currentSender?.id || 'sender-1'
     const newMessage: Message = {
       id: generateId(),
-      userId: state.sender.id,
+      userId: senderId,
       content: '',
       timestamp: new Date(),
       type: 'text',
       status: 'read',
     }
-    setState((prev) => ({
-      ...prev,
-      messages: [...prev.messages, newMessage],
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: [...prev[sessionKey].messages, newMessage],
+        },
+      }
+    })
     return newMessage.id
-  }, [state.sender.id, setState])
+  }, [currentSender?.id, setState])
 
   const updateMessage = useCallback((id: string, updates: Partial<Message>) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === id ? { ...msg, ...updates } : msg
-      ),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.map((msg) =>
+            msg.id === id ? { ...msg, ...updates } : msg
+          ),
+        },
+      }
+    })
   }, [setState])
 
   const updateMessageStatus = useCallback((id: string, status: MessageStatus) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === id ? { ...msg, status } : msg
-      ),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.map((msg) =>
+            msg.id === id ? { ...msg, status } : msg
+          ),
+        },
+      }
+    })
   }, [setState])
 
   const updateMessageForwarded = useCallback((id: string, isForwarded: boolean) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === id ? { ...msg, isForwarded } : msg
-      ),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.map((msg) =>
+            msg.id === id ? { ...msg, isForwarded } : msg
+          ),
+        },
+      }
+    })
   }, [setState])
 
   const updateMessageReplyTo = useCallback((id: string, replyTo?: ReplyTo) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === id ? { ...msg, replyTo } : msg
-      ),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.map((msg) =>
+            msg.id === id ? { ...msg, replyTo } : msg
+          ),
+        },
+      }
+    })
   }, [setState])
 
   const updateMessageReactions = useCallback((id: string, reactions: MessageReaction[]) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === id ? { ...msg, reactions } : msg
-      ),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.map((msg) =>
+            msg.id === id ? { ...msg, reactions } : msg
+          ),
+        },
+      }
+    })
   }, [setState])
 
   const updateMessageImage = useCallback((id: string, imageUrl?: string) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((msg) =>
-        msg.id === id ? { ...msg, imageUrl, type: imageUrl ? 'image' : 'text' } : msg
-      ),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.map((msg) =>
+            msg.id === id ? { ...msg, imageUrl, type: imageUrl ? 'image' : 'text' } : msg
+          ),
+        },
+      }
+    })
   }, [setState])
 
   const deleteMessage = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.filter((msg) => msg.id !== id),
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: prev[sessionKey].messages.filter((msg) => msg.id !== id),
+        },
+      }
+    })
   }, [setState])
 
   const reorderMessages = useCallback((fromIndex: number, toIndex: number) => {
     setState((prev) => {
-      const newMessages = [...prev.messages]
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      const newMessages = [...prev[sessionKey].messages]
       const [removed] = newMessages.splice(fromIndex, 1)
       newMessages.splice(toIndex, 0, removed)
-      return { ...prev, messages: newMessages }
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          messages: newMessages,
+        },
+      }
     })
   }, [setState])
 
@@ -364,62 +535,68 @@ export function useChatState() {
     }))
   }, [setState])
 
-  // Group Settings
+  // Group Settings - updates active session's groupSettings
   const setGroupSettings = useCallback((settings: Partial<GroupChatSettings>) => {
-    setState((prev) => ({
-      ...prev,
-      groupSettings: { ...prev.groupSettings, ...settings },
-    }))
+    setState((prev) => {
+      const sessionKey = prev.isGroupChat ? 'groupChatSession' : 'directChatSession'
+      return {
+        ...prev,
+        [sessionKey]: {
+          ...prev[sessionKey],
+          groupSettings: { ...prev[sessionKey].groupSettings, ...settings },
+        },
+      }
+    })
   }, [setState])
 
-  // Toggle group chat mode - also loads appropriate sample messages
+  // Toggle group chat mode - switches between sessions (no data loss)
   const toggleGroupChat = useCallback((isGroupChat: boolean) => {
     setState((prev) => ({
       ...prev,
-      messages: isGroupChat ? defaultGroupMessages : defaultMessages,
-      groupSettings: {
-        ...prev.groupSettings,
-        isGroupChat,
-        // Only reset to defaults if switching TO group chat AND no participants exist yet
-        ...(isGroupChat && prev.groupSettings.participants.length === 0 ? {
-          groupName: DEFAULT_GROUP_SETTINGS.groupName,
-          participants: DEFAULT_GROUP_SETTINGS.participants,
-        } : {}),
-      },
+      isGroupChat,
     }))
   }, [setState])
 
-  // Add participant to group
+  // Add participant to group - updates group session
   const addParticipant = useCallback((participant: GroupParticipant) => {
     setState((prev) => ({
       ...prev,
-      groupSettings: {
-        ...prev.groupSettings,
-        participants: [...prev.groupSettings.participants, participant],
+      groupChatSession: {
+        ...prev.groupChatSession,
+        groupSettings: {
+          ...prev.groupChatSession.groupSettings,
+          participants: [...prev.groupChatSession.groupSettings.participants, participant],
+        },
       },
     }))
   }, [setState])
 
-  // Remove participant from group
+  // Remove participant from group - updates group session
   const removeParticipant = useCallback((participantId: string) => {
     setState((prev) => ({
       ...prev,
-      groupSettings: {
-        ...prev.groupSettings,
-        participants: prev.groupSettings.participants.filter((p) => p.id !== participantId),
+      groupChatSession: {
+        ...prev.groupChatSession,
+        groupSettings: {
+          ...prev.groupChatSession.groupSettings,
+          participants: prev.groupChatSession.groupSettings.participants.filter((p) => p.id !== participantId),
+        },
       },
     }))
   }, [setState])
 
-  // Update participant
+  // Update participant - updates group session
   const updateParticipant = useCallback((participantId: string, updates: Partial<GroupParticipant>) => {
     setState((prev) => ({
       ...prev,
-      groupSettings: {
-        ...prev.groupSettings,
-        participants: prev.groupSettings.participants.map((p) =>
-          p.id === participantId ? { ...p, ...updates } : p
-        ),
+      groupChatSession: {
+        ...prev.groupChatSession,
+        groupSettings: {
+          ...prev.groupChatSession.groupSettings,
+          participants: prev.groupChatSession.groupSettings.participants.map((p) =>
+            p.id === participantId ? { ...p, ...updates } : p
+          ),
+        },
       },
     }))
   }, [setState])
@@ -429,10 +606,29 @@ export function useChatState() {
     setState(defaultState)
   }, [setState])
 
+  // Get active session data for return
+  const activeSession = state.isGroupChat
+    ? (state.groupChatSession || defaultGroupChatSession)
+    : (state.directChatSession || defaultDirectChatSession)
+
   // Return initial state during SSR
   if (!isHydrated) {
+    const defaultActiveSession = defaultDirectChatSession
     return {
-      ...defaultState,
+      platform: defaultState.platform,
+      sender: defaultActiveSession.sender,
+      receiver: defaultActiveSession.receiver,
+      messages: defaultActiveSession.messages,
+      darkMode: defaultState.darkMode,
+      mobileView: defaultState.mobileView,
+      timeFormat: defaultState.timeFormat,
+      transparentBg: defaultState.transparentBg,
+      whatsappSettings: defaultState.whatsappSettings,
+      language: defaultState.language,
+      fontFamily: defaultState.fontFamily,
+      batteryLevel: defaultState.batteryLevel,
+      deviceType: defaultState.deviceType,
+      groupSettings: defaultActiveSession.groupSettings,
       setPlatform,
       setSender,
       setReceiver,
@@ -466,9 +662,20 @@ export function useChatState() {
   }
 
   return {
-    ...state,
-    // Ensure groupSettings has a fallback for older localStorage data
-    groupSettings: state.groupSettings || DEFAULT_GROUP_SETTINGS,
+    platform: state.platform,
+    sender: activeSession.sender,
+    receiver: activeSession.receiver,
+    messages: activeSession.messages,
+    darkMode: state.darkMode,
+    mobileView: state.mobileView,
+    timeFormat: state.timeFormat,
+    transparentBg: state.transparentBg,
+    whatsappSettings: state.whatsappSettings,
+    language: state.language,
+    fontFamily: state.fontFamily,
+    batteryLevel: state.batteryLevel,
+    deviceType: state.deviceType,
+    groupSettings: activeSession.groupSettings,
     setPlatform,
     setSender,
     setReceiver,

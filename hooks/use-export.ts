@@ -30,8 +30,8 @@ const DEFAULT_OPTIONS: ExportOptions = {
   quality: 1,
   pixelRatio: 2,
   backgroundColor: '#ffffff',
-  addWatermark: false,
-  watermarkText: 'FakeSocialMessage',
+  addWatermark: true,
+  watermarkText: 'memesocial.app',
   format: 'png',
   jpgQuality: 0.92,
 }
@@ -59,27 +59,27 @@ export function useExport(): UseExportReturn {
           // Draw original image
           ctx.drawImage(img, 0, 0)
 
-          // Configure watermark style
-          const fontSize = Math.max(14, img.width * 0.025)
-          ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'
+          // Configure watermark style - larger and more visible
+          const fontSize = Math.max(22, img.width * 0.05)
+          ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
 
           // Draw watermark in center-bottom
-          const watermarkY = img.height - fontSize * 2
+          const watermarkY = img.height - fontSize * 1.2
           ctx.fillText(watermarkText, img.width / 2, watermarkY)
 
-          // Add subtle diagonal watermark pattern
-          ctx.font = `${fontSize * 0.8}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'
+          // Add subtle diagonal watermark pattern - slightly more visible
+          ctx.font = `600 ${fontSize * 0.75}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'
           ctx.save()
           ctx.translate(img.width / 2, img.height / 2)
           ctx.rotate(-Math.PI / 6) // -30 degrees
 
-          const spacing = fontSize * 8
+          const spacing = fontSize * 5
           for (let y = -img.height; y < img.height * 2; y += spacing) {
-            for (let x = -img.width; x < img.width * 2; x += spacing * 2) {
+            for (let x = -img.width; x < img.width * 2; x += spacing * 1.2) {
               ctx.fillText(watermarkText, x, y)
             }
           }

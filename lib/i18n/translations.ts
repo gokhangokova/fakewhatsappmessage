@@ -314,7 +314,7 @@ export const en: Translations = {
   },
   
   about: {
-    description: 'FakeSocialMessage is a free tool to create realistic fake chat screenshots for social media platforms.',
+    description: 'memesocial.app is a free tool to create realistic fake chat screenshots for social media platforms.',
     autoSave: 'Your changes are automatically saved to your browser.',
   },
   
@@ -512,7 +512,7 @@ export const tr: Translations = {
   },
   
   about: {
-    description: 'FakeSocialMessage, sosyal medya platformları için gerçekçi sahte sohbet ekran görüntüleri oluşturmaya yarayan ücretsiz bir araçtır.',
+    description: 'memesocial.app, sosyal medya platformları için gerçekçi sahte sohbet ekran görüntüleri oluşturmaya yarayan ücretsiz bir araçtır.',
     autoSave: 'Değişiklikleriniz otomatik olarak tarayıcınıza kaydedilir.',
   },
   

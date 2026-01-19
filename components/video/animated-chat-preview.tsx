@@ -959,9 +959,11 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     const currentMessage = messages[visibleMessageCount]
     if (!currentMessage) return
 
-    // Check if message is from receiver (not from current user)
-    // Supports both sender.id and legacy 'me' value
-    const isSenderMessage = currentMessage.userId === sender.id || currentMessage.userId === 'me'
+    // Check if message is from sender (current user)
+    // Supports sender.id, legacy 'me' value, and group chat default 'sender-1'
+    const isSenderMessage = currentMessage.userId === sender.id ||
+                            currentMessage.userId === 'me' ||
+                            currentMessage.userId === 'sender-1'
     const isReceiverMessage = !isSenderMessage
 
     // State machine transitions
@@ -992,13 +994,16 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
       }
 
       case 'typing': {
-        // Typing süresi
+        // Typing süresi - ilk mesaj için daha kısa (hızlı başlangıç)
+        const effectiveTypingDuration = visibleMessageCount === 0
+          ? Math.min(typingDuration, 1000) // İlk mesaj max 1 saniye
+          : typingDuration
         const timer = setTimeout(() => {
           if (animationStoppedRef.current) return
           setShowTyping(false)
           setTypingUserName(undefined)
           setPhase('waiting_after_typing')
-        }, typingDuration)
+        }, effectiveTypingDuration)
         return () => clearTimeout(timer)
       }
 
