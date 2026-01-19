@@ -130,6 +130,8 @@ export interface Translations {
     downloading: string
     preview: string
     stop: string
+    imageExport: string
+    videoExport: string
   }
   
   // Video Export
@@ -330,8 +332,10 @@ export const en: Translations = {
     downloading: 'Exporting...',
     preview: 'Preview',
     stop: 'Stop',
+    imageExport: 'Image',
+    videoExport: 'Video',
   },
-  
+
   video: {
     videoExport: 'Export Video',
     videoExportDesc: 'Create an animated video of your chat conversation',
@@ -526,8 +530,10 @@ export const tr: Translations = {
     downloading: 'Dışa aktarılıyor...',
     preview: 'Önizleme',
     stop: 'Durdur',
+    imageExport: 'Resim',
+    videoExport: 'Video',
   },
-  
+
   video: {
     videoExport: 'Video Dışa Aktar',
     videoExportDesc: 'Sohbetinizin animasyonlu videosunu oluşturun',

@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { TabbedSidebar } from '@/components/editor/tabbed-sidebar'
 import { PhonePreview } from '@/components/preview/phone-preview'
-import { ImageExportPanel } from '@/components/export'
+import { ExportMenu } from '@/components/export'
 import { useChatState } from '@/contexts/chat-context'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
@@ -15,16 +15,12 @@ import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
 // AnimatedChatPreview uses forwardRef, so we import it directly (dynamic breaks ref forwarding)
 import { AnimatedChatPreview } from '@/components/video/animated-chat-preview'
-import type { AnimatedChatPreviewRef, VideoExportSettings } from '@/components/video'
+import type { AnimatedChatPreviewRef } from '@/components/video'
+import type { VideoExportSettings } from '@/components/export'
 
 // Global session ID for video recording workflow (survives React StrictMode remounts)
 let globalWorkflowSessionId: string | null = null
 
-// Dynamic import for VideoExportPanel (doesn't need ref)
-const VideoExportPanel = dynamic(
-  () => import('@/components/video/video-export-panel').then(mod => mod.VideoExportPanel),
-  { ssr: false }
-)
 
 const FORMAT_INFO = {
   png: { name: 'PNG' },
@@ -83,10 +79,9 @@ export default function Home() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png')
   const [jpgQuality, setJpgQuality] = useState(0.92)
   const [copied, setCopied] = useState(false)
-  const [showOptions, setShowOptions] = useState(false)
 
-  // Video Export State
-  const [videoExportOpen, setVideoExportOpen] = useState(false)
+  // Export Menu State
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const [isVideoMode, setIsVideoMode] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [isRecordingMode, setIsRecordingMode] = useState(false)
@@ -474,10 +469,26 @@ export default function Home() {
             </Button>
           )}
 
-          {/* Video Export Button */}
-          <VideoExportPanel
-            isOpen={videoExportOpen}
-            onOpenChange={setVideoExportOpen}
+          {/* Unified Export Menu */}
+          <ExportMenu
+            isOpen={exportMenuOpen}
+            onOpenChange={setExportMenuOpen}
+            language={language}
+            disabled={isVideoMode && !isRecording && !isProcessing && !videoBlob}
+            // Image export props
+            isExporting={isExporting}
+            exportFormat={exportFormat}
+            setExportFormat={setExportFormat}
+            exportScale={exportScale}
+            setExportScale={setExportScale}
+            jpgQuality={jpgQuality}
+            setJpgQuality={setJpgQuality}
+            showWatermark={showWatermark}
+            setShowWatermark={setShowWatermark}
+            onImageDownload={handleDownload}
+            onCopyToClipboard={handleCopyToClipboard}
+            copied={copied}
+            // Video export props
             isAnimating={isVideoMode && isRecording}
             isRecording={isRecording}
             isProcessing={isProcessing}
@@ -488,32 +499,11 @@ export default function Home() {
             onStartAnimation={handleStartVideoRecording}
             onStopAnimation={handleStopVideoRecording}
             onResetAnimation={handleResetVideoAnimation}
-            onDownload={handleDownloadVideo}
-            settings={videoSettings}
-            onSettingsChange={handleVideoSettingsChange}
+            onVideoDownload={handleDownloadVideo}
+            videoSettings={videoSettings}
+            onVideoSettingsChange={handleVideoSettingsChange}
             messageCount={messages.length}
             currentFormat={currentFormat}
-            language={language}
-          />
-
-          {/* Image Export Button */}
-          <ImageExportPanel
-            isOpen={showOptions}
-            onOpenChange={setShowOptions}
-            isExporting={isExporting}
-            exportFormat={exportFormat}
-            setExportFormat={setExportFormat}
-            exportScale={exportScale}
-            setExportScale={setExportScale}
-            jpgQuality={jpgQuality}
-            setJpgQuality={setJpgQuality}
-            showWatermark={showWatermark}
-            setShowWatermark={setShowWatermark}
-            onDownload={handleDownload}
-            onCopyToClipboard={handleCopyToClipboard}
-            copied={copied}
-            disabled={isExporting || isVideoMode}
-            language={language}
           />
         </div>
 
