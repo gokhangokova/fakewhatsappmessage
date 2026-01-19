@@ -968,6 +968,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
       case 'waiting_before_typing': {
         // Mesajdan önce kısa bir bekleme (önceki mesajın oturması için)
         const waitTime = visibleMessageCount === 0 ? 300 : messageDelay
+
         const timer = setTimeout(() => {
           if (animationStoppedRef.current) return
 
@@ -980,6 +981,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
                 receiver.name
               setTypingUserName(senderName)
             }
+
             setShowTyping(true)
             setPhase('typing')
           } else {

@@ -315,9 +315,10 @@ export default function Home() {
   }, [groupSettings?.isGroupChat])
 
   // Merge groupSettings into whatsappSettings for preview
-  // Computed on every render to ensure correct values when switching chat types
-  const mergedWhatsappSettings = groupSettings?.isGroupChat
-    ? {
+  // Memoized to prevent unnecessary re-renders and useEffect re-runs
+  const mergedWhatsappSettings = useMemo(() => {
+    if (groupSettings?.isGroupChat) {
+      return {
         ...whatsappSettings,
         groupName: groupSettings.groupName,
         groupIcon: groupSettings.groupIcon,
@@ -328,7 +329,15 @@ export default function Home() {
           color: p.color,
         })) || [],
       }
-    : whatsappSettings
+    }
+    return whatsappSettings
+  }, [
+    groupSettings?.isGroupChat,
+    groupSettings?.groupName,
+    groupSettings?.groupIcon,
+    groupSettings?.participants,
+    whatsappSettings
+  ])
 
   // Memoize sidebar close handler
   const handleSidebarClose = useCallback(() => setSidebarOpen(false), [])
