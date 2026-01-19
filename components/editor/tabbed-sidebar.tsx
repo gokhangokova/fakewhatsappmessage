@@ -1081,25 +1081,25 @@ export function TabbedSidebar({
                     <button
                       onClick={() => toggleGroupChat(false)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        'flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
                         !groupSettings.isGroupChat
                           ? 'bg-[#d4f5e2] text-[#128C7E]'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       )}
                     >
-                      <Users className="w-4 h-4" />
+                      <Users className="w-4 h-4 flex-shrink-0" />
                       <span>{t.editor.oneToOne}</span>
                     </button>
                     <button
                       onClick={() => toggleGroupChat(true)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        'flex-1 flex items-center justify-center gap-2 px-2 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
                         groupSettings.isGroupChat
                           ? 'bg-[#d4f5e2] text-[#128C7E]'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       )}
                     >
-                      <Users2 className="w-4 h-4" />
+                      <Users2 className="w-4 h-4 flex-shrink-0" />
                       <span>{t.editor.groupChat}</span>
                     </button>
                   </div>
@@ -1761,7 +1761,7 @@ export function TabbedSidebar({
 
   // Desktop: Fixed sidebar
   return (
-    <div className="fixed left-4 top-20 z-50 w-80">
+    <div className="fixed left-4 top-20 z-50 w-[352px]">
       <div className="bg-white shadow-2xl border border-gray-200 overflow-hidden rounded-2xl">
         {SidebarContent}
       </div>
