@@ -2109,7 +2109,7 @@ export function TabbedSidebar({
       <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
         <SheetContent
           side="bottom"
-          className="h-[50vh] px-0 pb-0 pt-0 rounded-t-2xl"
+          className="h-[50vh] px-0 pb-0 pt-0 rounded-t-2xl flex flex-col"
           hideOverlay={false}
           hideCloseButton={true}
         >
@@ -2118,12 +2118,12 @@ export function TabbedSidebar({
           </SheetHeader>
 
           {/* Drag handle */}
-          <div className="flex justify-center py-2">
+          <div className="flex justify-center py-2 flex-shrink-0">
             <div className="w-10 h-1 bg-gray-300 rounded-full" />
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 flex-shrink-0">
             <div className="flex items-center gap-2">
               <FlaskConical className="w-5 h-5 text-[#128C7E]" />
               <span className="font-semibold text-gray-800">{t.common.settings}</span>
@@ -2137,7 +2137,7 @@ export function TabbedSidebar({
           </div>
 
           {/* Content with scroll */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[calc(50vh-100px)]">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             {/* Appearance Section */}
             <CollapsibleSection
               title={t.settings.appearance}
@@ -2308,22 +2308,36 @@ export function TabbedSidebar({
                 ))}
               </div>
             </CollapsibleSection>
-          </div>
 
-          {/* Footer - Reset Button */}
-          {onReset && (
-            <div className="p-3 border-t border-gray-100 bg-white">
-              <Button
-                onClick={onReset}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                {t.common.resetToDefaults}
-              </Button>
-            </div>
-          )}
+            {/* About Section */}
+            <CollapsibleSection
+              title={t.settings.about}
+              icon={Info}
+              defaultOpen={false}
+            >
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {t.about.description}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                {t.about.autoSave}
+              </p>
+            </CollapsibleSection>
+
+            {/* Reset Button inside scroll area */}
+            {onReset && (
+              <div className="pt-2 pb-4">
+                <Button
+                  onClick={onReset}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  {t.common.resetToDefaults}
+                </Button>
+              </div>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
     )
