@@ -27,13 +27,69 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 ### Hooks
 - `hooks/use-video-export.ts` - Video kayıt ve export
 - `hooks/use-export.ts` - Image export (PNG/JPG/WebP, clipboard)
-- `hooks/use-chat-state.ts` - Sohbet durumu yönetimi
+- `hooks/use-chat-state.ts` - Sohbet durumu yönetimi (localStorage ile)
+- `hooks/use-toast.ts` - Toast bildirimleri (auto-dismiss 3 saniye)
+
+### Contexts
+- `contexts/chat-context.tsx` - Ana state yönetimi (Context API ile)
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
 
 ### CSS
 - `app/globals.css` - Global stiller, export mode CSS kuralları
+
+---
+
+## State Yönetimi Mimarisi
+
+### İki State Sistemi
+Projede iki farklı state yönetim yaklaşımı var:
+
+1. **`hooks/use-chat-state.ts`** - localStorage hook tabanlı
+   - `useLocalStorage` custom hook kullanır
+   - Dual session sistemi (1-1 ve Group chat için ayrı session'lar)
+   - `directChatSession` ve `groupChatSession` ayrı tutulur
+   - `isGroupChat` flag ile aktif session belirlenir
+
+2. **`contexts/chat-context.tsx`** - Context API tabanlı
+   - Multiple context'ler: `MessagesContext`, `UsersContext`, `AppearanceContext`, `SettingsContext`, `HydrationContext`
+   - `useChatState()` hook'u tüm context'leri birleştirir
+   - Debounced localStorage save (500ms)
+
+### Hangi Dosya Kullanılıyor?
+- **Ana uygulama (`app/page.tsx`)**: `contexts/chat-context.tsx` kullanıyor
+- Her iki dosya da `useChatState` export ediyor, import path'e dikkat et!
+
+### Dual Session Sistemi (`hooks/use-chat-state.ts`)
+```tsx
+interface ChatSessionData {
+  sender: User
+  receiver: User
+  messages: Message[]
+  groupSettings: GroupChatSettings
+}
+
+interface ChatState {
+  // Görünüm ayarları (paylaşılan)
+  darkMode: boolean
+  deviceType: DeviceType
+  mobilePreviewScale: number
+  // ...
+
+  // Aktif chat tipi
+  isGroupChat: boolean
+
+  // Ayrı session'lar
+  directChatSession: ChatSessionData
+  groupChatSession: ChatSessionData
+}
+```
+
+### localStorage Key
+```tsx
+const STORAGE_KEY = 'fake-social-message-state'
+```
 
 ---
 
@@ -465,6 +521,10 @@ chatBg: '#0B141A'
 8. **delayMs={0}:** Avatar fallback'in hemen görünmesi için gerekli
 9. **Export timing:** `forExport` prop değişikliği için yeterli bekleme süresi gerekli (200ms+)
 10. **data-export-mode:** CSS !important kuralları için attribute selector kullan
+11. **State import path:** `useChatState` iki dosyada var - `@/contexts/chat-context` kullan
+12. **CSS variable inheritance:** Inline style'dan CSS class'a variable geçirmek için element'e set et
+13. **Mobil responsive:** `max-sm:` ve `sm:` prefix'leri doğru kullan (639px breakpoint)
+14. **Toast auto-dismiss:** 3 saniye sonra otomatik kapanır, manuel dismiss gerekmiyor
 
 ---
 
@@ -629,6 +689,119 @@ Mobil cihazlarda kullanıcının preview ekranının ölçeğini ayarlamasını 
 - Step: 5%
 - localStorage'da persist ediliyor
 - Desktop'ta Tailwind class'ları override ediyor (sm:scale-[0.8] vb.)
+
+---
+
+## Mobile UI Layout (Ocak 2025)
+
+### Mobil Buton Yerleşimi
+Mobilde butonlar ekranın altında yatay sıralanır:
+
+```tsx
+{/* Floating Export Panel - Mobile: horizontal at bottom center */}
+<div className="absolute bottom-3 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-2.5 sm:gap-3">
+  {/* Editor Button - Mobile only */}
+  <Button className="sm:hidden" onClick={() => { setSidebarTab('editor'); setSidebarOpen(true) }}>
+    <Edit3 />
+  </Button>
+
+  {/* Settings Button - Mobile only */}
+  <Button className="sm:hidden" onClick={() => { setSidebarTab('settings'); setSidebarOpen(true) }}>
+    <FlaskConical />
+  </Button>
+
+  {/* Preview Animation Button */}
+  <Button onClick={handleStartPreview}>
+    <Play />
+  </Button>
+
+  {/* Export Menu */}
+  <ExportMenu ... />
+</div>
+```
+
+### Preview Container Padding
+Mobilde butonlar için alt padding:
+```tsx
+<div className="... max-sm:pb-20">
+  {/* Phone Preview */}
+</div>
+```
+
+### Mobil Sidebar
+- `TabbedSidebar` bileşeni Radix Sheet kullanır
+- `initialTab` prop ile açıldığında hangi sekme gösterilecek belirlenir
+- `isOpen` ve `onClose` props ile kontrol edilir
+
+---
+
+## Toast Sistemi
+
+### Auto-Dismiss Özelliği
+`hooks/use-toast.ts` dosyasında toast'lar otomatik kapanır:
+
+```tsx
+const TOAST_REMOVE_DELAY = 3000  // 3 saniye
+
+function toast({ ...props }: Toast) {
+  // ... toast oluştur
+
+  // Auto-dismiss after TOAST_REMOVE_DELAY
+  setTimeout(() => {
+    dismiss()
+  }, TOAST_REMOVE_DELAY)
+}
+```
+
+### Kullanım
+```tsx
+const { toast } = useToast()
+
+toast({
+  title: '✅ Screenshot downloaded!',
+  description: 'Your PNG screenshot has been saved.',
+})
+
+// Hata durumunda
+toast({
+  variant: 'destructive',
+  title: 'Export failed',
+  description: error,
+})
+```
+
+---
+
+## Dialog Component
+
+### hideCloseButton Prop
+`components/ui/dialog.tsx` dosyasında close button gizlenebilir:
+
+```tsx
+interface DialogContentProps {
+  hideCloseButton?: boolean
+}
+
+const DialogContent = ({ hideCloseButton = false, ...props }) => (
+  <DialogPrimitive.Content>
+    {children}
+    {!hideCloseButton && (
+      <DialogPrimitive.Close>
+        <X className="h-4 w-4" />
+      </DialogPrimitive.Close>
+    )}
+  </DialogPrimitive.Content>
+)
+```
+
+### Kullanım
+```tsx
+<Dialog>
+  <DialogContent hideCloseButton>
+    {/* Close button yok */}
+  </DialogContent>
+</Dialog>
+```
 
 ---
 
