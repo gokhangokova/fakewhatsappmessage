@@ -522,10 +522,16 @@ const isSent = message.userId === 'me'
 
 ---
 
-## Gelecek Geliştirmeler İçin Notlar
-- Video export performansı optimize edildi (requestAnimationFrame ile throttling)
-- Grup sohbet katılımcı yönetimi tam çalışıyor (ekle/sil/düzenle)
-- Mesaj sürükle-bırak ile sıralama çalışıyor (dnd-kit)
-- Grup icon seçimi illüstrasyon avatarlarla çalışıyor (DiceBear API)
-- Image export keskin köşelerle çalışıyor (forExport prop)
-- Video export grup chat gecikmesi düzeltildi (isReady state)
+## Backlog
+
+### Planlanmış
+- Instagram DM desteği
+- iMessage desteği
+- PWA desteği (offline kullanım)
+
+### Düşünülebilir
+- Video FPS ayarını kullanıcıya sunma (şu an MP4=60, GIF=30)
+- WebM format desteği
+- Mesaj düzenleme undo/redo
+- Keyboard shortcuts
+- Swipe gestures (mobil)
