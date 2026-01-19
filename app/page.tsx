@@ -228,11 +228,11 @@ export default function Home() {
     }
 
     if (videoPreviewContainerRef.current && animatedPreviewRef.current) {
-      // Start recording
+      // Start recording - MP4 uses 60fps for smoother animations, GIF uses 30fps for smaller file size
       await startRecording(videoPreviewContainerRef.current, {
         format: videoSettings.format,
         quality: videoSettings.quality,
-        frameRate: 30,
+        frameRate: videoSettings.format === 'gif' ? 30 : 60,
       })
 
       // Start animation immediately after recording starts
