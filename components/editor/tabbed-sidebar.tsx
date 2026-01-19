@@ -1032,41 +1032,60 @@ export function TabbedSidebar({
   // Shared content that will be used in both mobile Sheet and desktop sidebar
   const SidebarContent = (
     <>
-      {/* Tab Header */}
-      <div className="flex border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('editor')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
-            activeTab === 'editor'
-              ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
-              : 'text-gray-600 hover:bg-gray-50'
+      {/* Tab Header - Hidden on mobile (separate buttons control tabs) */}
+      {!isMobile && (
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('editor')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
+              activeTab === 'editor'
+                ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
+                : 'text-gray-600 hover:bg-gray-50'
+            )}
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>{t.common.editor}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
+              activeTab === 'settings'
+                ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
+                : 'text-gray-600 hover:bg-gray-50'
+            )}
+          >
+            <FlaskConical className="w-4 h-4" />
+            <span>{t.common.settings}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Tab Title */}
+      {isMobile && (
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-[#d4f5e2]">
+          {activeTab === 'editor' ? (
+            <>
+              <Edit3 className="w-4 h-4 text-[#128C7E]" />
+              <span className="font-medium text-[#128C7E]">{t.common.editor}</span>
+            </>
+          ) : (
+            <>
+              <FlaskConical className="w-4 h-4 text-[#128C7E]" />
+              <span className="font-medium text-[#128C7E]">{t.common.settings}</span>
+            </>
           )}
-        >
-          <Edit3 className="w-4 h-4" />
-          <span>{t.common.editor}</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 px-4 py-3.5 transition-all font-medium',
-            activeTab === 'settings'
-              ? 'bg-[#d4f5e2] text-[#128C7E] border-b-2 border-[#128C7E]'
-              : 'text-gray-600 hover:bg-gray-50'
-          )}
-        >
-          <FlaskConical className="w-4 h-4" />
-          <span>{t.common.settings}</span>
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* Content */}
       <div ref={scrollContainerRef} className={cn(
         "p-3 space-y-2 overflow-y-auto",
-        // Mobile: content scrolls within the full height sidebar (minus header ~60px and footer ~60px)
+        // Mobile: content scrolls within the full height sidebar (minus title ~50px and footer ~60px)
         isMobile && activeTab === 'settings' && onReset
-          ? "max-h-[calc(100vh-120px)]"
-          : isMobile ? "max-h-[calc(100vh-60px)]" : "",
+          ? "max-h-[calc(100vh-110px)]"
+          : isMobile ? "max-h-[calc(100vh-50px)]" : "",
         // Desktop: max height
         !isMobile && activeTab === 'settings' && onReset
           ? "lg:max-h-[calc(100vh-240px)]"
