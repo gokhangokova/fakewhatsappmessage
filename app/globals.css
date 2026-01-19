@@ -386,10 +386,10 @@
     --padding: 16px;
     --available-height: calc(100vh - var(--header-height) - var(--button-row) - var(--padding));
     --available-width: calc(100vw - var(--padding) * 2);
-    /* Scale to fit both dimensions, pick the smaller one */
+    /* Scale to fit both dimensions, pick the smaller one, then apply 50% reduction */
     --scale-by-height: calc(var(--available-height) / 812);
     --scale-by-width: calc(var(--available-width) / 375);
-    transform: scale(min(var(--scale-by-height), var(--scale-by-width)));
+    transform: scale(calc(min(var(--scale-by-height), var(--scale-by-width)) * 0.5));
     transform-origin: center center;
   }
 }
