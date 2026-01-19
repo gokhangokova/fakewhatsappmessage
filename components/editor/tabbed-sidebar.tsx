@@ -1808,7 +1808,7 @@ export function TabbedSidebar({
     if (activeTab === 'editor') {
       return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-          <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none border-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom">
+          <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none border-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom" hideCloseButton={true}>
             <DialogHeader className="sr-only">
               <DialogTitle>{t.common.editor}</DialogTitle>
             </DialogHeader>
