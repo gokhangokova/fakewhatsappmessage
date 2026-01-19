@@ -2202,6 +2202,39 @@ export function TabbedSidebar({
                 </div>
               </div>
 
+              {/* Battery Level */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.batteryLevel}</Label>
+                  <span className={cn(
+                    "text-xs font-medium",
+                    batteryLevel <= 20 ? "text-red-500" : "text-[#128C7E]"
+                  )}>
+                    {batteryLevel}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={batteryLevel}
+                    onChange={(e) => setBatteryLevel(parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    style={{ accentColor: batteryLevel <= 20 ? '#EF4444' : '#25D366' }}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={batteryLevel}
+                    onChange={(e) => setBatteryLevel(parseInt(e.target.value) || 0)}
+                    className="w-14 px-2 py-1.5 text-sm text-center rounded-lg bg-gray-50 border border-gray-200 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] focus:outline-none"
+                  />
+                </div>
+              </div>
+
               {/* Device Type */}
               <div className="space-y-2">
                 <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.device}</Label>
@@ -2243,14 +2276,24 @@ export function TabbedSidebar({
                 icon={Sparkles}
                 defaultOpen={false}
               >
-                {/* Dark Mode Toggle */}
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
-                  <span className="text-sm text-gray-700">{t.settings.darkMode}</span>
-                  <Switch
-                    checked={darkMode}
-                    onCheckedChange={setDarkMode}
-                    className="data-[state=checked]:bg-[#25D366]"
-                  />
+                {/* Dark Mode & Transparent Bg Toggles */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                    <span className="text-sm text-gray-700">{t.settings.darkMode}</span>
+                    <Switch
+                      checked={darkMode}
+                      onCheckedChange={setDarkMode}
+                      className="data-[state=checked]:bg-[#25D366]"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                    <span className="text-sm text-gray-700">{t.settings.transparentBg}</span>
+                    <Switch
+                      checked={transparentBg}
+                      onCheckedChange={setTransparentBg}
+                      className="data-[state=checked]:bg-[#25D366]"
+                    />
+                  </div>
                 </div>
 
                 {/* Font Family */}
