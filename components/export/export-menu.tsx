@@ -171,13 +171,13 @@ export function ExportMenu({
   const TriggerButton = (
     <Button
       size="default"
-      className="rounded-full shadow-lg h-12 sm:h-14 w-12 sm:w-36 sm:px-0 gap-2 justify-center"
+      className="rounded-full shadow-lg h-14 sm:h-14 w-14 sm:w-36 sm:px-0 gap-2 justify-center active:scale-95 transition-transform"
       disabled={disabled || isExporting || isVideoWorking}
     >
       {isExporting || isVideoWorking ? (
-        <Loader2 className="w-5 h-5 animate-spin" />
+        <Loader2 className="w-6 h-6 sm:w-5 sm:h-5 animate-spin" />
       ) : (
-        <Share2 className="w-5 h-5" />
+        <Share2 className="w-6 h-6 sm:w-5 sm:h-5" />
       )}
       <span className="font-medium hidden sm:inline">{t.export.export}</span>
     </Button>
@@ -189,7 +189,7 @@ export function ExportMenu({
       <button
         onClick={() => setActiveTab('image')}
         className={cn(
-          'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all',
+          'flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md text-sm font-medium transition-all active:scale-[0.98]',
           activeTab === 'image'
             ? 'bg-background shadow-sm text-foreground'
             : 'text-muted-foreground hover:text-foreground'
@@ -201,7 +201,7 @@ export function ExportMenu({
       <button
         onClick={() => setActiveTab('video')}
         className={cn(
-          'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all',
+          'flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-md text-sm font-medium transition-all active:scale-[0.98]',
           activeTab === 'video'
             ? 'bg-background shadow-sm text-foreground'
             : 'text-muted-foreground hover:text-foreground'

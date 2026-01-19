@@ -381,3 +381,45 @@
     transform-origin: center center;
   }
 }
+
+/* Safe area insets for modern phones (notch, home indicator) */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+/* Touch-friendly button states */
+@media (max-width: 639px) {
+  .touch-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Increase tap targets on mobile */
+  button, [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+/* Improved mobile scrolling */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent text selection during touch interactions */
+.no-select-touch {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

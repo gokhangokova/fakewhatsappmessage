@@ -414,7 +414,7 @@ export default function Home() {
       <TabbedSidebar {...sidebarProps} />
 
       {/* Preview Panel - Full width on mobile, buttons at bottom */}
-      <div className="w-full h-full flex items-center justify-center sm:px-4 md:p-8 overflow-hidden max-sm:pb-20">
+      <div className="w-full h-full flex items-center justify-center sm:px-4 md:p-8 overflow-hidden max-sm:pb-24">
         {/* Phone Preview - Responsive scaling with dynamic fit */}
         <div
           className={cn(
@@ -472,49 +472,49 @@ export default function Home() {
         </div>
 
         {/* Floating Export Panel - Mobile: horizontal at bottom center, Desktop: bottom right */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-2.5 sm:gap-3">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-3 safe-area-bottom">
           {/* Editor Button - Mobile only */}
           <Button
             size="default"
-            className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300"
+            className="rounded-full shadow-lg h-14 w-14 sm:hidden bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300 active:scale-95 transition-transform"
             onClick={() => {
               setSidebarTab('editor')
               setSidebarOpen(true)
             }}
           >
-            <Edit3 className="w-5 h-5" strokeWidth={2.5} />
+            <Edit3 className="w-6 h-6" strokeWidth={2.5} />
           </Button>
 
           {/* Settings Button - Mobile only */}
           <Button
             size="default"
-            className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300"
+            className="rounded-full shadow-lg h-14 w-14 sm:hidden bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300 active:scale-95 transition-transform"
             onClick={() => {
               setSidebarTab('settings')
               setSidebarOpen(true)
             }}
           >
-            <FlaskConical className="w-5 h-5" strokeWidth={2.5} />
+            <FlaskConical className="w-6 h-6" strokeWidth={2.5} />
           </Button>
 
           {/* Preview Animation Button */}
           {isPreviewMode ? (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-12 w-12 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-500 hover:bg-orange-600 text-white border-0 justify-center"
+              className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-500 hover:bg-orange-600 text-white border-0 justify-center active:scale-95 transition-transform"
               onClick={handleStopPreview}
             >
-              <Square className="w-5 h-5 sm:w-5 sm:h-5" strokeWidth={2.5} />
+              <Square className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
               <span className="font-medium hidden sm:inline">{t.export.stop}</span>
             </Button>
           ) : (
             <Button
               size="default"
-              className="rounded-full shadow-lg h-12 w-12 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-500 hover:bg-orange-600 text-white border-0 justify-center"
+              className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-orange-500 hover:bg-orange-600 text-white border-0 justify-center active:scale-95 transition-transform"
               onClick={handleStartPreview}
               disabled={isVideoMode || isExporting || messages.length === 0}
             >
-              <Play className="w-5 h-5 sm:w-5 sm:h-5" strokeWidth={2.5} />
+              <Play className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
               <span className="font-medium hidden sm:inline">{t.export.preview}</span>
             </Button>
           )}
