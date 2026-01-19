@@ -2253,6 +2253,22 @@ export function TabbedSidebar({
                   />
                 </div>
 
+                {/* Font Family */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.fontFamily}</Label>
+                  <select
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value as FontFamily)}
+                    className="w-full h-9 px-3 text-sm border rounded-lg bg-white"
+                  >
+                    {SUPPORTED_FONTS.map((font) => (
+                      <option key={font.code} value={font.code}>
+                        {font.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Status */}
                 <div className="space-y-2">
                   <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.status}</Label>
@@ -2277,6 +2293,114 @@ export function TabbedSidebar({
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Background Type */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.background}</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'solid', label: t.settings.solid },
+                      { value: 'doodle', label: t.settings.pattern },
+                      { value: 'image', label: t.settings.image },
+                    ] as { value: WhatsAppBackgroundType; label: string }[]).map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => setWhatsAppSettings({ backgroundType: type.value })}
+                        className={cn(
+                          'px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                          backgroundType === type.value
+                            ? 'bg-[#d4f5e2] text-[#128C7E]'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        )}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Solid Color */}
+                {backgroundType === 'solid' && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.color}</Label>
+                    <div className="grid grid-cols-6 gap-2">
+                      {WHATSAPP_BG_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => setWhatsAppSettings({ backgroundColor: color })}
+                          className={cn(
+                            'w-full aspect-square rounded-lg border-2 transition-all',
+                            whatsappSettings.backgroundColor === color
+                              ? 'border-[#25D366] scale-110 shadow-md'
+                              : 'border-transparent hover:border-gray-300'
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={whatsappSettings.backgroundColor || '#EFEFE4'}
+                        onChange={(e) => setWhatsAppSettings({ backgroundColor: e.target.value })}
+                        className="w-8 h-8 rounded cursor-pointer border border-gray-200"
+                      />
+                      <DebouncedInput
+                        value={whatsappSettings.backgroundColor || '#EFEFE4'}
+                        onChange={(value) => setWhatsAppSettings({ backgroundColor: value })}
+                        placeholder="#EFEFE4"
+                        className="flex-1 text-sm h-8"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Doodle Settings */}
+                {backgroundType === 'doodle' && (
+                  <>
+                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg mb-3">
+                      <p>✨ {language === 'tr' ? 'Orijinal WhatsApp desen görseli kullanılıyor.' : 'Using authentic WhatsApp pattern image.'}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.patternOpacity}</Label>
+                        <span className="text-xs text-[#128C7E] font-medium">
+                          {Math.round((whatsappSettings.doodleOpacity || 1) * 100)}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1"
+                        step="0.05"
+                        value={whatsappSettings.doodleOpacity || 1}
+                        onChange={(e) => setWhatsAppSettings({ doodleOpacity: parseFloat(e.target.value) })}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#25D366]"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Image Background */}
+                {backgroundType === 'image' && (
+                  <BackgroundImageUploader
+                    imageUrl={whatsappSettings.backgroundImage}
+                    onChange={(url) => setWhatsAppSettings({ backgroundImage: url })}
+                    uploadLabel={t.settings.upload}
+                    changeLabel={t.settings.change}
+                  />
+                )}
+
+                {/* Encryption Notice */}
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                  <span className="text-sm text-gray-700">{t.settings.encryptionNotice}</span>
+                  <Switch
+                    checked={whatsappSettings.showEncryptionNotice}
+                    onCheckedChange={(checked) => setWhatsAppSettings({ showEncryptionNotice: checked })}
+                    className="data-[state=checked]:bg-[#25D366]"
+                  />
                 </div>
               </CollapsibleSection>
             )}
