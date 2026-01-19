@@ -558,9 +558,9 @@ function SortableMessageItem({
     ? message.timestamp
     : new Date(message.timestamp)
 
-  // For group chat, check if user is 'sender-1' (You) or find in participants
+  // For group chat, check if user is 'me' (You) or find in participants
   const isGroupChat = groupSettings?.isGroupChat && groupSettings.participants.length > 0
-  const isSent = message.userId === sender.id || message.userId === 'sender-1'
+  const isSent = message.userId === 'me'
   const isWhatsApp = platform === 'whatsapp'
 
   // Get the display name for the message sender
@@ -949,8 +949,8 @@ export function TabbedSidebar({
         content: '',
         timestamp: new Date(),
         type: 'text',
-        // Only 'sender-1' (You) messages should have status
-        status: nextParticipant.id === 'sender-1' ? 'read' : undefined,
+        // Only 'me' (You) messages should have status
+        status: nextParticipant.id === 'me' ? 'read' : undefined,
       }
       setMessages([...messages, newMessage])
     } else {
@@ -1050,8 +1050,8 @@ export function TabbedSidebar({
             senderId: nextParticipant.id,
             senderName: nextParticipant.name,
             senderColor: nextParticipant.color,
-            // Only sent messages (from 'sender-1' / 'You') should have status
-            status: nextParticipant.id === 'sender-1' ? (msg.status || 'read') : undefined,
+            // Only sent messages (from 'me' / 'You') should have status
+            status: nextParticipant.id === 'me' ? (msg.status || 'read') : undefined,
           }
         })
       )

@@ -8,7 +8,7 @@ import { generateId } from '@/lib/utils'
 const STORAGE_KEY = 'fake-social-chat-state'
 
 const defaultSender: User = {
-  id: 'sender-1',
+  id: 'me',
   name: 'John',
   avatar: null,
 }
@@ -25,7 +25,7 @@ const baseTime = new Date('2024-01-15T09:41:00')
 const defaultMessages: Message[] = [
   {
     id: 'msg-default-1',
-    userId: 'sender-1',
+    userId: 'me',
     content: 'Good morning!',
     timestamp: new Date(baseTime.getTime()),
     type: 'text',
@@ -33,7 +33,7 @@ const defaultMessages: Message[] = [
   },
   {
     id: 'msg-default-2',
-    userId: 'sender-1',
+    userId: 'me',
     content: 'Japan looks amazing!',
     timestamp: new Date(baseTime.getTime() + 60000), // +1 min
     type: 'text',
@@ -48,7 +48,7 @@ const defaultMessages: Message[] = [
   },
   {
     id: 'msg-default-4',
-    userId: 'sender-1',
+    userId: 'me',
     content: "It's morning in Tokyo 😎",
     timestamp: new Date(baseTime.getTime() + 180000), // +3 min
     type: 'text',
@@ -97,8 +97,8 @@ const defaultGroupMessages: Message[] = [
   },
   {
     id: 'grp-msg-4',
-    userId: 'sender-1', // You (matches sender.id)
-    senderId: 'sender-1',
+    userId: 'me', // You (matches sender.id)
+    senderId: 'me',
     senderName: 'You',
     senderColor: '#25D366',
     content: 'How about 9am at the park entrance?',
@@ -346,7 +346,7 @@ export function useChatState() {
     : state.directChatSession?.sender
 
   const addMessage = useCallback(() => {
-    const senderId = currentSender?.id || 'sender-1'
+    const senderId = currentSender?.id || 'me'
     const newMessage: Message = {
       id: generateId(),
       userId: senderId,

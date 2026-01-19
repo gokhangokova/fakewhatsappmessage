@@ -392,9 +392,8 @@ Ardışık mesajlarda kuyruk ve avatar **SON** mesajda görünüyor:
 
 ### isSent Kontrolü (Kritik!)
 ```tsx
-// 1-1 Chat: sender.id veya 'me'
-// Group Chat: sender.id, 'me' veya 'sender-1' (varsayılan You ID'si)
-const isSent = message.userId === sender.id || message.userId === 'me' || message.userId === 'sender-1'
+// Hem 1-1 Chat hem Group Chat için tek kontrol
+const isSent = message.userId === 'me'
 ```
 
 ### Grup Chat Avatar Gösterimi
@@ -447,9 +446,9 @@ chatBg: '#0B141A'
 - Kuyruk köşesi: `rounded-br-[2px]` (gönderilen) veya `rounded-bl-[2px]` (alınan)
 
 ### Varsayılan Sender ID'leri
-- 1-1 Chat: `sender.id` (dinamik) veya `'me'`
-- Group Chat You: `'sender-1'` (varsayılan)
-- Group Chat Participants: `'participant-{uuid}'`
+- 1-1 Chat: `'me'` (You için standart ID)
+- Group Chat You: `'me'` (You için standart ID)
+- Group Chat Participants: `'p1'`, `'p2'`, `'p3'` veya `'participant-{uuid}'`
 
 ---
 
@@ -459,7 +458,7 @@ chatBg: '#0B141A'
 2. **iOS/Android farkları:** Header, footer ve bazı stiller cihaz tipine göre değişiyor
 3. **Light/Dark mode:** Tüm renkler tema'ya göre belirlenmeli
 4. **Türkçe çeviriler:** `lib/i18n/translations.ts` dosyasında
-5. **isSent kontrolü:** Hem `sender.id`, `'me'` hem de `'sender-1'` kontrol edilmeli
+5. **isSent kontrolü:** Sadece `'me'` kontrol edilmeli (standartlaştırıldı)
 6. **Kuyruk ve Avatar:** `isLastInGroup` kullan, `isFirstInGroup` değil
 7. **AvatarFallback:** Her zaman `AvatarImage` ile birlikte render et
 8. **delayMs={0}:** Avatar fallback'in hemen görünmesi için gerekli
@@ -489,10 +488,10 @@ npm run build
 **Çözüm:** `hooks/use-chat-state.ts`'te mevcut ayarları koru
 
 ### Sorun: Grup chat'te "You" mesajlarında kuyruk her mesajda görünüyor
-**Sebep:** `isSent` kontrolü `'sender-1'` ID'sini içermiyor
-**Çözüm:**
+**Sebep:** `isSent` kontrolü yanlış ID kullanıyor
+**Çözüm:** Tüm "You" mesajları için `userId: 'me'` kullan:
 ```tsx
-const isSent = message.userId === sender.id || message.userId === 'me' || message.userId === 'sender-1'
+const isSent = message.userId === 'me'
 ```
 
 ### Sorun: Kuyruk ilk mesajda görünüyor, son mesajda değil

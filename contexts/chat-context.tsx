@@ -11,7 +11,7 @@ const STORAGE_KEY = 'fake-social-chat-state'
 const baseTime = new Date('2024-01-15T09:41:00')
 
 const defaultSender: User = {
-  id: 'sender-1',
+  id: 'me',
   name: 'John',
   avatar: null,
 }
@@ -25,7 +25,7 @@ const defaultReceiver: User = {
 const defaultMessages: Message[] = [
   {
     id: 'msg-default-1',
-    userId: 'sender-1',
+    userId: 'me',
     content: 'Good morning!',
     timestamp: new Date(baseTime.getTime()),
     type: 'text',
@@ -33,7 +33,7 @@ const defaultMessages: Message[] = [
   },
   {
     id: 'msg-default-2',
-    userId: 'sender-1',
+    userId: 'me',
     content: 'Japan looks amazing!',
     timestamp: new Date(baseTime.getTime() + 60000),
     type: 'text',
@@ -48,7 +48,7 @@ const defaultMessages: Message[] = [
   },
   {
     id: 'msg-default-4',
-    userId: 'sender-1',
+    userId: 'me',
     content: "It's morning in Tokyo 😎",
     timestamp: new Date(baseTime.getTime() + 180000),
     type: 'text',
@@ -96,8 +96,8 @@ const defaultGroupMessages: Message[] = [
   },
   {
     id: 'grp-msg-4',
-    userId: 'sender-1',
-    senderId: 'sender-1',
+    userId: 'me',
+    senderId: 'me',
     senderName: 'You',
     senderColor: '#25D366',
     content: 'How about 9am at the park entrance?',

@@ -518,8 +518,8 @@ const AnimatedMessageBubble = ({
   participants?: User[]
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  // Check if message is from current user - supports sender.id, 'me', and 'sender-1' (group chat default)
-  const isSent = message.userId === sender.id || message.userId === 'me' || message.userId === 'sender-1'
+  // Check if message is from current user
+  const isSent = message.userId === 'me'
   const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
   const time = formatTime(timestamp, timeFormat)
   const status = message.status || 'read'
@@ -960,10 +960,7 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
     if (!currentMessage) return
 
     // Check if message is from sender (current user)
-    // Supports sender.id, legacy 'me' value, and group chat default 'sender-1'
-    const isSenderMessage = currentMessage.userId === sender.id ||
-                            currentMessage.userId === 'me' ||
-                            currentMessage.userId === 'sender-1'
+    const isSenderMessage = currentMessage.userId === 'me'
     const isReceiverMessage = !isSenderMessage
 
     // State machine transitions

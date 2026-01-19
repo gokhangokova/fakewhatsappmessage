@@ -911,8 +911,8 @@ const IOSMessageBubble = ({
   t: ReturnType<typeof useTranslations>
 }) => {
   const theme = darkMode ? themes.dark : themes.light
-  // Check if message is from current user - supports sender.id, 'me', and 'sender-1' (group chat default)
-  const isSent = message.userId === sender.id || message.userId === 'me' || message.userId === 'sender-1'
+  // Check if message is from current user
+  const isSent = message.userId === 'me'
   const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
   const time = formatTime(timestamp, timeFormat)
   const status = message.status || 'read'
