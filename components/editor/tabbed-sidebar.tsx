@@ -134,6 +134,8 @@ interface TabbedSidebarProps {
   setFontFamily: (fontFamily: FontFamily) => void
   batteryLevel: number
   setBatteryLevel: (level: number) => void
+  mobilePreviewScale: number
+  setMobilePreviewScale: (scale: number) => void
   deviceType: DeviceType
   setDeviceType: (deviceType: DeviceType) => void
   // Group chat props
@@ -834,6 +836,8 @@ export function TabbedSidebar({
   setFontFamily,
   batteryLevel,
   setBatteryLevel,
+  mobilePreviewScale,
+  setMobilePreviewScale,
   deviceType,
   setDeviceType,
   groupSettings,
@@ -2230,6 +2234,36 @@ export function TabbedSidebar({
                     max="100"
                     value={batteryLevel}
                     onChange={(e) => setBatteryLevel(parseInt(e.target.value) || 0)}
+                    className="w-14 px-2 py-1.5 text-sm text-center rounded-lg bg-gray-50 border border-gray-200 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Preview Scale - Mobile only */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t.settings.previewScale}</Label>
+                  <span className="text-xs font-medium text-[#128C7E]">
+                    {mobilePreviewScale}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value={mobilePreviewScale}
+                    onChange={(e) => setMobilePreviewScale(parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    style={{ accentColor: '#25D366' }}
+                  />
+                  <input
+                    type="number"
+                    min="10"
+                    max="100"
+                    value={mobilePreviewScale}
+                    onChange={(e) => setMobilePreviewScale(parseInt(e.target.value) || 50)}
                     className="w-14 px-2 py-1.5 text-sm text-center rounded-lg bg-gray-50 border border-gray-200 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] focus:outline-none"
                   />
                 </div>

@@ -192,12 +192,14 @@ interface AppearanceContextType {
   transparentBg: boolean
   fontFamily: FontFamily
   deviceType: DeviceType
+  mobilePreviewScale: number
   setDarkMode: (darkMode: boolean) => void
   setMobileView: (mobileView: boolean) => void
   setTimeFormat: (timeFormat: '12h' | '24h') => void
   setTransparentBg: (transparentBg: boolean) => void
   setFontFamily: (fontFamily: FontFamily) => void
   setDeviceType: (deviceType: DeviceType) => void
+  setMobilePreviewScale: (scale: number) => void
 }
 
 const AppearanceContext = createContext<AppearanceContextType | null>(null)
@@ -257,6 +259,7 @@ interface ChatState {
   fontFamily: FontFamily
   batteryLevel: number
   deviceType: DeviceType
+  mobilePreviewScale: number
   groupSettings: GroupChatSettings
 }
 
@@ -274,6 +277,7 @@ const defaultState: ChatState = {
   fontFamily: 'sf-pro',
   batteryLevel: 100,
   deviceType: 'ios',
+  mobilePreviewScale: 50,
   groupSettings: DEFAULT_GROUP_SETTINGS,
 }
 
@@ -296,6 +300,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const [transparentBg, setTransparentBgState] = useState(defaultState.transparentBg)
   const [fontFamily, setFontFamilyState] = useState<FontFamily>(defaultState.fontFamily)
   const [deviceType, setDeviceTypeState] = useState<DeviceType>(defaultState.deviceType)
+  const [mobilePreviewScale, setMobilePreviewScaleState] = useState(defaultState.mobilePreviewScale)
   const [platform, setPlatformState] = useState<Platform>(defaultState.platform)
   const [language, setLanguageState] = useState<Language>(defaultState.language)
   const [batteryLevel, setBatteryLevelState] = useState(defaultState.batteryLevel)
@@ -327,6 +332,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         setTransparentBgState(parsed.transparentBg)
         setFontFamilyState(parsed.fontFamily)
         setDeviceTypeState(parsed.deviceType)
+        setMobilePreviewScaleState(parsed.mobilePreviewScale ?? 50)
         setPlatformState(parsed.platform)
         setLanguageState(parsed.language)
         setBatteryLevelState(parsed.batteryLevel)
@@ -361,11 +367,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
         fontFamily,
         batteryLevel,
         deviceType,
+        mobilePreviewScale,
         groupSettings,
       }
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     }, 500) // 500ms debounce for batching multiple changes
-  }, [isHydrated, platform, sender, receiver, messages, darkMode, mobileView, timeFormat, transparentBg, whatsappSettings, language, fontFamily, batteryLevel, deviceType, groupSettings])
+  }, [isHydrated, platform, sender, receiver, messages, darkMode, mobileView, timeFormat, transparentBg, whatsappSettings, language, fontFamily, batteryLevel, deviceType, mobilePreviewScale, groupSettings])
 
   // Trigger save whenever state changes
   useEffect(() => {
@@ -392,6 +399,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         fontFamily,
         batteryLevel,
         deviceType,
+        mobilePreviewScale,
         groupSettings,
       }
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
@@ -404,7 +412,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [platform, sender, receiver, messages, darkMode, mobileView, timeFormat, transparentBg, whatsappSettings, language, fontFamily, batteryLevel, deviceType, groupSettings])
+  }, [platform, sender, receiver, messages, darkMode, mobileView, timeFormat, transparentBg, whatsappSettings, language, fontFamily, batteryLevel, deviceType, mobilePreviewScale, groupSettings])
 
   // ============= MESSAGES ACTIONS =============
   const setMessages = useCallback((newMessages: Message[]) => {
@@ -526,6 +534,10 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setFontFamilyState(value === 'android' ? 'roboto' : 'sf-pro')
   }, [])
 
+  const setMobilePreviewScale = useCallback((value: number) => {
+    setMobilePreviewScaleState(Math.min(100, Math.max(10, value)))
+  }, [])
+
   // ============= SETTINGS ACTIONS =============
   const setPlatform = useCallback((value: Platform) => {
     setPlatformState(value)
@@ -555,6 +567,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setTransparentBgState(defaultState.transparentBg)
     setFontFamilyState(defaultState.fontFamily)
     setDeviceTypeState(defaultState.deviceType)
+    setMobilePreviewScaleState(defaultState.mobilePreviewScale)
     setPlatformState(defaultState.platform)
     setLanguageState(defaultState.language)
     setBatteryLevelState(defaultState.batteryLevel)
@@ -596,13 +609,15 @@ export function ChatProvider({ children }: ChatProviderProps) {
     transparentBg,
     fontFamily,
     deviceType,
+    mobilePreviewScale,
     setDarkMode,
     setMobileView,
     setTimeFormat,
     setTransparentBg,
     setFontFamily,
     setDeviceType,
-  }), [darkMode, mobileView, timeFormat, transparentBg, fontFamily, deviceType, setDarkMode, setMobileView, setTimeFormat, setTransparentBg, setFontFamily, setDeviceType])
+    setMobilePreviewScale,
+  }), [darkMode, mobileView, timeFormat, transparentBg, fontFamily, deviceType, mobilePreviewScale, setDarkMode, setMobileView, setTimeFormat, setTransparentBg, setFontFamily, setDeviceType, setMobilePreviewScale])
 
   const settingsValue = useMemo<SettingsContextType>(() => ({
     platform,
@@ -674,12 +689,14 @@ export function useChatState() {
     transparentBg: appearanceCtx.transparentBg,
     fontFamily: appearanceCtx.fontFamily,
     deviceType: appearanceCtx.deviceType,
+    mobilePreviewScale: appearanceCtx.mobilePreviewScale,
     setDarkMode: appearanceCtx.setDarkMode,
     setMobileView: appearanceCtx.setMobileView,
     setTimeFormat: appearanceCtx.setTimeFormat,
     setTransparentBg: appearanceCtx.setTransparentBg,
     setFontFamily: appearanceCtx.setFontFamily,
     setDeviceType: appearanceCtx.setDeviceType,
+    setMobilePreviewScale: appearanceCtx.setMobilePreviewScale,
     // Settings
     platform: settingsCtx.platform,
     language: settingsCtx.language,

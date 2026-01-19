@@ -54,6 +54,8 @@ export default function Home() {
     setFontFamily,
     batteryLevel,
     setBatteryLevel,
+    mobilePreviewScale,
+    setMobilePreviewScale,
     deviceType,
     setDeviceType,
     groupSettings,
@@ -356,6 +358,8 @@ export default function Home() {
     setFontFamily,
     batteryLevel,
     setBatteryLevel,
+    mobilePreviewScale,
+    setMobilePreviewScale,
     deviceType,
     setDeviceType,
     groupSettings,
@@ -374,6 +378,7 @@ export default function Home() {
     darkMode, setDarkMode, mobileView, setMobileView, timeFormat, setTimeFormat,
     transparentBg, setTransparentBg, whatsappSettings, setWhatsAppSettings,
     language, setLanguage, fontFamily, setFontFamily, batteryLevel, setBatteryLevel,
+    mobilePreviewScale, setMobilePreviewScale,
     deviceType, setDeviceType, groupSettings, setGroupSettings, toggleGroupChat,
     addParticipant, removeParticipant, updateParticipant, resetToDefaults,
     sidebarOpen, handleSidebarClose, sidebarTab
@@ -411,6 +416,7 @@ export default function Home() {
             // Mobile: dynamic scaling via CSS class
             "max-sm:mobile-phone-preview"
           )}
+          style={{ '--mobile-preview-scale': mobilePreviewScale / 100 } as React.CSSProperties}
         >
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
