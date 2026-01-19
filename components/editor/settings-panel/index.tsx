@@ -416,7 +416,7 @@ export function SettingsPanel({
             <div className="px-3 py-4 animate-in slide-in-from-top-2 fade-in duration-200">
               <div className="p-4 rounded-xl bg-[#252525] space-y-3">
                 <p className="text-sm text-[#909090] leading-relaxed">
-                  <span className="text-[#b8d4a8] font-medium">FakeSocialMessage</span> is a free tool to create realistic chat screenshots for social media platforms.
+                  <span className="text-[#b8d4a8] font-medium">memesocial.app</span> is a free tool to create realistic chat screenshots for social media platforms.
                 </p>
                 <p className="text-xs text-[#606060]">
                   Your changes are automatically saved to your browser.

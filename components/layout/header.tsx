@@ -14,9 +14,7 @@ export function Header() {
             <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <span className="font-bold text-lg md:text-xl">
-            <span className="hidden sm:inline">FakeSocial</span>
-            <span className="sm:hidden">FS</span>
-            <span className="text-primary">.io</span>
+            memesocial<span className="text-primary">.app</span>
           </span>
         </Link>
 
