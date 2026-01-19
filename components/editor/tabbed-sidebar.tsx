@@ -1053,8 +1053,10 @@ export function TabbedSidebar({
       {/* Content */}
       <div ref={scrollContainerRef} className={cn(
         "p-3 space-y-2 overflow-y-auto",
-        // Mobile: content scrolls within the 50vh sheet (minus header ~60px and footer ~60px)
-        isMobile ? "max-h-[calc(50vh-120px)]" : "",
+        // Mobile: content scrolls within the full height sidebar (minus header ~60px and footer ~60px)
+        isMobile && activeTab === 'settings' && onReset
+          ? "max-h-[calc(100vh-120px)]"
+          : isMobile ? "max-h-[calc(100vh-60px)]" : "",
         // Desktop: max height
         !isMobile && activeTab === 'settings' && onReset
           ? "lg:max-h-[calc(100vh-240px)]"
@@ -1737,19 +1739,16 @@ export function TabbedSidebar({
       </>
     )
 
-  // Mobile: Bottom Sheet - 50% of screen height
+  // Mobile: Left sidebar
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
         <SheetContent
-          side="bottom"
-          className="rounded-t-2xl px-0 pb-4 pt-0 h-[50vh] overflow-hidden"
+          side="left"
+          className="w-[85vw] max-w-sm px-0 pb-4 pt-0 h-full overflow-hidden"
           hideOverlay={true}
           hideCloseButton={true}
         >
-          {/* Drag handle */}
-          <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto my-3" />
-
           <SheetHeader className="sr-only">
             <SheetTitle>{t.common.editor}</SheetTitle>
           </SheetHeader>
