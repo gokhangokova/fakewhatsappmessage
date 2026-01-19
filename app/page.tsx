@@ -451,8 +451,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* Floating Export Panel - Mobile: single row centered at bottom */}
-        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3">
+        {/* Floating Export Panel - Mobile: single row centered at bottom with safe area */}
+        <div className="absolute bottom-0 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3">
           {/* Editor Button - Mobile only */}
           <Button
             size="default"

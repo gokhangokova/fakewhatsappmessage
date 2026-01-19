@@ -2110,7 +2110,7 @@ export function TabbedSidebar({
         <SheetContent
           side="bottom"
           className="h-[50vh] px-0 pb-0 pt-0 rounded-t-2xl flex flex-col"
-          hideOverlay={false}
+          hideOverlay={true}
           hideCloseButton={true}
         >
           <SheetHeader className="sr-only">
