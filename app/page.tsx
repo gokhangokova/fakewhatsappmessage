@@ -409,14 +409,15 @@ export default function Home() {
         {/* Phone Preview - Responsive scaling with dynamic fit */}
         <div
           className={cn(
-            "transition-transform flex items-center justify-center",
-            // Desktop scaling
+            "transition-transform flex items-center justify-center origin-center",
+            // Desktop scaling (Tailwind classes)
             "sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
-            "sm:origin-center",
-            // Mobile: dynamic scaling via CSS class
+            // Mobile: dynamic scaling via CSS custom property
             "max-sm:mobile-phone-preview"
           )}
-          style={{ '--mobile-preview-scale': mobilePreviewScale / 100 } as React.CSSProperties}
+          style={{
+            '--mobile-preview-scale': mobilePreviewScale / 100,
+          } as React.CSSProperties}
         >
           {isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>

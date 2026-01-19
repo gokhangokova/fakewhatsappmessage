@@ -376,22 +376,11 @@
 /* Mobile phone preview - dynamic scaling to fit available space */
 @media (max-width: 639px) {
   .mobile-phone-preview {
-    /* Calculate available space:
-       - Height: viewport - header (56px) - button row (80px) - padding (16px)
-       - Width: viewport - left/right padding (16px each)
-       Phone dimensions: 375px wide x 812px tall
-       --mobile-preview-scale: user-configurable scale (0.1 to 1.0), default 0.5
+    /*
+       --mobile-preview-scale: user-configurable scale (0.1 to 1.0), passed via inline style
+       Default is 0.5 (50%) if not provided
     */
-    --header-height: 56px;
-    --button-row: 80px;
-    --padding: 16px;
-    --available-height: calc(100vh - var(--header-height) - var(--button-row) - var(--padding));
-    --available-width: calc(100vw - var(--padding) * 2);
-    /* Scale to fit both dimensions, pick the smaller one, then apply user scale */
-    --scale-by-height: calc(var(--available-height) / 812);
-    --scale-by-width: calc(var(--available-width) / 375);
-    --user-scale: var(--mobile-preview-scale, 0.5);
-    transform: scale(calc(min(var(--scale-by-height), var(--scale-by-width)) * var(--user-scale)));
+    transform: scale(var(--mobile-preview-scale, 0.5));
     transform-origin: center center;
   }
 }
