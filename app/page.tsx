@@ -472,7 +472,7 @@ export default function Home() {
         </div>
 
         {/* Floating Export Panel - Mobile: horizontal at bottom center, Desktop: bottom right */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-3 safe-area-bottom">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3 sm:gap-3 safe-area-bottom">
           {/* Editor Button - Mobile only */}
           <Button
             size="default"
