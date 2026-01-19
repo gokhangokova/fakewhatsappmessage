@@ -521,6 +521,115 @@ const isSent = message.userId === sender.id || message.userId === 'me' || messag
 2. `app/page.tsx`'te ref polling mekanizması ekle
 3. DOM render tamamlanana kadar bekle (200ms+)
 
+### Sorun: Mobile preview scale slider çalışmıyor
+**Sebep:** CSS custom property inheritance sorunu - CSS class içinde tanımlanan variable, aynı class'ta kullanılamıyor
+**Çözüm:**
+1. CSS'i sadeleştir - viewport hesaplamalarını kaldır
+2. Inline style'dan gelen `--mobile-preview-scale` değerini doğrudan kullan
+```css
+/* app/globals.css */
+@media (max-width: 639px) {
+  .mobile-phone-preview {
+    transform: scale(var(--mobile-preview-scale, 0.5));
+    transform-origin: center center;
+  }
+}
+```
+3. React'ta CSS variable'ı inline style ile geçir:
+```tsx
+style={{
+  '--mobile-preview-scale': mobilePreviewScale / 100,
+} as React.CSSProperties}
+```
+
+---
+
+## Mobile Preview Scale Özelliği (Ocak 2025)
+
+### Açıklama
+Mobil cihazlarda kullanıcının preview ekranının ölçeğini ayarlamasını sağlayan slider. Settings > Appearance altında bulunur.
+
+### Dosyalar ve Değişiklikler
+
+1. **`hooks/use-chat-state.ts`**:
+   - `ChatState` interface'ine `mobilePreviewScale: number` eklendi
+   - `defaultState`'e `mobilePreviewScale: 50` eklendi
+   - `setMobilePreviewScale` callback fonksiyonu (10-100 arası sınırlama)
+   - SSR ve normal return value'larda fallback: `mobilePreviewScale: state.mobilePreviewScale ?? 50`
+
+2. **`contexts/chat-context.tsx`**:
+   - `AppearanceContextType` interface'ine eklendi
+   - `ChatState` interface ve `defaultState`'e eklendi
+   - State: `useState(defaultState.mobilePreviewScale)`
+   - localStorage load: `setMobilePreviewScaleState(parsed.mobilePreviewScale ?? 50)`
+   - `saveToStorage` ve `beforeunload` handler'larına eklendi
+   - `setMobilePreviewScale` callback
+   - `resetToDefaults`'a eklendi
+   - `appearanceValue` memo'ya eklendi
+   - `useChatState` return value'ya eklendi
+
+3. **`lib/i18n/translations.ts`**:
+   - Interface'e `previewScale: string` eklendi
+   - English: `previewScale: 'Preview Scale'`
+   - Turkish: `previewScale: 'Önizleme Ölçeği'`
+
+4. **`components/editor/tabbed-sidebar.tsx`**:
+   - Interface'e `mobilePreviewScale` ve `setMobilePreviewScale` eklendi
+   - Settings > Appearance altına slider UI eklendi (range input + number input)
+   - Sadece mobilde görünür (sm:hidden ile gizlenmemiş, mobil sidebar'da gösterilir)
+
+5. **`app/page.tsx`**:
+   - `useChatState` destructure'a eklendi
+   - `sidebarProps` memo'ya eklendi
+   - Preview container'a CSS variable inline style eklendi
+
+6. **`app/globals.css`**:
+   - Mobile preview class basitleştirildi
+   - `transform: scale(var(--mobile-preview-scale, 0.5))`
+   - Viewport hesaplamaları kaldırıldı (artık sadece user scale kullanılıyor)
+
+### Slider UI Kodu
+```tsx
+{/* Preview Scale - Mobile only */}
+<div className="space-y-2">
+  <div className="flex items-center justify-between">
+    <Label className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+      {t.settings.previewScale}
+    </Label>
+    <span className="text-xs font-medium text-[#128C7E]">
+      {mobilePreviewScale}%
+    </span>
+  </div>
+  <div className="flex items-center gap-3">
+    <input
+      type="range"
+      min="10"
+      max="100"
+      step="5"
+      value={mobilePreviewScale}
+      onChange={(e) => setMobilePreviewScale(parseInt(e.target.value))}
+      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+      style={{ accentColor: '#25D366' }}
+    />
+    <input
+      type="number"
+      min="10"
+      max="100"
+      value={mobilePreviewScale}
+      onChange={(e) => setMobilePreviewScale(parseInt(e.target.value) || 50)}
+      className="w-14 px-2 py-1.5 text-sm text-center rounded-lg bg-gray-50 border border-gray-200 focus:border-[#25D366] focus:ring-1 focus:ring-[#25D366] focus:outline-none"
+    />
+  </div>
+</div>
+```
+
+### Önemli Notlar
+- Varsayılan değer: 50 (50%)
+- Min: 10%, Max: 100%
+- Step: 5%
+- localStorage'da persist ediliyor
+- Desktop'ta Tailwind class'ları override ediyor (sm:scale-[0.8] vb.)
+
 ---
 
 ## Gelecek Geliştirmeler İçin Notlar
@@ -530,3 +639,4 @@ const isSent = message.userId === sender.id || message.userId === 'me' || messag
 - Grup icon seçimi illüstrasyon avatarlarla çalışıyor (DiceBear API)
 - Image export keskin köşelerle çalışıyor (forExport prop)
 - Video export grup chat gecikmesi düzeltildi (isReady state)
+- Mobile preview scale slider eklendi (Settings > Appearance)
