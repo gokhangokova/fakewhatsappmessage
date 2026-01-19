@@ -1411,8 +1411,12 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                     {group.messages.map((message, index) => {
                       const prevMessage = index > 0 ? group.messages[index - 1] : null
                       const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
-                      const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
-                      const isLastInGroup = !nextMessage || nextMessage.userId !== message.userId
+                      // Ensure userId comparison handles undefined/null cases
+                      const currentUserId = message.userId || message.senderId || ''
+                      const prevUserId = prevMessage?.userId || prevMessage?.senderId || ''
+                      const nextUserId = nextMessage?.userId || nextMessage?.senderId || ''
+                      const isFirstInGroup = !prevMessage || prevUserId !== currentUserId
+                      const isLastInGroup = !nextMessage || nextUserId !== currentUserId
 
                       return (
                         <IOSMessageBubble
@@ -1595,8 +1599,12 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
                   {group.messages.map((message, index) => {
                     const prevMessage = index > 0 ? group.messages[index - 1] : null
                     const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
-                    const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
-                    const isLastInGroup = !nextMessage || nextMessage.userId !== message.userId
+                    // Ensure userId comparison handles undefined/null cases
+                    const currentUserId = message.userId || message.senderId || ''
+                    const prevUserId = prevMessage?.userId || prevMessage?.senderId || ''
+                    const nextUserId = nextMessage?.userId || nextMessage?.senderId || ''
+                    const isFirstInGroup = !prevMessage || prevUserId !== currentUserId
+                    const isLastInGroup = !nextMessage || nextUserId !== currentUserId
 
                     return (
                       <IOSMessageBubble

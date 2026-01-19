@@ -1159,8 +1159,12 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             {messages.slice(0, visibleMessageCount).map((message, index, visibleMessages) => {
               const prevMessage = index > 0 ? visibleMessages[index - 1] : null
               const nextMessage = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : null
-              const isFirstInGroup = !prevMessage || prevMessage.userId !== message.userId
-              const isLastInGroup = !nextMessage || nextMessage.userId !== message.userId
+              // Ensure userId comparison handles undefined/null cases
+              const currentUserId = message.userId || message.senderId || ''
+              const prevUserId = prevMessage?.userId || prevMessage?.senderId || ''
+              const nextUserId = nextMessage?.userId || nextMessage?.senderId || ''
+              const isFirstInGroup = !prevMessage || prevUserId !== currentUserId
+              const isLastInGroup = !nextMessage || nextUserId !== currentUserId
 
               return (
                 <AnimatedMessageBubble
