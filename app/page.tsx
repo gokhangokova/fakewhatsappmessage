@@ -399,8 +399,8 @@ export default function Home() {
       {/* Tabbed Sidebar - Responsive */}
       <TabbedSidebar {...sidebarProps} />
 
-      {/* Preview Panel - Full width on mobile, centered between left edge and buttons */}
-      <div className="w-full h-full flex items-center justify-center sm:px-4 md:p-8 overflow-hidden max-sm:pr-16 max-sm:pl-2">
+      {/* Preview Panel - Full width on mobile, buttons at bottom */}
+      <div className="w-full h-full flex items-center justify-center sm:px-4 md:p-8 overflow-hidden max-sm:pb-20">
         {/* Phone Preview - Responsive scaling with dynamic fit */}
         <div
           className={cn(
@@ -456,8 +456,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* Floating Export Panel - Mobile: vertical on right side, Desktop: bottom right */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 sm:translate-y-0 sm:top-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-col sm:flex-col items-center sm:items-end gap-2.5 sm:gap-3">
+        {/* Floating Export Panel - Mobile: horizontal at bottom center, Desktop: bottom right */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:bottom-6 md:bottom-8 sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-2.5 sm:gap-3">
           {/* Editor Button - Mobile only */}
           <Button
             size="default"
