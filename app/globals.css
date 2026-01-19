@@ -378,13 +378,13 @@
   .mobile-phone-preview {
     /* Scale to fit available height (viewport - header - padding) */
     /* Phone is 812px tall, we want it to fit in available space */
-    /* Apply 0.8 multiplier (20% smaller) for better fit */
+    /* Apply 0.56 multiplier (50% smaller total) for better fit */
     --available-height: calc(100vh - 56px - 32px);
     --available-width: calc(100vw - 64px - 16px); /* subtract button area (64px) and padding */
     --scale-by-height: calc(var(--available-height) / 812);
     --scale-by-width: calc(var(--available-width) / 375);
     --base-scale: min(var(--scale-by-height), var(--scale-by-width), 1);
-    transform: scale(calc(var(--base-scale) * 0.8));
+    transform: scale(calc(var(--base-scale) * 0.56));
     transform-origin: center center;
   }
 }
