@@ -9,7 +9,7 @@ import { useChatState } from '@/contexts/chat-context'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Play, Square, Settings } from 'lucide-react'
+import { Play, Square, Edit3, FlaskConical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
@@ -72,6 +72,7 @@ export default function Home() {
   
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarTab, setSidebarTab] = useState<'editor' | 'settings'>('editor')
   
   // Export options
   const [showWatermark, setShowWatermark] = useState(false)
@@ -355,6 +356,7 @@ export default function Home() {
     // Mobile props
     isOpen: sidebarOpen,
     onClose: handleSidebarClose,
+    initialTab: sidebarTab,
   }), [
     platform, sender, setSender, receiver, setReceiver, messages, setMessages,
     darkMode, setDarkMode, mobileView, setMobileView, timeFormat, setTimeFormat,
@@ -362,7 +364,7 @@ export default function Home() {
     language, setLanguage, fontFamily, setFontFamily, batteryLevel, setBatteryLevel,
     deviceType, setDeviceType, groupSettings, setGroupSettings, toggleGroupChat,
     addParticipant, removeParticipant, updateParticipant, resetToDefaults,
-    sidebarOpen, handleSidebarClose
+    sidebarOpen, handleSidebarClose, sidebarTab
   ])
 
   return (
@@ -438,13 +440,28 @@ export default function Home() {
 
         {/* Floating Export Panel - Mobile: single row centered at bottom */}
         <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-4 md:right-8 flex flex-row sm:flex-col items-center sm:items-end gap-3">
+          {/* Editor Button - Mobile only */}
+          <Button
+            size="default"
+            className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+            onClick={() => {
+              setSidebarTab('editor')
+              setSidebarOpen(true)
+            }}
+          >
+            <Edit3 className="w-5 h-5" />
+          </Button>
+
           {/* Settings Button - Mobile only */}
           <Button
             size="default"
             className="rounded-full shadow-lg h-12 w-12 sm:hidden bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => {
+              setSidebarTab('settings')
+              setSidebarOpen(true)
+            }}
           >
-            <Settings className="w-5 h-5" />
+            <FlaskConical className="w-5 h-5" />
           </Button>
 
           {/* Preview Animation Button */}

@@ -141,6 +141,8 @@ interface TabbedSidebarProps {
   // Mobile props
   isOpen?: boolean
   onClose?: () => void
+  // Tab control
+  initialTab?: 'editor' | 'settings'
 }
 
 // Collapsible Section Component
@@ -837,9 +839,10 @@ export function TabbedSidebar({
   onReset,
   isOpen = false,
   onClose,
+  initialTab,
 }: TabbedSidebarProps) {
   const t = useTranslations(language)
-  const [activeTab, setActiveTab] = useState<TabType>('editor')
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'editor')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollPositionRef = useRef(0)
   const [isMobile, setIsMobile] = useState(false)
@@ -853,6 +856,13 @@ export function TabbedSidebar({
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Update active tab when initialTab changes (for mobile tab buttons)
+  useEffect(() => {
+    if (initialTab && isOpen) {
+      setActiveTab(initialTab)
+    }
+  }, [initialTab, isOpen])
 
   // Close sidebar on escape key
   useEffect(() => {
