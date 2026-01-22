@@ -1,7 +1,13 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
+  // Skip middleware for auth callback - let the route handler process the code exchange first
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    console.log('[Middleware] Skipping middleware for auth callback')
+    return NextResponse.next()
+  }
+
   return await updateSession(request)
 }
 

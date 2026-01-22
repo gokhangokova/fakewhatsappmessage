@@ -78,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[Auth] onAuthStateChange:', event, session?.user?.email)
+
         setSession(session)
         setUser(session?.user ?? null)
 
@@ -98,12 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase, fetchProfile])
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    console.log('[Auth] Starting Google OAuth with PKCE flow')
+    console.log('[Auth] redirectTo:', `${window.location.origin}/auth/callback`)
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        skipBrowserRedirect: false,
       },
     })
+
+    console.log('[Auth] signInWithOAuth result:', { data, error })
 
     if (error) {
       console.error('Error signing in with Google:', error)
