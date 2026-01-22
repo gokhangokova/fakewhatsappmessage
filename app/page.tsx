@@ -10,6 +10,7 @@ import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
 import { Play, Square, Edit3, FlaskConical } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/lib/i18n/translations'
@@ -557,13 +558,15 @@ export default function Home() {
           />
         </div>
 
-        {/* Quick Info - Hidden on mobile */}
-        <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 hidden lg:block">
-          <p className="text-xs text-muted-foreground">
-            {darkMode ? t.info.darkModeOn : t.info.lightModeOn} • {mobileView ? t.info.mobileView : t.info.desktopView}
-            {isPreviewMode && ` • ${t.info.previewing}`}
-            {isVideoMode && !isPreviewMode && ` • ${t.info.recordingVideo}`}
-          </p>
+        {/* Legal Links - Bottom Left */}
+        <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 hidden lg:flex items-center gap-3 text-xs text-muted-foreground">
+          <Link href="/terms-of-service" className="hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
+          <span className="text-muted-foreground/50">•</span>
+          <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </div>

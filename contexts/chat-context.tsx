@@ -1,11 +1,8 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react'
 import { Platform, Message, User, WhatsAppSettings, MessageStatus, ReplyTo, MessageReaction, Language, FontFamily, DeviceType, GroupChatSettings, DEFAULT_GROUP_SETTINGS, GroupParticipant } from '@/types'
 import { generateId } from '@/lib/utils'
-
-// Storage key
-const STORAGE_KEY = 'fake-social-chat-state'
 
 // Default values
 const baseTime = new Date('2024-01-15T09:41:00')
@@ -287,9 +284,7 @@ interface ChatProviderProps {
 }
 
 export function ChatProvider({ children }: ChatProviderProps) {
-  const [isHydrated, setIsHydrated] = useState(false)
-
-  // Individual state pieces
+  // Individual state pieces - no localStorage persistence
   const [messages, setMessagesState] = useState<Message[]>(defaultState.messages)
   const [sender, setSenderState] = useState<User>(defaultState.sender)
   const [receiver, setReceiverState] = useState<User>(defaultState.receiver)
@@ -306,113 +301,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const [batteryLevel, setBatteryLevelState] = useState(defaultState.batteryLevel)
   const [whatsappSettings, setWhatsappSettingsState] = useState<WhatsAppSettings>(defaultState.whatsappSettings)
 
-  // Debounce ref for localStorage
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed: ChatState = JSON.parse(stored)
-
-        // Convert date strings to Date objects
-        const messagesWithDates = parsed.messages.map(msg => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
-
-        setMessagesState(messagesWithDates)
-        setSenderState(parsed.sender)
-        setReceiverState(parsed.receiver)
-        setGroupSettingsState(parsed.groupSettings || DEFAULT_GROUP_SETTINGS)
-        setDarkModeState(parsed.darkMode)
-        setMobileViewState(parsed.mobileView)
-        setTimeFormatState(parsed.timeFormat)
-        setTransparentBgState(parsed.transparentBg)
-        setFontFamilyState(parsed.fontFamily)
-        setDeviceTypeState(parsed.deviceType)
-        setMobilePreviewScaleState(parsed.mobilePreviewScale ?? 50)
-        setPlatformState(parsed.platform)
-        setLanguageState(parsed.language)
-        setBatteryLevelState(parsed.batteryLevel)
-        setWhatsappSettingsState(parsed.whatsappSettings)
-      }
-    } catch (error) {
-      console.warn('Error loading from localStorage:', error)
-    }
-    setIsHydrated(true)
-  }, [])
-
-  // Save to localStorage with debounce (batching writes)
-  const saveToStorage = useCallback(() => {
-    if (!isHydrated) return
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      const state: ChatState = {
-        platform,
-        sender,
-        receiver,
-        messages,
-        darkMode,
-        mobileView,
-        timeFormat,
-        transparentBg,
-        whatsappSettings,
-        language,
-        fontFamily,
-        batteryLevel,
-        deviceType,
-        mobilePreviewScale,
-        groupSettings,
-      }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    }, 500) // 500ms debounce for batching multiple changes
-  }, [isHydrated, platform, sender, receiver, messages, darkMode, mobileView, timeFormat, transparentBg, whatsappSettings, language, fontFamily, batteryLevel, deviceType, mobilePreviewScale, groupSettings])
-
-  // Trigger save whenever state changes
-  useEffect(() => {
-    saveToStorage()
-  }, [saveToStorage])
-
-  // Save immediately on unmount
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-      const state: ChatState = {
-        platform,
-        sender,
-        receiver,
-        messages,
-        darkMode,
-        mobileView,
-        timeFormat,
-        transparentBg,
-        whatsappSettings,
-        language,
-        fontFamily,
-        batteryLevel,
-        deviceType,
-        mobilePreviewScale,
-        groupSettings,
-      }
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    }
-
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-    }
-  }, [platform, sender, receiver, messages, darkMode, mobileView, timeFormat, transparentBg, whatsappSettings, language, fontFamily, batteryLevel, deviceType, mobilePreviewScale, groupSettings])
+  // isHydrated is always true now since we don't load from localStorage
+  const isHydrated = true
 
   // ============= MESSAGES ACTIONS =============
   const setMessages = useCallback((newMessages: Message[]) => {

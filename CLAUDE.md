@@ -7,7 +7,7 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - **Framework:** Next.js 14 (App Router)
 - **UI:** React, TailwindCSS, shadcn/ui
 - **Dil Desteği:** Türkçe (tr) ve İngilizce (en)
-- **State:** React hooks, localStorage persistence
+- **State:** React hooks (in-memory only, no persistence)
 - **Export:** html-to-image (PNG/JPG/WebP), mp4-muxer (video), gif.js (GIF)
 
 ## Önemli Dosyalar
@@ -27,7 +27,6 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 ### Hooks
 - `hooks/use-video-export.ts` - Video kayıt ve export
 - `hooks/use-export.ts` - Image export (PNG/JPG/WebP, clipboard)
-- `hooks/use-chat-state.ts` - Sohbet durumu yönetimi
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
@@ -525,6 +524,7 @@ const isSent = message.userId === 'me'
 ## Backlog
 
 ### Planlanmış
+- FAQ sayfası (`/faq` route, accordion yapısı, TR/EN dil desteği)
 - Instagram DM desteği
 - iMessage desteği
 - PWA desteği (offline kullanım)
