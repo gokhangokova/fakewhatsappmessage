@@ -7,7 +7,9 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - **Framework:** Next.js 14 (App Router)
 - **UI:** React, TailwindCSS, shadcn/ui
 - **Dil Desteği:** Türkçe (tr) ve İngilizce (en)
-- **State:** React hooks (in-memory only, no persistence)
+- **State:** React hooks + Supabase (cloud persistence)
+- **Auth:** Supabase Auth (Google OAuth, Email/Password)
+- **Database:** Supabase PostgreSQL
 - **Export:** html-to-image (PNG/JPG/WebP), mp4-muxer (video), gif.js (GIF)
 
 ## Önemli Dosyalar
@@ -27,6 +29,17 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 ### Hooks
 - `hooks/use-video-export.ts` - Video kayıt ve export
 - `hooks/use-export.ts` - Image export (PNG/JPG/WebP, clipboard)
+- `hooks/use-saved-chats.ts` - Supabase chat CRUD operations
+
+### Auth & Database
+- `contexts/auth-context.tsx` - Authentication state ve fonksiyonları
+- `lib/supabase/client.ts` - Supabase browser client
+- `lib/supabase/server.ts` - Supabase server client
+- `lib/supabase/chats.ts` - Chat CRUD fonksiyonları
+- `components/auth/auth-modal.tsx` - Login/Signup modal
+- `components/auth/user-menu.tsx` - User profile dropdown
+- `components/chats/saved-chats-modal.tsx` - My Chats modal
+- `components/chats/save-chat-button.tsx` - Save button component
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
@@ -476,6 +489,12 @@ npm run dev
 npm run build
 ```
 
+### Claude İzinleri
+Aşağıdaki işlemler için kullanıcı onayı gerekmez:
+- Sunucu komutları: `npm run dev`, `npm run build`, `npm install`
+- Git komutları: `git add`, `git commit`, `git push`, `git merge`, `git pull`
+- Chrome MCP araçları: Tarayıcı açma, sayfa gezinme, element tıklama, screenshot alma
+
 ## Sık Karşılaşılan Sorunlar ve Çözümleri
 
 ### Sorun: Avatar/Fallback görünmüyor (boş kalıyor)
@@ -518,6 +537,47 @@ const isSent = message.userId === 'me'
 1. `animated-chat-preview.tsx`'te `isReady` state ekle
 2. `app/page.tsx`'te ref polling mekanizması ekle
 3. DOM render tamamlanana kadar bekle (200ms+)
+
+---
+
+## Supabase Entegrasyonu (Ocak 2025)
+
+### Veritabanı Yapısı
+
+**profiles tablosu:**
+- `id` (UUID) - auth.users referansı
+- `email` (TEXT)
+- `full_name` (TEXT)
+- `avatar_url` (TEXT)
+- `subscription_tier` ('free' | 'pro' | 'business')
+- `created_at`, `updated_at` (TIMESTAMPTZ)
+
+**chats tablosu:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID) - auth.users referansı
+- `name` (TEXT) - Chat adı (receiver name veya group name)
+- `platform` (TEXT) - 'whatsapp', 'instagram', etc.
+- `data` (JSONB) - Tüm chat state'i (messages, settings, etc.)
+- `thumbnail_url` (TEXT) - Opsiyonel önizleme
+- `created_at`, `updated_at` (TIMESTAMPTZ)
+
+### Free Tier Limiti
+- Free kullanıcılar maksimum 2 chat kaydedebilir
+- Pro ve Business kullanıcılar sınırsız chat
+- `hooks/use-saved-chats.ts` → `remainingChats` değeri
+
+### Supabase Migration
+Yeni kurulumda `supabase/migrations/001_create_profiles_trigger.sql` dosyasını Supabase SQL Editor'de çalıştırın.
+
+### Auth Flow
+1. Google OAuth veya Email/Password ile giriş
+2. Yeni kullanıcı → `on_auth_user_created` trigger → profiles tablosuna otomatik kayıt
+3. `AuthProvider` → user ve profile state yönetimi
+4. RLS politikaları ile veri güvenliği
+
+### UI Butonları (app/page.tsx)
+- **Save Button** - Mevcut chat'i kaydet (yeşil = kaydedilmiş, beyaz = yeni)
+- **My Chats Button (FolderOpen)** - Kayıtlı chat'leri listele, yükle, sil
 
 ---
 

@@ -4,6 +4,7 @@ import './globals.css'
 import { Header } from '@/components/layout/header'
 import { Toaster } from '@/components/ui/toaster'
 import { ChatProvider } from '@/contexts/chat-context'
+import { AuthProvider } from '@/contexts/auth-context'
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -24,13 +25,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${jakarta.variable} font-sans antialiased h-screen overflow-hidden`}>
-        <ChatProvider>
-          <Header />
-          <main>
-            {children}
-          </main>
-          <Toaster />
-        </ChatProvider>
+        <AuthProvider>
+          <ChatProvider>
+            <Header />
+            <main>
+              {children}
+            </main>
+            <Toaster />
+          </ChatProvider>
+        </AuthProvider>
       </body>
     </html>
   )
