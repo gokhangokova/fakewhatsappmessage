@@ -581,7 +581,49 @@ Yeni kurulumda `supabase/migrations/001_create_profiles_trigger.sql` dosyasını
 
 ---
 
+## Bilinen Sorunlar (Ocak 2025)
+
+### Google OAuth Session Sorunu (WIP)
+
+**Durum:** Google OAuth Supabase tarafında başarıyla tamamlanıyor ancak session tarayıcıya aktarılamıyor.
+
+**Belirtiler:**
+- Email/Password login düzgün çalışıyor
+- Google OAuth sonrası Supabase logs'da "Login" görünüyor
+- Ama tarayıcıda session cookie set edilmiyor
+- Supabase logs'da `/token | 404: invalid flow state, no valid flow state found` hatası
+
+**Analiz:**
+1. PKCE flow başlatılıyor (`flow_state_id` URL'de mevcut)
+2. Google OAuth başarılı
+3. Supabase kendi callback'ini tamamlıyor
+4. Supabase `redirectTo` URL'imize (`/auth/callback`) yönlendirmeli
+5. **SORUN:** Ya redirect olmuyor ya da `code_verifier` cookie kaybolmuş
+
+**Yapılan Değişiklikler:**
+- `middleware.ts` - `/auth/callback` için middleware atlandı (session refresh interference önleme)
+- `app/auth/callback/route.ts` - Detaylı debug logging eklendi
+- `app/auth/auth-code-error/page.tsx` - Hata sayfası oluşturuldu
+- `contexts/auth-context.tsx` - OAuth flow için debug logging
+
+**Olası Çözümler:**
+1. Supabase client'ta explicit `flowType: 'pkce'` ayarı
+2. Cookie SameSite/Secure ayarları kontrolü
+3. `code_verifier` cookie'nin neden kaybolduğunu araştırma
+4. Supabase'in hangi URL'e redirect ettiğini takip etme
+
+**İlgili Dosyalar:**
+- `contexts/auth-context.tsx` - `signInWithGoogle` fonksiyonu
+- `app/auth/callback/route.ts` - OAuth callback handler
+- `lib/supabase/client.ts` - Browser client
+- `lib/supabase/middleware.ts` - Session refresh middleware
+
+---
+
 ## Backlog
+
+### Öncelikli
+- **Google OAuth fix** - Session establishment sorunu çözülmeli
 
 ### Planlanmış
 - FAQ sayfası (`/faq` route, accordion yapısı, TR/EN dil desteği)
