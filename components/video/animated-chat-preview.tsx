@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react'
-import { Message, User, WhatsAppSettings, Language, FontFamily, SUPPORTED_FONTS, DeviceType } from '@/types'
+import { Message, User, WhatsAppSettings, Language, FontFamily, SUPPORTED_FONTS, DeviceType, MessageStatus } from '@/types'
 import { cn } from '@/lib/utils'
 import {
   ChevronLeft,
@@ -35,6 +35,125 @@ const getAvatarColor = (avatar: string | null | undefined): string | null => {
 // Helper function to check if avatar is a valid image URL
 const isImageAvatar = (avatar: string | null | undefined): boolean => {
   return !!avatar && !avatar.startsWith('color:')
+}
+
+// Message Status Icon - shows clock (sending), single check (sent), double check gray (delivered), double check blue (read)
+const MessageStatusIcon = ({ status, darkMode, isOverlay = false }: { status: MessageStatus; darkMode: boolean; isOverlay?: boolean }) => {
+  // Colors based on context (overlay = white/light, normal = themed)
+  const readColor = '#53BDEB' // Blue for read
+  const grayColor = isOverlay ? '#FFFFFF' : (darkMode ? '#8696A0' : '#667781')
+
+  if (status === 'sending') {
+    // Clock icon for sending
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6" stroke={grayColor} strokeWidth="1.5" fill="none" />
+        <path d="M8 5V8.5L10.5 10" stroke={grayColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (status === 'sent') {
+    // Single check for sent
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+        <path
+          d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
+          fill={grayColor}
+        />
+      </svg>
+    )
+  }
+
+  // Double check for delivered and read
+  const checkColor = status === 'read' ? readColor : grayColor
+
+  return (
+    <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+      <path
+        d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
+        fill={checkColor}
+      />
+      <path
+        d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
+        fill={checkColor}
+      />
+    </svg>
+  )
+}
+
+// Format date label based on message date - WhatsApp style
+const formatDateLabel = (date: Date, language: Language): string => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffTime = today.getTime() - messageDate.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+  // Today
+  if (diffDays === 0) {
+    return language === 'tr' ? 'Bugün' : 'Today'
+  }
+
+  // Yesterday
+  if (diffDays === 1) {
+    return language === 'tr' ? 'Dün' : 'Yesterday'
+  }
+
+  // Within last 7 days - show day name
+  if (diffDays < 7) {
+    const dayNames = language === 'tr'
+      ? ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+      : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    return dayNames[date.getDay()]
+  }
+
+  // Older - show full date with day name (WhatsApp style: "16 Oca Cum" or "16 Jan Fri")
+  const monthNames = language === 'tr'
+    ? ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const shortDayNames = language === 'tr'
+    ? ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  const day = date.getDate()
+  const month = monthNames[date.getMonth()]
+  const dayName = shortDayNames[date.getDay()]
+
+  return `${day} ${month} ${dayName}`
+}
+
+// Group messages by date
+const groupMessagesByDate = (messages: Message[], language: Language = 'en'): { date: string; messages: Message[] }[] => {
+  if (messages.length === 0) return []
+
+  const groups: { date: string; messages: Message[] }[] = []
+  let currentDateStr = ''
+  let currentGroup: Message[] = []
+
+  messages.forEach((message) => {
+    const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
+    const dateLabel = formatDateLabel(timestamp, language)
+
+    if (dateLabel !== currentDateStr) {
+      // Save previous group if exists
+      if (currentGroup.length > 0) {
+        groups.push({ date: currentDateStr, messages: currentGroup })
+      }
+      // Start new group
+      currentDateStr = dateLabel
+      currentGroup = [message]
+    } else {
+      currentGroup.push(message)
+    }
+  })
+
+  // Don't forget the last group
+  if (currentGroup.length > 0) {
+    groups.push({ date: currentDateStr, messages: currentGroup })
+  }
+
+  return groups
 }
 
 interface AnimatedChatPreviewProps {
@@ -637,18 +756,7 @@ const AnimatedMessageBubble = ({
                   style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
                 >
                   <span className="text-[11px] text-white italic">{time}</span>
-                  {isSent && (
-                    <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                      <path
-                        d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
-                        fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
-                      />
-                      <path
-                        d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
-                        fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
-                      />
-                    </svg>
-                  )}
+                  {isSent && <MessageStatusIcon status={status} darkMode={darkMode} isOverlay />}
                 </div>
               )}
             </div>
@@ -675,18 +783,7 @@ const AnimatedMessageBubble = ({
                 style={{ color: timeColor }}
               >
                 {time}
-                {isSent && (
-                  <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                    <path
-                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
-                      fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
-                    />
-                    <path
-                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
-                      fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
-                    />
-                  </svg>
-                )}
+                {isSent && <MessageStatusIcon status={status} darkMode={darkMode} />}
               </span>
             </div>
           )}
@@ -1151,43 +1248,46 @@ export const AnimatedChatPreview = forwardRef<AnimatedChatPreviewRef, AnimatedCh
             )}
           >
           
-          <div 
+          <div
             ref={contentRef}
             className="relative z-10 py-[4px] pb-[40px]"
             style={forVideoExport ? { transform: `translateY(-${contentOffset}px)` } : undefined}
           >
             {settings.showEncryptionNotice && <EncryptionNotice darkMode={darkMode} t={t} />}
-            
-            <DateSeparator date={t.preview.today} darkMode={darkMode} />
-            
-            {messages.slice(0, visibleMessageCount).map((message, index, visibleMessages) => {
-              const prevMessage = index > 0 ? visibleMessages[index - 1] : null
-              const nextMessage = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : null
-              // Ensure userId comparison handles undefined/null cases
-              const currentUserId = message.userId || message.senderId || ''
-              const prevUserId = prevMessage?.userId || prevMessage?.senderId || ''
-              const nextUserId = nextMessage?.userId || nextMessage?.senderId || ''
-              const isFirstInGroup = !prevMessage || prevUserId !== currentUserId
-              const isLastInGroup = !nextMessage || nextUserId !== currentUserId
 
-              return (
-                <AnimatedMessageBubble
-                  key={message.id}
-                  message={message}
-                  sender={sender}
-                  receiver={receiver}
-                  timeFormat={timeFormat}
-                  isFirstInGroup={isFirstInGroup}
-                  isLastInGroup={isLastInGroup}
-                  darkMode={darkMode}
-                  isVisible={true}
-                  appearDuration={messageAppearDuration}
-                  isGroupChat={isGroupChat}
-                  participants={settings.groupParticipants}
-                />
-              )
-            })}
-            
+            {groupMessagesByDate(messages.slice(0, visibleMessageCount), language).map((group) => (
+              <div key={group.date}>
+                <DateSeparator date={group.date} darkMode={darkMode} />
+                {group.messages.map((message, index) => {
+                  const prevMessage = index > 0 ? group.messages[index - 1] : null
+                  const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
+                  // Ensure userId comparison handles undefined/null cases
+                  const currentUserId = message.userId || message.senderId || ''
+                  const prevUserId = prevMessage?.userId || prevMessage?.senderId || ''
+                  const nextUserId = nextMessage?.userId || nextMessage?.senderId || ''
+                  const isFirstInGroup = !prevMessage || prevUserId !== currentUserId
+                  const isLastInGroup = !nextMessage || nextUserId !== currentUserId
+
+                  return (
+                    <AnimatedMessageBubble
+                      key={message.id}
+                      message={message}
+                      sender={sender}
+                      receiver={receiver}
+                      timeFormat={timeFormat}
+                      isFirstInGroup={isFirstInGroup}
+                      isLastInGroup={isLastInGroup}
+                      darkMode={darkMode}
+                      isVisible={true}
+                      appearDuration={messageAppearDuration}
+                      isGroupChat={isGroupChat}
+                      participants={settings.groupParticipants}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+
             {/* Typing Indicator - only for receiver */}
             {showTyping && <TypingIndicator darkMode={darkMode} />}
           </div>

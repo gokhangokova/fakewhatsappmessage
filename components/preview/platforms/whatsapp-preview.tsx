@@ -569,11 +569,11 @@ const ReplyPreview = ({
 // Reactions Display
 const ReactionsDisplay = ({ reactions, darkMode }: { reactions: MessageReaction[]; darkMode: boolean }) => {
   if (!reactions || reactions.length === 0) return null
-  
+
   return (
-    <div 
+    <div
       className="absolute -bottom-[12px] left-[8px] flex items-center gap-[2px] px-[6px] py-[3px] rounded-full"
-      style={{ 
+      style={{
         backgroundColor: darkMode ? '#1F2C34' : '#FFFFFF',
         boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
       }}
@@ -582,6 +582,51 @@ const ReactionsDisplay = ({ reactions, darkMode }: { reactions: MessageReaction[
         <span key={idx} className="text-[13px]">{reaction.emoji}</span>
       ))}
     </div>
+  )
+}
+
+// Message Status Icon - shows clock (sending), single check (sent), double check gray (delivered), double check blue (read)
+const MessageStatusIcon = ({ status, darkMode, isOverlay = false }: { status: MessageStatus; darkMode: boolean; isOverlay?: boolean }) => {
+  // Colors based on context (overlay = white/light, normal = themed)
+  const readColor = '#53BDEB' // Blue for read
+  const grayColor = isOverlay ? '#FFFFFF' : (darkMode ? '#8696A0' : '#667781')
+
+  if (status === 'sending') {
+    // Clock icon for sending
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6" stroke={grayColor} strokeWidth="1.5" fill="none" />
+        <path d="M8 5V8.5L10.5 10" stroke={grayColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (status === 'sent') {
+    // Single check for sent
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+        <path
+          d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
+          fill={grayColor}
+        />
+      </svg>
+    )
+  }
+
+  // Double check for delivered and read
+  const checkColor = status === 'read' ? readColor : grayColor
+
+  return (
+    <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+      <path
+        d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
+        fill={checkColor}
+      />
+      <path
+        d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
+        fill={checkColor}
+      />
+    </svg>
   )
 }
 
@@ -1082,18 +1127,7 @@ const IOSMessageBubble = ({
                 className="absolute bottom-[8px] right-[10px] inline-flex items-center gap-[3px] whitespace-nowrap text-[11px] bg-black/40 px-[6px] py-[2px] rounded-full text-white/90"
               >
                 {time}
-                {isSent && (
-                  <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                    <path
-                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
-                      fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
-                    />
-                    <path
-                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
-                      fill={status === 'read' ? '#53BDEB' : '#FFFFFF'}
-                    />
-                  </svg>
-                )}
+                {isSent && <MessageStatusIcon status={status} darkMode={darkMode} isOverlay />}
               </span>
             )}
 
@@ -1115,18 +1149,7 @@ const IOSMessageBubble = ({
                 style={{ color: timeColor }}
               >
                 {time}
-                {isSent && (
-                  <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
-                    <path
-                      d="M11.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-2.5-2.5a.464.464 0 0 0-.643 0 .464.464 0 0 0 0 .643l2.857 2.857a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.41-.117Z"
-                      fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
-                    />
-                    <path
-                      d="M15.071 0.653a.457.457 0 0 0-.304.117l-6.428 5.714-.964-.964a.464.464 0 0 0-.643.643l1.286 1.286a.464.464 0 0 0 .643 0l6.786-6.071a.464.464 0 0 0 0-.643.457.457 0 0 0-.376-.082Z"
-                      fill={status === 'read' ? '#53BDEB' : (darkMode ? '#8696A0' : '#667781')}
-                    />
-                  </svg>
-                )}
+                {isSent && <MessageStatusIcon status={status} darkMode={darkMode} />}
               </span>
             )}
           </div>
@@ -1267,13 +1290,78 @@ const AndroidWhatsAppFooter = ({ darkMode, t }: { darkMode: boolean; t: ReturnTy
   )
 }
 
-// Group messages by date - always show "Today" to avoid hydration issues
-const groupMessagesByDate = (messages: Message[]): { date: string; messages: Message[] }[] => {
-  // For a mockup app, we always show "Today" as the date
-  // This avoids hydration mismatch between server and client
+// Format date label based on message date - WhatsApp style
+const formatDateLabel = (date: Date, language: Language): string => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffTime = today.getTime() - messageDate.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+  // Today
+  if (diffDays === 0) {
+    return language === 'tr' ? 'Bugün' : 'Today'
+  }
+
+  // Yesterday
+  if (diffDays === 1) {
+    return language === 'tr' ? 'Dün' : 'Yesterday'
+  }
+
+  // Within last 7 days - show day name
+  if (diffDays < 7) {
+    const dayNames = language === 'tr'
+      ? ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi']
+      : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    return dayNames[date.getDay()]
+  }
+
+  // Older - show full date with day name (WhatsApp style: "16 Oca Cum" or "16 Jan Fri")
+  const monthNames = language === 'tr'
+    ? ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const shortDayNames = language === 'tr'
+    ? ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  const day = date.getDate()
+  const month = monthNames[date.getMonth()]
+  const dayName = shortDayNames[date.getDay()]
+
+  return `${day} ${month} ${dayName}`
+}
+
+// Group messages by date
+const groupMessagesByDate = (messages: Message[], language: Language = 'en'): { date: string; messages: Message[] }[] => {
   if (messages.length === 0) return []
-  
-  return [{ date: 'Today', messages: [...messages] }]
+
+  const groups: { date: string; messages: Message[] }[] = []
+  let currentDateStr = ''
+  let currentGroup: Message[] = []
+
+  messages.forEach((message) => {
+    const timestamp = message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)
+    const dateLabel = formatDateLabel(timestamp, language)
+
+    if (dateLabel !== currentDateStr) {
+      // Save previous group if exists
+      if (currentGroup.length > 0) {
+        groups.push({ date: currentDateStr, messages: currentGroup })
+      }
+      // Start new group
+      currentDateStr = dateLabel
+      currentGroup = [message]
+    } else {
+      currentGroup.push(message)
+    }
+  })
+
+  // Don't forget the last group
+  if (currentGroup.length > 0) {
+    groups.push({ date: currentDateStr, messages: currentGroup })
+  }
+
+  return groups
 }
 
 // Main Component
@@ -1312,8 +1400,8 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
 
   // Memoize message groups
   const messageGroups = useMemo(
-    () => groupMessagesByDate(visibleMessages),
-    [visibleMessages]
+    () => groupMessagesByDate(visibleMessages, language),
+    [visibleMessages, language]
   )
 
   // Check if group chat mode is enabled AND there are participants
@@ -1407,7 +1495,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
 
                 {messageGroups.map((group) => (
                   <div key={group.date}>
-                    <DateSeparator date={t.preview.today} darkMode={darkMode} />
+                    <DateSeparator date={group.date} darkMode={darkMode} />
                     {group.messages.map((message, index) => {
                       const prevMessage = index > 0 ? group.messages[index - 1] : null
                       const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
@@ -1595,7 +1683,7 @@ export const WhatsAppPreview = memo(function WhatsAppPreview({
 
               {messageGroups.map((group) => (
                 <div key={group.date}>
-                  <DateSeparator date={t.preview.today} darkMode={darkMode} />
+                  <DateSeparator date={group.date} darkMode={darkMode} />
                   {group.messages.map((message, index) => {
                     const prevMessage = index > 0 ? group.messages[index - 1] : null
                     const nextMessage = index < group.messages.length - 1 ? group.messages[index + 1] : null
