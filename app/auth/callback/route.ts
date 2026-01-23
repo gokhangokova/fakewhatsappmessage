@@ -1,31 +1,17 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
 
-  // DEBUG: Log that callback was hit
-  console.log('\n\n')
-  console.log('========================================')
-  console.log('[Auth Callback] CALLBACK ROUTE HIT!')
-  console.log('========================================')
-  console.log('[Auth Callback] Full URL:', request.url)
-  console.log('[Auth Callback] Code received:', code ? `yes (${code.substring(0, 10)}...)` : 'no')
-  console.log('[Auth Callback] Origin:', origin)
-  console.log('[Auth Callback] Next:', next)
+  console.log('[Auth Callback] Code received:', code ? 'yes' : 'no')
 
   if (code) {
     const cookieStore = await cookies()
-
-    // Log existing cookies
-    const existingCookies = cookieStore.getAll()
-    console.log('[Auth Callback] Existing cookies:', existingCookies.map(c => c.name))
-
-    // Store cookies that need to be set on the response
-    const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = []
+    const response = NextResponse.redirect(`${origin}${next}`)
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,61 +19,68 @@ export async function GET(request: Request) {
       {
         cookies: {
           getAll() {
-            const all = cookieStore.getAll()
-            console.log('[Auth Callback] getAll called, returning:', all.map(c => c.name))
-            return all
+            return cookieStore.getAll()
           },
-          setAll(cookies) {
-            console.log('[Auth Callback] setAll called with:', cookies.map(c => c.name))
-            cookies.forEach(({ name, value, options }) => {
-              // Store for later to set on response
-              cookiesToSet.push({ name, value, options })
-              console.log('[Auth Callback] Queued cookie:', name, 'options:', JSON.stringify(options))
-              // Also try to set on cookie store
-              try {
-                cookieStore.set(name, value, options)
-              } catch (e) {
-                console.log('[Auth Callback] cookieStore.set error for', name, ':', e)
-              }
+          setAll(cookiesToSet) {
+            console.log('[Auth Callback] setAll called with:', cookiesToSet.map(c => c.name))
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // Set directly on response
+              response.cookies.set(name, value, options)
             })
           },
         },
       }
     )
 
-    console.log('[Auth Callback] Calling exchangeCodeForSession...')
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    console.log('[Auth Callback] Exchange result:', {
-      session: data?.session ? 'exists' : 'null',
-      sessionAccessToken: data?.session?.access_token ? 'exists' : 'null',
-      user: data?.user?.email,
-      error: error?.message,
-      cookiesToSet: cookiesToSet.length,
-      cookieNames: cookiesToSet.map(c => c.name)
-    })
-
-    if (!error && data?.session) {
-      console.log('[Auth Callback] SUCCESS! Redirecting to:', `${origin}${next}`)
-
-      // Create redirect response and set cookies on it
-      const response = NextResponse.redirect(`${origin}${next}`)
-
-      // Set all auth cookies on the response
-      cookiesToSet.forEach(({ name, value, options }) => {
-        response.cookies.set(name, value, options)
-        console.log('[Auth Callback] Set cookie on response:', name)
+    if (!error && data.session) {
+      // Manuel olarak session cookie'lerini oluştur
+      const sessionStr = JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
+        token_type: data.session.token_type,
+        user: data.session.user
       })
 
+      // Supabase cookie adı
+      const cookieName = `sb-rfvzikdnuyiloadbynsc-auth-token`
+
+      // Cookie çok büyükse chunk'lara böl (4KB limit)
+      const chunkSize = 3500
+      const chunks = []
+      for (let i = 0; i < sessionStr.length; i += chunkSize) {
+        chunks.push(sessionStr.slice(i, i + chunkSize))
+      }
+
+      // Her chunk için cookie set et
+      chunks.forEach((chunk, index) => {
+        const name = chunks.length > 1 ? `${cookieName}.${index}` : cookieName
+        response.cookies.set(name, chunk, {
+          path: '/',
+          sameSite: 'lax',
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 60 * 60 * 24 * 400 // 400 days
+        })
+        console.log('[Auth Callback] Set cookie:', name)
+      })
+
+      // code-verifier cookie'sini sil
+      response.cookies.set(`${cookieName}-code-verifier`, '', {
+        path: '/',
+        maxAge: 0
+      })
+
+      console.log('[Auth Callback] SUCCESS! User:', data.session.user.email)
       console.log('[Auth Callback] Response cookies:', response.cookies.getAll().map(c => c.name))
-      console.log('[Auth Callback] ====== CALLBACK SUCCESS ======')
       return response
     }
 
-    console.error('[Auth Callback] Error or no session:', error?.message || 'No session in response')
+    console.error('[Auth Callback] Error:', error?.message || 'No session')
   }
 
-  // Return the user to an error page with instructions
-  console.log('[Auth Callback] ====== CALLBACK FAILED ======')
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }
