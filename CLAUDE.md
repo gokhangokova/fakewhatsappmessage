@@ -18,9 +18,11 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - `components/preview/platforms/whatsapp-preview.tsx` - Ana WhatsApp önizleme
 - `components/video/animated-chat-preview.tsx` - Video export için animasyonlu önizleme
 - `components/preview/phone-preview.tsx` - Genel telefon çerçevesi
+- `components/chats/whatsapp-chat-list.tsx` - WhatsApp-style kaydedilmiş sohbetler listesi
 
 ### Editor
 - `components/editor/tabbed-sidebar.tsx` - Sol panel (Editor, Settings, Export sekmeleri)
+  - People ve Messages section'ları `defaultOpen={true}` ile açık geliyor
 
 ### UI Components
 - `components/ui/avatar.tsx` - Radix Avatar wrapper (delayMs={0} ile)
@@ -29,23 +31,194 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 ### Hooks
 - `hooks/use-video-export.ts` - Video kayıt ve export
 - `hooks/use-export.ts` - Image export (PNG/JPG/WebP, clipboard)
-- `hooks/use-saved-chats.ts` - Supabase chat CRUD operations
+- `hooks/use-saved-chats.ts` - Supabase chat CRUD operations + auto-load latest
 
 ### Auth & Database
 - `contexts/auth-context.tsx` - Authentication state ve fonksiyonları
+- `contexts/chat-context.tsx` - Chat state yönetimi, `resetToDefaults` boş mesajlarla başlar
 - `lib/supabase/client.ts` - Supabase browser client
 - `lib/supabase/server.ts` - Supabase server client
 - `lib/supabase/chats.ts` - Chat CRUD fonksiyonları
 - `components/auth/auth-modal.tsx` - Login/Signup modal
 - `components/auth/user-menu.tsx` - User profile dropdown
-- `components/chats/saved-chats-modal.tsx` - My Chats modal
-- `components/chats/save-chat-button.tsx` - Save button component
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
 
 ### CSS
 - `app/globals.css` - Global stiller, export mode CSS kuralları
+
+---
+
+## Kaydedilmiş Sohbetler Sistemi (Ocak 2025)
+
+### WhatsApp-Style Chat List
+Kaydedilmiş sohbetler artık modal yerine telefon preview çerçevesi içinde WhatsApp tarzı bir liste olarak görüntüleniyor.
+
+**Dosya:** `components/chats/whatsapp-chat-list.tsx`
+
+**Özellikler:**
+- Phone preview frame ile aynı boyutlar (375px x 812px)
+- iOS ve Android device type desteği (farklı border-radius, status bar)
+- Light/Dark tema desteği
+- WhatsApp tarzı chat listesi (avatar, isim, son mesaj, tarih)
+- Son mesaj tipine göre ikon (ses, resim, video, dosya, konum, kişi)
+- Mesaj durumu ikonu (sent, delivered, read)
+- Swipe-to-delete yerine hover'da çöp kutusu
+
+**Props:**
+```tsx
+interface WhatsAppChatListProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onLoadChat: (chatData: ChatData) => void
+  onNewChat: () => void
+  language?: Language
+  darkMode?: boolean
+  deviceType?: DeviceType
+}
+```
+
+**Kullanım (app/page.tsx):**
+```tsx
+{chatListOpen ? (
+  <WhatsAppChatList
+    open={chatListOpen}
+    onOpenChange={setChatListOpen}
+    onLoadChat={handleLoadChat}
+    onNewChat={handleNewChat}
+    language={language}
+    darkMode={darkMode}
+    deviceType={deviceType}
+  />
+) : (
+  <PhonePreview ... />
+)}
+```
+
+### Erişim Butonu
+- **MessageCircle butonu** - Alt action bar'da, login olmamış kullanıcılar için auth modal açar
+- **FolderOpen butonu kaldırıldı** - Artık sadece MessageCircle butonu kullanılıyor
+
+### Auto-Load Latest Chat on Login
+Kullanıcı login olduğunda en son kaydettiği sohbet otomatik olarak yüklenir.
+
+**Dosya:** `hooks/use-saved-chats.ts`
+
+```tsx
+// useSavedChats hook'una eklenen yeni state ve fonksiyonlar
+const [latestChatData, setLatestChatData] = useState<ChatData | null>(null)
+
+const loadChats = useCallback(async (loadLatest: boolean = false) => {
+  // ...
+  if (loadLatest && chats.length > 0) {
+    const latestChat = chats[0] // Already sorted by updated_at desc
+    setCurrentChatId(latestChat.id)
+    setLatestChatData(latestChat.data)
+  }
+}, [user])
+
+const clearLatestChatData = useCallback(() => {
+  setLatestChatData(null)
+}, [])
+
+// Load chats when user logs in
+useEffect(() => {
+  if (user) {
+    loadChats(true) // Load latest on login
+  } else {
+    // Clear state when user logs out
+    setSavedChats([])
+    setCurrentChatId(null)
+    setChatCount(0)
+    setLatestChatData(null)
+  }
+}, [user, loadChats])
+```
+
+**Dosya:** `app/page.tsx`
+
+```tsx
+const { latestChatData, clearLatestChatData } = useSavedChats()
+
+// Apply chat data to current state (without toast)
+const applyChatData = useCallback((chatData: ChatData) => {
+  setPlatform(chatData.platform)
+  setSender(chatData.sender)
+  setReceiver(chatData.receiver)
+  setMessages(chatData.messages)
+  // ... tüm state'ler
+}, [...])
+
+// Auto-load latest chat when user logs in
+useEffect(() => {
+  if (latestChatData) {
+    applyChatData(latestChatData)
+    clearLatestChatData()
+  }
+}, [latestChatData, applyChatData, clearLatestChatData])
+```
+
+### New Chat - Boş Mesajlarla Başlama
+"New Chat" tıklandığında boş bir chat açılıyor ve editor tab'ı People/Messages açık olarak geliyor.
+
+**Dosya:** `contexts/chat-context.tsx`
+
+```tsx
+const resetToDefaults = useCallback(() => {
+  setMessagesState([]) // Boş mesajlarla başla (template mesajlar yok)
+  // ... diğer state reset'leri
+}, [])
+```
+
+**Dosya:** `components/editor/tabbed-sidebar.tsx`
+
+```tsx
+// People section
+<CollapsibleSection
+  title={t.editor.people}
+  icon={<Users className="w-4 h-4" />}
+  defaultOpen={true}  // Varsayılan olarak açık
+>
+
+// Messages section
+<CollapsibleSection
+  title={t.editor.messages}
+  icon={<MessageSquare className="w-4 h-4" />}
+  defaultOpen={true}  // Varsayılan olarak açık
+>
+```
+
+**Dosya:** `app/page.tsx`
+
+```tsx
+const handleNewChat = useCallback(() => {
+  setCurrentChatId(null)
+  resetToDefaults()
+  // Open editor tab on mobile
+  setSidebarTab('editor')
+  setSidebarOpen(true)
+  toast({
+    title: 'New chat',
+    description: 'Started a new chat. Your previous work is saved.',
+  })
+}, [setCurrentChatId, resetToDefaults, toast])
+```
+
+### Theme Colors (Chat List)
+```tsx
+const theme = {
+  bg: darkMode ? '#111B21' : '#FFFFFF',
+  headerBg: darkMode ? '#202C33' : '#F0F2F5',
+  headerText: darkMode ? '#E9EDEF' : '#111B21',
+  text: darkMode ? '#E9EDEF' : '#111B21',
+  subtext: darkMode ? '#8696A0' : '#667781',
+  border: darkMode ? '#222D34' : '#E9EDEF',
+  itemHoverBg: darkMode ? '#202C33' : '#F5F6F6',
+  itemActiveBg: darkMode ? '#2A3942' : '#D9FDD3',
+  green: '#00A884',
+}
+```
 
 ---
 
@@ -476,6 +649,9 @@ chatBg: '#0B141A'
 8. **delayMs={0}:** Avatar fallback'in hemen görünmesi için gerekli
 9. **Export timing:** `forExport` prop değişikliği için yeterli bekleme süresi gerekli (200ms+)
 10. **data-export-mode:** CSS !important kuralları için attribute selector kullan
+11. **Chat List:** WhatsApp-style chat list phone preview frame içinde gösterilmeli
+12. **Auto-load:** Login sonrası `latestChatData` ile son chat otomatik yüklenmeli
+13. **New Chat:** Boş mesajlarla başlamalı, editor tab açık gelmeli
 
 ---
 
@@ -538,6 +714,18 @@ const isSent = message.userId === 'me'
 2. `app/page.tsx`'te ref polling mekanizması ekle
 3. DOM render tamamlanana kadar bekle (200ms+)
 
+### Sorun: Chat list telefon frame'i ile uyumsuz
+**Sebep:** Modal olarak açılıyor, preview alanı içinde değil
+**Çözüm:** `WhatsAppChatList` bileşeni phone preview frame boyutlarında render edilmeli
+
+### Sorun: Login sonrası boş ekran geliyor
+**Sebep:** Auto-load özelliği eksik
+**Çözüm:** `useSavedChats`'e `latestChatData` ve `loadChats(true)` ekle
+
+### Sorun: New Chat template mesajlarla açılıyor
+**Sebep:** `resetToDefaults` varsayılan mesajları yüklüyor
+**Çözüm:** `setMessagesState([])` ile boş array kullan
+
 ---
 
 ## Supabase Entegrasyonu (Ocak 2025)
@@ -577,7 +765,7 @@ Yeni kurulumda `supabase/migrations/001_create_profiles_trigger.sql` dosyasını
 
 ### UI Butonları (app/page.tsx)
 - **Save Button** - Mevcut chat'i kaydet (yeşil = kaydedilmiş, beyaz = yeni)
-- **My Chats Button (FolderOpen)** - Kayıtlı chat'leri listele, yükle, sil
+- **MessageCircle Button** - WhatsApp-style chat listesini aç (login gerektirir)
 
 ---
 
