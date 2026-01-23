@@ -1,7 +1,10 @@
-# FakeSocialMessage - Project Context
+# FakeSocialMessage (MemeSocial) - Project Context
 
 ## Proje Hakkında
 Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformların sahte sohbet ekran görüntülerini oluşturan Next.js uygulaması.
+
+**Uygulama Adı:** MemeSocial / MemeChat
+**Açıklama:** Create realistic fake chat screenshots for memes, stories, and social media content. Design WhatsApp-style conversations with customizable messages, avatars, and themes.
 
 ## Tech Stack
 - **Framework:** Next.js 14 (App Router)
@@ -11,6 +14,53 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - **Auth:** Supabase Auth (Google OAuth, Email/Password)
 - **Database:** Supabase PostgreSQL
 - **Export:** html-to-image (PNG/JPG/WebP), mp4-muxer (video), gif.js (GIF)
+
+---
+
+## Git Repository Yapılandırması
+
+### Remote'lar
+Proje iki farklı GitHub hesabına push edilebilir:
+
+| Remote | Hesap | Repository |
+|--------|-------|------------|
+| `origin` | gokhangokova | fakewhatsappmessage |
+| `ob` | ob-gokhan | memesocialapp-wp |
+| `all` | Her ikisi | Paralel push |
+
+### Push Komutları
+```bash
+# Kişisel hesaba push
+git push origin main
+
+# Overbrain hesabına push
+git push ob main
+
+# Her iki hesaba birden push
+git push all main
+```
+
+### Claude için Push Talimatları
+- `"pushla gokhan"` → `git push origin main`
+- `"pushla ob"` → `git push ob main`
+- `"pushla"` → `git push all main` (her ikisine birden)
+
+### Remote Yapılandırması
+```bash
+# Mevcut remote'ları görüntüle
+git remote -v
+
+# Yeni remote ekle
+git remote add <name> <url>
+
+# PAT token ile remote URL güncelle (ob hesabı için)
+git remote set-url ob https://ob-gokhan:<PAT_TOKEN>@github.com/ob-gokhan/memesocialapp-wp.git
+
+# all remote'a ikinci push URL ekle
+git remote set-url --add --push all <url>
+```
+
+---
 
 ## Önemli Dosyalar
 
@@ -604,7 +654,7 @@ const showGroupAvatar = isGroupChat && !isSent && isLastInGroup && messageSender
 // Alınan (Sol taraf)
 {isLastInGroup && (
   <svg className="absolute -left-[8px] bottom-0" width="8" height="13" viewBox="0 0 8 13">
-    <path d="M8 0v13L0 4.5 7.5 0H8z" fill={theme.receivedBubble} />
+  <path d="M8 0v13L0 4.5 7.5 0H8z" fill={theme.receivedBubble} />
   </svg>
 )}
 ```
@@ -663,6 +713,11 @@ npm run dev
 
 # Build
 npm run build
+
+# Push komutları
+git push origin main    # Kişisel hesap
+git push ob main        # Overbrain hesabı
+git push all main       # Her ikisine birden
 ```
 
 ### Claude İzinleri
@@ -670,6 +725,8 @@ Aşağıdaki işlemler için kullanıcı onayı gerekmez:
 - Sunucu komutları: `npm run dev`, `npm run build`, `npm install`
 - Git komutları: `git add`, `git commit`, `git push`, `git merge`, `git pull`
 - Chrome MCP araçları: Tarayıcı açma, sayfa gezinme, element tıklama, screenshot alma
+
+---
 
 ## Sık Karşılaşılan Sorunlar ve Çözümleri
 
@@ -725,6 +782,13 @@ const isSent = message.userId === 'me'
 ### Sorun: New Chat template mesajlarla açılıyor
 **Sebep:** `resetToDefaults` varsayılan mesajları yüklüyor
 **Çözüm:** `setMessagesState([])` ile boş array kullan
+
+### Sorun: Git push ob remote'a çalışmıyor
+**Sebep:** GitHub credentials eksik veya PAT token gerekli
+**Çözüm:** PAT token ile remote URL güncelle:
+```bash
+git remote set-url ob https://ob-gokhan:<PAT_TOKEN>@github.com/ob-gokhan/memesocialapp-wp.git
+```
 
 ---
 
