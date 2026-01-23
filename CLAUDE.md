@@ -7,7 +7,9 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 - **Framework:** Next.js 14 (App Router)
 - **UI:** React, TailwindCSS, shadcn/ui
 - **Dil Desteği:** Türkçe (tr) ve İngilizce (en)
-- **State:** React hooks (in-memory only, no persistence)
+- **State:** React hooks + Supabase (cloud persistence)
+- **Auth:** Supabase Auth (Google OAuth, Email/Password)
+- **Database:** Supabase PostgreSQL
 - **Export:** html-to-image (PNG/JPG/WebP), mp4-muxer (video), gif.js (GIF)
 
 ## Önemli Dosyalar
@@ -27,6 +29,17 @@ Fake chat screenshot generator - WhatsApp, Instagram, iMessage gibi platformlar�
 ### Hooks
 - `hooks/use-video-export.ts` - Video kayıt ve export
 - `hooks/use-export.ts` - Image export (PNG/JPG/WebP, clipboard)
+- `hooks/use-saved-chats.ts` - Supabase chat CRUD operations
+
+### Auth & Database
+- `contexts/auth-context.tsx` - Authentication state ve fonksiyonları
+- `lib/supabase/client.ts` - Supabase browser client
+- `lib/supabase/server.ts` - Supabase server client
+- `lib/supabase/chats.ts` - Chat CRUD fonksiyonları
+- `components/auth/auth-modal.tsx` - Login/Signup modal
+- `components/auth/user-menu.tsx` - User profile dropdown
+- `components/chats/saved-chats-modal.tsx` - My Chats modal
+- `components/chats/save-chat-button.tsx` - Save button component
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
@@ -476,6 +489,12 @@ npm run dev
 npm run build
 ```
 
+### Claude İzinleri
+Aşağıdaki işlemler için kullanıcı onayı gerekmez:
+- Sunucu komutları: `npm run dev`, `npm run build`, `npm install`
+- Git komutları: `git add`, `git commit`, `git push`, `git merge`, `git pull`
+- Chrome MCP araçları: Tarayıcı açma, sayfa gezinme, element tıklama, screenshot alma
+
 ## Sık Karşılaşılan Sorunlar ve Çözümleri
 
 ### Sorun: Avatar/Fallback görünmüyor (boş kalıyor)
@@ -521,7 +540,90 @@ const isSent = message.userId === 'me'
 
 ---
 
+## Supabase Entegrasyonu (Ocak 2025)
+
+### Veritabanı Yapısı
+
+**profiles tablosu:**
+- `id` (UUID) - auth.users referansı
+- `email` (TEXT)
+- `full_name` (TEXT)
+- `avatar_url` (TEXT)
+- `subscription_tier` ('free' | 'pro' | 'business')
+- `created_at`, `updated_at` (TIMESTAMPTZ)
+
+**chats tablosu:**
+- `id` (UUID) - Primary key
+- `user_id` (UUID) - auth.users referansı
+- `name` (TEXT) - Chat adı (receiver name veya group name)
+- `platform` (TEXT) - 'whatsapp', 'instagram', etc.
+- `data` (JSONB) - Tüm chat state'i (messages, settings, etc.)
+- `thumbnail_url` (TEXT) - Opsiyonel önizleme
+- `created_at`, `updated_at` (TIMESTAMPTZ)
+
+### Free Tier Limiti
+- Free kullanıcılar maksimum 2 chat kaydedebilir
+- Pro ve Business kullanıcılar sınırsız chat
+- `hooks/use-saved-chats.ts` → `remainingChats` değeri
+
+### Supabase Migration
+Yeni kurulumda `supabase/migrations/001_create_profiles_trigger.sql` dosyasını Supabase SQL Editor'de çalıştırın.
+
+### Auth Flow
+1. Google OAuth veya Email/Password ile giriş
+2. Yeni kullanıcı → `on_auth_user_created` trigger → profiles tablosuna otomatik kayıt
+3. `AuthProvider` → user ve profile state yönetimi
+4. RLS politikaları ile veri güvenliği
+
+### UI Butonları (app/page.tsx)
+- **Save Button** - Mevcut chat'i kaydet (yeşil = kaydedilmiş, beyaz = yeni)
+- **My Chats Button (FolderOpen)** - Kayıtlı chat'leri listele, yükle, sil
+
+---
+
+## Bilinen Sorunlar (Ocak 2025)
+
+### Google OAuth Session Sorunu (WIP)
+
+**Durum:** Google OAuth Supabase tarafında başarıyla tamamlanıyor ancak session tarayıcıya aktarılamıyor.
+
+**Belirtiler:**
+- Email/Password login düzgün çalışıyor
+- Google OAuth sonrası Supabase logs'da "Login" görünüyor
+- Ama tarayıcıda session cookie set edilmiyor
+- Supabase logs'da `/token | 404: invalid flow state, no valid flow state found` hatası
+
+**Analiz:**
+1. PKCE flow başlatılıyor (`flow_state_id` URL'de mevcut)
+2. Google OAuth başarılı
+3. Supabase kendi callback'ini tamamlıyor
+4. Supabase `redirectTo` URL'imize (`/auth/callback`) yönlendirmeli
+5. **SORUN:** Ya redirect olmuyor ya da `code_verifier` cookie kaybolmuş
+
+**Yapılan Değişiklikler:**
+- `middleware.ts` - `/auth/callback` için middleware atlandı (session refresh interference önleme)
+- `app/auth/callback/route.ts` - Detaylı debug logging eklendi
+- `app/auth/auth-code-error/page.tsx` - Hata sayfası oluşturuldu
+- `contexts/auth-context.tsx` - OAuth flow için debug logging
+
+**Olası Çözümler:**
+1. Supabase client'ta explicit `flowType: 'pkce'` ayarı
+2. Cookie SameSite/Secure ayarları kontrolü
+3. `code_verifier` cookie'nin neden kaybolduğunu araştırma
+4. Supabase'in hangi URL'e redirect ettiğini takip etme
+
+**İlgili Dosyalar:**
+- `contexts/auth-context.tsx` - `signInWithGoogle` fonksiyonu
+- `app/auth/callback/route.ts` - OAuth callback handler
+- `lib/supabase/client.ts` - Browser client
+- `lib/supabase/middleware.ts` - Session refresh middleware
+
+---
+
 ## Backlog
+
+### Öncelikli
+- **Google OAuth fix** - Session establishment sorunu çözülmeli
 
 ### Planlanmış
 - FAQ sayfası (`/faq` route, accordion yapısı, TR/EN dil desteği)
