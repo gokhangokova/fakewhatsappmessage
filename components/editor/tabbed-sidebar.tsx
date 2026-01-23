@@ -1177,7 +1177,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={groupSettings?.isGroupChat ? t.editor.groupInfo : t.editor.people}
                 icon={Users}
-                defaultOpen={false}
+                defaultOpen={true}
               >
                 {/* Group Chat Settings */}
                 {groupSettings?.isGroupChat && setGroupSettings ? (
@@ -1355,7 +1355,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={t.editor.messages}
                 icon={MessageSquare}
-                defaultOpen={false}
+                defaultOpen={true}
                 badge={
                   <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
                     {messages.length}
@@ -1878,7 +1878,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={groupSettings?.isGroupChat ? t.editor.groupInfo : t.editor.people}
                 icon={Users}
-                defaultOpen={false}
+                defaultOpen={true}
               >
                 {/* Group Chat Settings */}
                 {groupSettings?.isGroupChat && setGroupSettings ? (

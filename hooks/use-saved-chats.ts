@@ -19,6 +19,7 @@ interface UseSavedChatsReturn {
   savedChats: ChatRow[]
   currentChatId: string | null
   chatCount: number
+  latestChatData: ChatData | null // Latest chat data loaded on login
 
   // Loading states
   isLoading: boolean
@@ -31,6 +32,7 @@ interface UseSavedChatsReturn {
   saveAsNewChat: (chatData: ChatData, thumbnailUrl?: string) => Promise<ChatRow | null>
   removeChat: (chatId: string) => Promise<void>
   setCurrentChatId: (chatId: string | null) => void
+  clearLatestChatData: () => void // Clear after applying to prevent re-applying
 
   // Limit checks
   canSaveNewChat: () => Promise<boolean>
@@ -45,6 +47,7 @@ export function useSavedChats(): UseSavedChatsReturn {
   const [chatCount, setChatCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [latestChatData, setLatestChatData] = useState<ChatData | null>(null)
 
   // Calculate remaining chats for free tier
   const FREE_TIER_LIMIT = 2
@@ -53,7 +56,7 @@ export function useSavedChats(): UseSavedChatsReturn {
     : null // null = unlimited for pro/business
 
   // Load all chats for the user
-  const loadChats = useCallback(async () => {
+  const loadChats = useCallback(async (loadLatest: boolean = false) => {
     if (!user) return
 
     setIsLoading(true)
@@ -61,12 +64,24 @@ export function useSavedChats(): UseSavedChatsReturn {
       const chats = await getUserChats()
       setSavedChats(chats)
       setChatCount(chats.length)
+
+      // If loadLatest is true and there are chats, load the most recent one
+      if (loadLatest && chats.length > 0) {
+        const latestChat = chats[0] // Already sorted by updated_at desc
+        setCurrentChatId(latestChat.id)
+        setLatestChatData(latestChat.data)
+      }
     } catch (error) {
       console.error('Failed to load chats:', error)
     } finally {
       setIsLoading(false)
     }
   }, [user])
+
+  // Clear latest chat data after applying
+  const clearLatestChatData = useCallback(() => {
+    setLatestChatData(null)
+  }, [])
 
   // Load a specific chat by ID
   const loadChat = useCallback(async (chatId: string): Promise<ChatData | null> => {
@@ -197,12 +212,14 @@ export function useSavedChats(): UseSavedChatsReturn {
   // Load chats when user logs in
   useEffect(() => {
     if (user) {
-      loadChats()
+      // Load chats and automatically load the latest one
+      loadChats(true)
     } else {
       // Clear state when user logs out
       setSavedChats([])
       setCurrentChatId(null)
       setChatCount(0)
+      setLatestChatData(null)
     }
   }, [user, loadChats])
 
@@ -210,6 +227,7 @@ export function useSavedChats(): UseSavedChatsReturn {
     savedChats,
     currentChatId,
     chatCount,
+    latestChatData,
     isLoading,
     isSaving,
     loadChats,
@@ -218,6 +236,7 @@ export function useSavedChats(): UseSavedChatsReturn {
     saveAsNewChat,
     removeChat,
     setCurrentChatId,
+    clearLatestChatData,
     canSaveNewChat,
     remainingChats,
   }
