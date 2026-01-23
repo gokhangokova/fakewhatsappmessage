@@ -9,7 +9,7 @@ import { useChatState } from '@/contexts/chat-context'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Play, Square, Edit3, FlaskConical, Save, FolderOpen } from 'lucide-react'
+import { Play, Square, Edit3, FlaskConical, Save, FolderOpen, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useSavedChats } from '@/hooks/use-saved-chats'
 import { AuthModal } from '@/components/auth/auth-modal'
 import { SavedChatsModal } from '@/components/chats/saved-chats-modal'
+import { WhatsAppChatList } from '@/components/chats/whatsapp-chat-list'
 import { ChatData } from '@/lib/supabase/chats'
 // AnimatedChatPreview uses forwardRef, so we import it directly (dynamic breaks ref forwarding)
 import { AnimatedChatPreview } from '@/components/video/animated-chat-preview'
@@ -87,6 +88,7 @@ export default function Home() {
   // Auth and Save modals
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [savedChatsModalOpen, setSavedChatsModalOpen] = useState(false)
+  const [chatListOpen, setChatListOpen] = useState(false)
   
   // Export options
   const [showWatermark, setShowWatermark] = useState(false)
@@ -588,7 +590,22 @@ export default function Home() {
             <FlaskConical className="w-6 h-6" strokeWidth={2.5} />
           </Button>
 
-          {/* My Chats Button */}
+          {/* WhatsApp-style Chat List Button */}
+          <Button
+            size="default"
+            className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-14 bg-[#00A884] hover:bg-[#008f6f] text-white border-0 active:scale-95 transition-transform"
+            onClick={() => {
+              if (!user) {
+                setAuthModalOpen(true)
+              } else {
+                setChatListOpen(true)
+              }
+            }}
+          >
+            <MessageCircle className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
+          </Button>
+
+          {/* My Chats Button (Grid View) */}
           <Button
             size="default"
             className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-14 bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300 active:scale-95 transition-transform"
@@ -699,6 +716,16 @@ export default function Home() {
         onOpenChange={setSavedChatsModalOpen}
         onLoadChat={handleLoadChat}
         onNewChat={handleNewChat}
+      />
+
+      {/* WhatsApp-style Chat List Drawer */}
+      <WhatsAppChatList
+        open={chatListOpen}
+        onOpenChange={setChatListOpen}
+        onLoadChat={handleLoadChat}
+        onNewChat={handleNewChat}
+        language={language}
+        darkMode={true}
       />
     </div>
   )
