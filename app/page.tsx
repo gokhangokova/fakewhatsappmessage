@@ -9,7 +9,7 @@ import { useChatState } from '@/contexts/chat-context'
 import { useExport, ExportFormat } from '@/hooks/use-export'
 import { useVideoExport } from '@/hooks/use-video-export'
 import { useToast } from '@/hooks/use-toast'
-import { Play, Square, Edit3, FlaskConical, Save, FolderOpen, MessageCircle } from 'lucide-react'
+import { Play, Square, Edit3, FlaskConical, Save, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -17,7 +17,6 @@ import { useTranslations } from '@/lib/i18n/translations'
 import { useAuth } from '@/contexts/auth-context'
 import { useSavedChats } from '@/hooks/use-saved-chats'
 import { AuthModal } from '@/components/auth/auth-modal'
-import { SavedChatsModal } from '@/components/chats/saved-chats-modal'
 import { WhatsAppChatList } from '@/components/chats/whatsapp-chat-list'
 import { ChatData } from '@/lib/supabase/chats'
 // AnimatedChatPreview uses forwardRef, so we import it directly (dynamic breaks ref forwarding)
@@ -79,7 +78,7 @@ export default function Home() {
   const { toast } = useToast()
   const t = useTranslations(language)
   const { user } = useAuth()
-  const { saveChat, currentChatId, isSaving, remainingChats, setCurrentChatId } = useSavedChats()
+  const { saveChat, currentChatId, isSaving, remainingChats, setCurrentChatId, latestChatData, clearLatestChatData } = useSavedChats()
 
   // Mobile sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -87,7 +86,6 @@ export default function Home() {
 
   // Auth and Save modals
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [savedChatsModalOpen, setSavedChatsModalOpen] = useState(false)
   const [chatListOpen, setChatListOpen] = useState(false)
   
   // Export options
@@ -171,9 +169,8 @@ export default function Home() {
     }
   }, [user, getChatData, saveChat, currentChatId, toast])
 
-  // Handle loading a chat from saved chats
-  const handleLoadChat = useCallback((chatData: ChatData) => {
-    // Apply all chat data to current state
+  // Apply chat data to current state (without toast)
+  const applyChatData = useCallback((chatData: ChatData) => {
     setPlatform(chatData.platform)
     setSender(chatData.sender)
     setReceiver(chatData.receiver)
@@ -190,17 +187,32 @@ export default function Home() {
     if (chatData.groupSettings) {
       setGroupSettings(chatData.groupSettings)
     }
+  }, [setPlatform, setSender, setReceiver, setMessages, setDarkMode, setTimeFormat, setFontFamily, setDeviceType, setLanguage, setBatteryLevel, setWhatsAppSettings, setGroupSettings])
 
+  // Handle loading a chat from saved chats (with toast notification)
+  const handleLoadChat = useCallback((chatData: ChatData) => {
+    applyChatData(chatData)
     toast({
       title: 'Chat loaded',
       description: `"${chatData.name}" has been loaded.`,
     })
-  }, [setPlatform, setSender, setReceiver, setMessages, setDarkMode, setTimeFormat, setFontFamily, setDeviceType, setLanguage, setBatteryLevel, setWhatsAppSettings, setGroupSettings, toast])
+  }, [applyChatData, toast])
+
+  // Auto-load latest chat when user logs in
+  useEffect(() => {
+    if (latestChatData) {
+      applyChatData(latestChatData)
+      clearLatestChatData()
+    }
+  }, [latestChatData, applyChatData, clearLatestChatData])
 
   // Handle creating a new chat
   const handleNewChat = useCallback(() => {
     setCurrentChatId(null)
     resetToDefaults()
+    // Open editor tab on mobile
+    setSidebarTab('editor')
+    setSidebarOpen(true)
     toast({
       title: 'New chat',
       description: 'Started a new chat. Your previous work is saved.',
@@ -520,7 +532,18 @@ export default function Home() {
           )}
           style={{ '--mobile-preview-scale': mobilePreviewScale / 100 } as React.CSSProperties}
         >
-          {isVideoMode ? (
+          {chatListOpen ? (
+            // WhatsApp-style Chat List (replaces preview when open)
+            <WhatsAppChatList
+              open={chatListOpen}
+              onOpenChange={setChatListOpen}
+              onLoadChat={handleLoadChat}
+              onNewChat={handleNewChat}
+              language={language}
+              darkMode={darkMode}
+              deviceType={deviceType}
+            />
+          ) : isVideoMode ? (
             <div ref={videoPreviewContainerRef} style={{ overflow: 'hidden', borderRadius: isRecordingMode ? 0 : (deviceType === 'android' ? '24px' : '44px') }}>
               <AnimatedChatPreview
                 key={`animated-${groupSettings?.isGroupChat ? 'group' : 'single'}`}
@@ -603,21 +626,6 @@ export default function Home() {
             }}
           >
             <MessageCircle className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
-          </Button>
-
-          {/* My Chats Button (Grid View) */}
-          <Button
-            size="default"
-            className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-14 bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300 active:scale-95 transition-transform"
-            onClick={() => {
-              if (!user) {
-                setAuthModalOpen(true)
-              } else {
-                setSavedChatsModalOpen(true)
-              }
-            }}
-          >
-            <FolderOpen className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
           </Button>
 
           {/* Save Button */}
@@ -710,23 +718,6 @@ export default function Home() {
       {/* Auth Modal */}
       <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
 
-      {/* Saved Chats Modal */}
-      <SavedChatsModal
-        open={savedChatsModalOpen}
-        onOpenChange={setSavedChatsModalOpen}
-        onLoadChat={handleLoadChat}
-        onNewChat={handleNewChat}
-      />
-
-      {/* WhatsApp-style Chat List Drawer */}
-      <WhatsAppChatList
-        open={chatListOpen}
-        onOpenChange={setChatListOpen}
-        onLoadChat={handleLoadChat}
-        onNewChat={handleNewChat}
-        language={language}
-        darkMode={true}
-      />
     </div>
   )
 }

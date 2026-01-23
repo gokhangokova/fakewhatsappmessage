@@ -447,7 +447,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
   // ============= RESET =============
   const resetToDefaults = useCallback(() => {
-    setMessagesState(defaultState.messages)
+    // Reset to empty messages for new chat
+    setMessagesState([])
     setSenderState(defaultState.sender)
     setReceiverState(defaultState.receiver)
     setGroupSettingsState(defaultState.groupSettings)
