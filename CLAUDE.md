@@ -884,6 +884,7 @@ Yeni kurulumda `supabase/migrations/001_create_profiles_trigger.sql` dosyasını
 - PWA desteği (offline kullanım)
 
 ### Düşünülebilir
+- **iPhone Frame Mockup** - iOS seçiliyken Settings'te frame dropdown (None, Orange, vb.), preview'da gerçek iPhone çerçevesi gösterimi, export'ta "Include Frame" toggle ile çerçeveli/çerçevesiz export
 - Video FPS ayarını kullanıcıya sunma (şu an MP4=60, GIF=30)
 - WebM format desteği
 - Mesaj düzenleme undo/redo

@@ -368,3 +368,155 @@ export const PRESET_LOCATIONS = [
   { name: 'Sydney Opera House', address: 'Bennelong Point, Sydney NSW 2000, Australia', latitude: -33.856784, longitude: 151.215297 },
   { name: 'Tokyo Tower', address: '4-2-8 Shibakoen, Minato, Tokyo, Japan', latitude: 35.658581, longitude: 139.745438 },
 ]
+
+// =============================================
+// Admin System Types
+// =============================================
+
+// User roles
+export type UserRole = 'user' | 'admin' | 'super_admin'
+
+// Subscription tiers
+export type SubscriptionTier = 'free' | 'pro' | 'business'
+
+// Extended profile with admin fields
+export interface AdminProfile {
+  id: string
+  email: string | null
+  username: string | null
+  avatar_url: string | null
+  subscription_tier: SubscriptionTier
+  role: UserRole
+  is_banned: boolean
+  banned_at: string | null
+  ban_reason: string | null
+  last_active: string | null
+  created_at: string
+  updated_at: string
+  // Computed fields (from joins)
+  chat_count?: number
+}
+
+// Feature flag
+export interface FeatureFlag {
+  id: string
+  name: string
+  description: string | null
+  category: string
+  free_enabled: boolean
+  pro_enabled: boolean
+  business_enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Feature flag categories
+export const FEATURE_FLAG_CATEGORIES = [
+  { value: 'export', label: 'Export Features' },
+  { value: 'storage', label: 'Storage' },
+  { value: 'customization', label: 'Customization' },
+  { value: 'support', label: 'Support' },
+  { value: 'advanced', label: 'Advanced' },
+  { value: 'general', label: 'General' },
+] as const
+
+// Admin log entry
+export interface AdminLog {
+  id: string
+  admin_id: string | null
+  action: string
+  target_type: string | null
+  target_id: string | null
+  details: Record<string, unknown> | null
+  ip_address: string | null
+  created_at: string
+  // Joined fields
+  admin?: {
+    username: string | null
+    email: string | null
+  }
+  target?: {
+    username: string | null
+    email: string | null
+  }
+}
+
+// Admin log actions
+export type AdminLogAction =
+  | 'user_tier_changed'
+  | 'user_banned'
+  | 'user_unbanned'
+  | 'user_role_changed'
+  | 'feature_flag_created'
+  | 'feature_flag_updated'
+  | 'feature_flag_deleted'
+  | 'system_setting_updated'
+  | 'content_report_reviewed'
+  | 'content_report_actioned'
+
+// System setting
+export interface SystemSetting {
+  id: string
+  key: string
+  value: Record<string, unknown>
+  description: string | null
+  updated_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Content report
+export interface ContentReport {
+  id: string
+  chat_id: string | null
+  reporter_id: string | null
+  reason: string
+  description: string | null
+  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed'
+  reviewed_by: string | null
+  reviewed_at: string | null
+  action_taken: string | null
+  created_at: string
+  // Joined fields
+  reporter?: {
+    username: string | null
+    email: string | null
+  }
+  reviewer?: {
+    username: string | null
+    email: string | null
+  }
+  chat?: {
+    name: string
+    platform: Platform
+  }
+}
+
+// Dashboard stats
+export interface AdminDashboardStats {
+  totalUsers: number
+  freeUsers: number
+  proUsers: number
+  businessUsers: number
+  newUsersToday: number
+  newUsersThisWeek: number
+  activeUsersToday: number
+  totalChats: number
+  pendingReports: number
+}
+
+// User growth data for charts
+export interface UserGrowthData {
+  date: string
+  total: number
+  free: number
+  pro: number
+  business: number
+}
+
+// Platform usage data
+export interface PlatformUsageData {
+  platform: Platform
+  count: number
+  percentage: number
+}

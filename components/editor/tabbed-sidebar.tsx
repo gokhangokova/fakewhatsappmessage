@@ -174,10 +174,10 @@ function CollapsibleSection({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'w-full flex items-center gap-3 px-4 py-4 transition-all active:scale-[0.99]',
+          "w-full flex items-center gap-3 px-4 py-4 transition-all active:scale-[0.99]",
           isOpen
-            ? 'bg-[#d4f5e2] text-gray-900'
-            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+            ? "bg-[#d4f5e2] text-[#128C7E]"
+            : "bg-gray-50 hover:bg-gray-100 text-gray-700"
         )}
       >
         <Icon className={cn("w-5 h-5", isOpen ? "text-[#128C7E]" : "text-gray-500")} />
@@ -1137,7 +1137,7 @@ export function TabbedSidebar({
                 <CollapsibleSection
                   title={t.editor.chatType}
                   icon={Users2}
-                  defaultOpen={true}
+                  defaultOpen={false}
                   badge={
                     <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
                       {groupSettings.isGroupChat ? t.editor.groupChat : t.editor.oneToOne}
@@ -1177,7 +1177,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={groupSettings?.isGroupChat ? t.editor.groupInfo : t.editor.people}
                 icon={Users}
-                defaultOpen={true}
+                defaultOpen={false}
               >
                 {/* Group Chat Settings */}
                 {groupSettings?.isGroupChat && setGroupSettings ? (
@@ -1355,7 +1355,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={t.editor.messages}
                 icon={MessageSquare}
-                defaultOpen={true}
+                defaultOpen={false}
                 badge={
                   <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
                     {messages.length}
@@ -1838,7 +1838,7 @@ export function TabbedSidebar({
                 <CollapsibleSection
                   title={t.editor.chatType}
                   icon={Users2}
-                  defaultOpen={true}
+                  defaultOpen={false}
                   badge={
                     <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
                       {groupSettings.isGroupChat ? t.editor.groupChat : t.editor.oneToOne}
@@ -1878,7 +1878,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={groupSettings?.isGroupChat ? t.editor.groupInfo : t.editor.people}
                 icon={Users}
-                defaultOpen={true}
+                defaultOpen={false}
               >
                 {/* Group Chat Settings */}
                 {groupSettings?.isGroupChat && setGroupSettings ? (
@@ -2044,7 +2044,7 @@ export function TabbedSidebar({
               <CollapsibleSection
                 title={t.editor.messages}
                 icon={MessageSquare}
-                defaultOpen={true}
+                defaultOpen={false}
                 badge={
                   <span className="text-xs text-[#128C7E] bg-[#d4f5e2] px-2 py-0.5 rounded-full font-medium">
                     {messages.length}
@@ -2146,7 +2146,7 @@ export function TabbedSidebar({
             <CollapsibleSection
               title={t.settings.appearance}
               icon={Palette}
-              defaultOpen={true}
+              defaultOpen={false}
             >
               {/* View Toggle */}
               <div className="space-y-2">
@@ -2544,10 +2544,10 @@ export function TabbedSidebar({
     )
   }
 
-  // Desktop: Fixed sidebar
+  // Desktop: Fixed sidebar - leaves space for legal links at bottom
   return (
-    <div className="fixed left-4 top-20 z-50 w-[352px]">
-      <div className="bg-white shadow-2xl border border-gray-200 overflow-hidden rounded-2xl">
+    <div className="fixed left-4 top-20 bottom-16 z-50 w-[352px]">
+      <div className="bg-white shadow-2xl border border-gray-200 overflow-hidden rounded-2xl h-full flex flex-col">
         {SidebarContent}
       </div>
     </div>

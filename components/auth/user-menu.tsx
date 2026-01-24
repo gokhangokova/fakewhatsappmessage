@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/popover'
 import { LogOut, User, CreditCard, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import Link from 'next/link'
 
 export function UserMenu() {
   const { user, profile, signOut, isLoading } = useAuth()
@@ -76,25 +77,29 @@ export function UserMenu() {
         <div className="border-t my-1" />
 
         <div className="space-y-1">
-          <Button
-            variant="ghost"
-            className="w-full justify-start h-9 px-2"
-            size="sm"
-          >
-            <User className="mr-2 h-4 w-4" />
-            Profile
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start h-9 px-2"
-            size="sm"
-          >
-            <CreditCard className="mr-2 h-4 w-4" />
-            Subscription
-            <span className="ml-auto text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-              {profile?.subscription_tier || 'free'}
-            </span>
-          </Button>
+          <Link href="/profile" onClick={() => setIsOpen(false)}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-9 px-2"
+              size="sm"
+            >
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </Button>
+          </Link>
+          <Link href="/subscription" onClick={() => setIsOpen(false)}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-9 px-2"
+              size="sm"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Subscription
+              <span className="ml-auto text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                {profile?.subscription_tier || 'free'}
+              </span>
+            </Button>
+          </Link>
         </div>
 
         <div className="border-t my-1" />

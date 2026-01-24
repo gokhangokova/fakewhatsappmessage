@@ -3,13 +3,16 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { UserRole, SubscriptionTier } from '@/types'
 
 interface Profile {
   id: string
   email: string | null
   username: string | null
   avatar_url: string | null
-  subscription_tier: 'free' | 'pro' | 'business'
+  subscription_tier: SubscriptionTier
+  role: UserRole
+  is_banned: boolean
   created_at: string
   updated_at: string
 }
@@ -19,6 +22,8 @@ interface AuthContextType {
   profile: Profile | null
   session: Session | null
   isLoading: boolean
+  isAdmin: boolean
+  isSuperAdmin: boolean
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
@@ -33,22 +38,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [supabase] = useState(() => createClient())
 
-  const supabase = createClient()
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    console.log('[Auth] Fetching profile for userId:', userId)
+    try {
+      // Add timeout wrapper
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout after 10s')), 10000)
+      })
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+      const queryPromise = supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
 
-    if (error) {
-      console.error('Error fetching profile:', error)
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise])
+
+      console.log('[Auth] Profile query completed:', { data, error })
+
+      if (error) {
+        console.error('[Auth] Error fetching profile:', error)
+        return null
+      }
+
+      console.log('[Auth] Profile fetched:', data)
+      console.log('[Auth] Profile role:', data?.role, 'isAdmin:', data?.role === 'admin' || data?.role === 'super_admin')
+      return data as Profile
+    } catch (err) {
+      console.error('[Auth] Exception in fetchProfile:', err)
       return null
     }
-
-    return data as Profile
   }, [supabase])
 
   const refreshProfile = useCallback(async () => {
@@ -59,18 +80,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchProfile])
 
   useEffect(() => {
+    let isMounted = true
+
+    // Check for OAuth code in URL
+    const handleOAuthCode = async () => {
+      if (typeof window === 'undefined') return false
+
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+
+      if (code) {
+        console.log('[Auth] Found OAuth code in URL, exchanging...')
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) {
+            console.error('[Auth] Code exchange error:', error)
+          } else {
+            console.log('[Auth] Code exchange success:', data.session?.user?.email)
+            // Clean up URL
+            window.history.replaceState({}, '', window.location.pathname)
+          }
+          return true
+        } catch (err) {
+          console.error('[Auth] Code exchange exception:', err)
+          return true
+        }
+      }
+      return false
+    }
+
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
+      console.log('[Auth] Getting initial session...')
 
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id)
-        setProfile(profileData)
+      // First check for OAuth code
+      const hadCode = await handleOAuthCode()
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!isMounted) return
+
+        console.log('[Auth] Initial session:', session?.user?.email ?? 'no session')
+        setSession(session)
+        setUser(session?.user ?? null)
+
+        if (session?.user) {
+          const profileData = await fetchProfile(session.user.id)
+          if (!isMounted) return
+          console.log('[Auth] Setting profile in state:', profileData)
+          setProfile(profileData)
+        }
+      } catch (error) {
+        console.error('[Auth] Error getting session:', error)
+      } finally {
+        if (isMounted) {
+          console.log('[Auth] Setting isLoading to false')
+          setIsLoading(false)
+        }
       }
-
-      setIsLoading(false)
     }
 
     getInitialSession()
@@ -78,6 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return
+
         console.log('[Auth] onAuthStateChange:', event, session?.user?.email)
 
         setSession(session)
@@ -85,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           const profileData = await fetchProfile(session.user.id)
+          if (!isMounted) return
           setProfile(profileData)
         } else {
           setProfile(null)
@@ -95,9 +166,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
 
     return () => {
+      isMounted = false
       subscription.unsubscribe()
     }
-  }, [supabase, fetchProfile])
+  }, [fetchProfile, supabase])
 
   const signInWithGoogle = async () => {
     console.log('[Auth] Starting Google OAuth with PKCE flow')
@@ -153,6 +225,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null)
   }
 
+  // Computed admin properties
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
+  const isSuperAdmin = profile?.role === 'super_admin'
+
   return (
     <AuthContext.Provider
       value={{
@@ -160,6 +236,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         session,
         isLoading,
+        isAdmin,
+        isSuperAdmin,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
