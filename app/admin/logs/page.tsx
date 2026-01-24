@@ -176,8 +176,11 @@ export default function LogsPage() {
                         {log.target_id ? (
                           <>
                             <span className="font-medium">
-                              {log.target?.username || log.target?.email || log.target_id.slice(0, 8) + '...'}
+                              {log.target?.username || log.target_id.slice(0, 8) + '...'}
                             </span>
+                            {log.target?.email && (
+                              <span className="text-xs text-gray-500 block">{log.target.email}</span>
+                            )}
                             {log.target_type && (
                               <span className="text-xs text-gray-400 block">{log.target_type}</span>
                             )}

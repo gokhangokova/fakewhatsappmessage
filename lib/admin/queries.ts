@@ -307,17 +307,23 @@ export async function getAdminLogs(options?: {
     .filter(log => log.target_type === 'user' && log.target_id)
     .map(log => log.target_id!)
 
+  console.log('[AdminLogs] User target IDs:', userTargetIds)
+
   if (userTargetIds.length > 0) {
-    const { data: targetUsers } = await supabase
+    const { data: targetUsers, error: targetError } = await supabase
       .from('profiles')
       .select('id, username, email')
       .in('id', userTargetIds)
 
+    console.log('[AdminLogs] Target users query result:', { targetUsers, targetError })
+
     if (targetUsers) {
       const userMap = new Map(targetUsers.map(u => [u.id, u]))
+      console.log('[AdminLogs] User map:', Object.fromEntries(userMap))
       logs.forEach(log => {
         if (log.target_type === 'user' && log.target_id) {
           const targetUser = userMap.get(log.target_id)
+          console.log('[AdminLogs] Looking up target_id:', log.target_id, 'found:', targetUser)
           if (targetUser) {
             log.target = {
               username: targetUser.username,
