@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${jakarta.variable} font-sans antialiased h-screen overflow-hidden`}>
+      <body className={`${jakarta.variable} font-sans antialiased min-h-screen`}>
         <AuthProvider>
           <ChatProvider>
             <Header />

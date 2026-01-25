@@ -31,11 +31,11 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-6">
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[#128C7E]/20 bg-[#128C7E] px-6">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-xl font-semibold text-white">{title}</h1>
         {description && (
-          <p className="text-sm text-gray-500">{description}</p>
+          <p className="text-sm text-white/70">{description}</p>
         )}
       </div>
 
@@ -45,8 +45,8 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
               isSuperAdmin
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-blue-100 text-blue-700'
+                ? 'bg-[#25D366] text-white'
+                : 'bg-white/20 text-white'
             }`}
           >
             <Shield className="h-3 w-3" />
@@ -57,10 +57,10 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
         {/* User Menu */}
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-              <Avatar className="h-9 w-9">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-white/10">
+              <Avatar className="h-9 w-9 ring-2 ring-white/30">
                 <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback className="bg-gray-700 text-white text-xs">
+                <AvatarFallback className="bg-[#25D366] text-white text-xs">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -70,7 +70,7 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
             <div className="flex items-center gap-3 p-2 mb-2">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback className="bg-gray-700 text-white">
+                <AvatarFallback className="bg-[#128C7E] text-white">
                   {initials}
                 </AvatarFallback>
               </Avatar>

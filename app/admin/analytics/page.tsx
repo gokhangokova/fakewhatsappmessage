@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
         description="View usage statistics and trends"
       />
 
-      <div className="p-6 space-y-8">
+      <div className="p-6 pb-12 space-y-8">
         {/* User Distribution */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">User Distribution</h2>

@@ -252,7 +252,7 @@ export default function PrivacyPolicyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-auto h-[calc(100vh-56px)] md:h-[calc(100vh-64px)]">
+    <div className="min-h-[calc(100vh-56px)] md:min-h-[calc(100vh-64px)] bg-background overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
         {/* Header with Back Link and Language Toggle */}
         <div className="flex items-center justify-between mb-8">

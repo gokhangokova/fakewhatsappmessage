@@ -167,7 +167,7 @@ export default function SettingsPage() {
         description="Configure global application settings"
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 pb-12 space-y-6">
         {/* Maintenance Mode */}
         <div className="bg-white rounded-lg border p-6 space-y-4">
           <div className="flex items-center gap-3">

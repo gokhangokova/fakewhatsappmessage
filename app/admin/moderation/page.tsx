@@ -186,7 +186,7 @@ export default function ModerationPage() {
         description="Review and manage reported content"
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-6 pb-12 space-y-4">
         {/* Filters */}
         <div className="flex items-center gap-4">
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0) }}>

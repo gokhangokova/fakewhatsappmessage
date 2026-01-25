@@ -28,12 +28,12 @@ export function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-900">
+    <div className="flex h-full w-64 flex-col bg-[#075E54]">
       {/* Logo / Back link */}
-      <div className="flex h-16 items-center gap-2 px-4 border-b border-gray-800">
+      <div className="flex h-16 items-center gap-2 px-4 border-b border-[#128C7E]/30">
         <Link
           href="/"
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-[#25D366] hover:text-white transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
           <span className="text-sm">Back to App</span>
@@ -41,9 +41,9 @@ export function AdminSidebar() {
       </div>
 
       {/* Admin Title */}
-      <div className="px-4 py-4 border-b border-gray-800">
+      <div className="px-4 py-4 border-b border-[#128C7E]/30">
         <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-        <p className="text-xs text-gray-500 mt-1">Manage your application</p>
+        <p className="text-xs text-[#25D366]/70 mt-1">Manage your application</p>
       </div>
 
       {/* Navigation */}
@@ -59,8 +59,8 @@ export function AdminSidebar() {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  ? 'bg-[#128C7E] text-white'
+                  : 'text-white/70 hover:bg-[#128C7E]/50 hover:text-white'
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -71,8 +71,8 @@ export function AdminSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-gray-800 p-4">
-        <p className="text-xs text-gray-500">
+      <div className="border-t border-[#128C7E]/30 p-4">
+        <p className="text-xs text-[#25D366]/50">
           memesocial.app Admin
         </p>
       </div>

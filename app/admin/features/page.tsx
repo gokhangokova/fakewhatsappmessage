@@ -211,7 +211,7 @@ export default function FeaturesPage() {
         description="Control which features are available for each subscription tier"
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 pb-12 space-y-6">
         {/* Add New Button */}
         <div className="flex justify-end">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

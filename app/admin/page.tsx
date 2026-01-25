@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         description="Overview of your application"
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 pb-12 space-y-6">
         {/* User Stats */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Users</h2>

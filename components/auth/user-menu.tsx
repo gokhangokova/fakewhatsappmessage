@@ -8,12 +8,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { LogOut, User, CreditCard, Loader2 } from 'lucide-react'
+import { LogOut, User, CreditCard, Loader2, Shield } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 
 export function UserMenu() {
-  const { user, profile, signOut, isLoading } = useAuth()
+  const { user, profile, signOut, isLoading, isAdmin } = useAuth()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -77,6 +77,19 @@ export function UserMenu() {
         <div className="border-t my-1" />
 
         <div className="space-y-1">
+          {/* Admin Panel link for admin users */}
+          {isAdmin && (
+            <Link href="/admin" onClick={() => setIsOpen(false)}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-9 px-2"
+                size="sm"
+              >
+                <Shield className="mr-2 h-4 w-4" />
+                Admin Panel
+              </Button>
+            </Link>
+          )}
           <Link href="/profile" onClick={() => setIsOpen(false)}>
             <Button
               variant="ghost"

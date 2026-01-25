@@ -244,7 +244,7 @@ export default function UsersPage() {
         description={`${total} total users`}
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-6 pb-12 space-y-4">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
