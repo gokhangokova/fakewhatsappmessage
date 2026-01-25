@@ -575,14 +575,15 @@ export default function Home() {
       <TabbedSidebar {...sidebarProps} />
 
       {/* Preview Panel - Full width on mobile, buttons at bottom */}
-      <div className="w-full h-full flex items-start justify-center sm:px-4 md:p-8 lg:pt-4 overflow-hidden max-sm:pb-24">
+      <div className="w-full h-full flex items-start justify-center sm:px-4 md:p-8 lg:pt-4 overflow-hidden max-sm:pb-24 max-sm:pt-4">
         {/* Phone Preview - Responsive scaling with dynamic fit */}
         <div
           className={cn(
             "transition-transform flex items-start justify-center",
             // Desktop scaling
             "sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
-            "sm:origin-top",
+            // Origin top for both mobile and desktop (scale from top)
+            "origin-top",
             // Mobile: use CSS custom property for dynamic scaling
             "mobile-phone-preview"
           )}
