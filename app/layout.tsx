@@ -3,13 +3,22 @@ import dynamic from 'next/dynamic'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
-import { ChatProvider } from '@/contexts/chat-context'
-import { AuthProvider } from '@/contexts/auth-context'
 
-// Dynamic import Header to avoid SSG issues with usePathname
-const Header = dynamic(() => import('@/components/layout/header').then(mod => ({ default: mod.Header })), {
-  ssr: false,
-})
+// Dynamic imports to avoid SSG issues with Supabase and client-side hooks
+const AuthProvider = dynamic(
+  () => import('@/contexts/auth-context').then(mod => ({ default: mod.AuthProvider })),
+  { ssr: false }
+)
+
+const ChatProvider = dynamic(
+  () => import('@/contexts/chat-context').then(mod => ({ default: mod.ChatProvider })),
+  { ssr: false }
+)
+
+const Header = dynamic(
+  () => import('@/components/layout/header').then(mod => ({ default: mod.Header })),
+  { ssr: false }
+)
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],

@@ -2,13 +2,33 @@ import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/
 
 let supabaseClient: SupabaseClient | null = null
 
+// Environment variables with fallback for build time
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
 export function createClient(): SupabaseClient {
-  // Her zaman yeni client oluştur - singleton sorun yaratıyor olabilir
-  if (typeof window === 'undefined') {
-    // Server-side: her seferinde yeni client
+  // Check if we have the required environment variables
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Return a dummy client during SSG build - this will never be used at runtime
+    // because AuthProvider is loaded with ssr: false
+    console.warn('[Supabase] Missing environment variables, returning placeholder client')
     return createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      'https://placeholder.supabase.co',
+      'placeholder-key',
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    )
+  }
+
+  // Server-side: her seferinde yeni client
+  if (typeof window === 'undefined') {
+    return createSupabaseClient(
+      supabaseUrl,
+      supabaseAnonKey,
       {
         auth: {
           persistSession: false,
@@ -24,8 +44,8 @@ export function createClient(): SupabaseClient {
   }
 
   supabaseClient = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       auth: {
         persistSession: true,
