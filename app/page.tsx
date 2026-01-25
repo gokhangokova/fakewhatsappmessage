@@ -613,37 +613,35 @@ export default function Home() {
             <FlaskConical className="w-6 h-6" strokeWidth={2.5} />
           </Button>
 
-          {/* WhatsApp-style Chat List Button */}
-          <Button
-            size="default"
-            className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-[#00A884] hover:bg-[#008f6f] text-white border-0 justify-center active:scale-95 transition-transform"
-            onClick={() => {
-              if (!user) {
-                setAuthModalOpen(true)
-              } else {
-                setChatListOpen(true)
-              }
-            }}
-          >
-            <MessageCircle className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
-            <span className="font-medium hidden sm:inline">{t.common.chats}</span>
-          </Button>
+          {/* WhatsApp-style Chat List Button - Only for logged in users */}
+          {user && (
+            <Button
+              size="default"
+              className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-[#00A884] hover:bg-[#008f6f] text-white border-0 justify-center active:scale-95 transition-transform"
+              onClick={() => setChatListOpen(true)}
+            >
+              <MessageCircle className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
+              <span className="font-medium hidden sm:inline">{t.common.chats}</span>
+            </Button>
+          )}
 
-          {/* Save Button */}
-          <Button
-            size="default"
-            className={cn(
-              "rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 justify-center active:scale-95 transition-transform text-white border-0",
-              user && currentChatId
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-blue-500 hover:bg-blue-600"
-            )}
-            onClick={handleSaveChat}
-            disabled={isSaving || (remainingChats !== null && remainingChats <= 0 && !currentChatId)}
-          >
-            <Save className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
-            <span className="font-medium hidden sm:inline">{t.common.save}</span>
-          </Button>
+          {/* Save Button - Only for logged in users */}
+          {user && (
+            <Button
+              size="default"
+              className={cn(
+                "rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 justify-center active:scale-95 transition-transform text-white border-0",
+                currentChatId
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-blue-500 hover:bg-blue-600"
+              )}
+              onClick={handleSaveChat}
+              disabled={isSaving || (remainingChats !== null && remainingChats <= 0 && !currentChatId)}
+            >
+              <Save className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
+              <span className="font-medium hidden sm:inline">{t.common.save}</span>
+            </Button>
+          )}
 
           {/* Preview Animation Button */}
           {isPreviewMode ? (
