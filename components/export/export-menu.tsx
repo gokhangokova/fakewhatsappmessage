@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -31,6 +31,7 @@ import {
   RotateCcw,
   CheckCircle2,
   Sparkles,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ExportFormat } from '@/hooks/use-export'
@@ -133,6 +134,34 @@ export function ExportMenu({
   const [showVideoSettings, setShowVideoSettings] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const t = useTranslations(language)
+
+  // Draggable sheet height state
+  const [sheetHeight, setSheetHeight] = useState(60)
+  const sheetDragStartY = useRef<number | null>(null)
+  const sheetDragStartHeight = useRef<number>(60)
+
+  const handleSheetDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    sheetDragStartY.current = clientY
+    sheetDragStartHeight.current = sheetHeight
+  }
+
+  const handleSheetDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (sheetDragStartY.current === null) return
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const deltaY = sheetDragStartY.current - clientY
+    const deltaPercent = (deltaY / window.innerHeight) * 100
+    const newHeight = Math.min(90, Math.max(10, sheetDragStartHeight.current + deltaPercent))
+    setSheetHeight(newHeight)
+  }
+
+  const handleSheetDragEnd = () => {
+    sheetDragStartY.current = null
+    if (sheetHeight < 30) {
+      onOpenChange(false)
+      setSheetHeight(60)
+    }
+  }
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640)
@@ -588,26 +617,62 @@ export function ExportMenu({
   // Mobile: Bottom Sheet
   if (isMobile) {
     return (
-      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) { onOpenChange(false); setSheetHeight(60) } else { onOpenChange(true) } }}>
         <SheetTrigger asChild>
           {TriggerButton}
         </SheetTrigger>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pb-8 pt-4 max-h-[85vh] overflow-y-auto">
-          {/* Drag handle */}
-          <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-3" />
-
-          <SheetHeader className="text-left mb-2 sr-only">
+        <SheetContent
+          side="bottom"
+          className="px-0 pb-0 pt-0 rounded-t-3xl flex flex-col transition-[height] duration-75"
+          style={{ height: `${sheetHeight}vh` }}
+          hideOverlay={true}
+          hideCloseButton={true}
+        >
+          <SheetHeader className="sr-only">
             <SheetTitle>{t.export.export}</SheetTitle>
             <SheetDescription>{t.export.exportOptions}</SheetDescription>
           </SheetHeader>
 
-          {TabHeader}
+          {/* Header with drag handle - same style as Editor/Settings */}
+          <div className="bg-[#d4f5e2] flex-shrink-0 rounded-t-3xl">
+            {/* Drag handle */}
+            <div
+              className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
+              onTouchStart={handleSheetDragStart}
+              onTouchMove={handleSheetDragMove}
+              onTouchEnd={handleSheetDragEnd}
+              onMouseDown={handleSheetDragStart}
+              onMouseMove={handleSheetDragMove}
+              onMouseUp={handleSheetDragEnd}
+              onMouseLeave={handleSheetDragEnd}
+            >
+              <div className="w-12 h-1.5 bg-[#128C7E]/30 rounded-full" />
+            </div>
+            {/* Title row */}
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-2">
+                <Download className="w-5 h-5 text-[#128C7E]" />
+                <span className="font-semibold text-[#128C7E]">{t.export.export}</span>
+              </div>
+              <button
+                onClick={() => onOpenChange(false)}
+                className="p-2.5 hover:bg-[#c0e8d4] rounded-full transition-colors active:scale-95"
+              >
+                <X className="w-5 h-5 text-[#128C7E]" />
+              </button>
+            </div>
+          </div>
 
-          {activeTab === 'image' ? ImageContent : VideoContent}
+          {/* Content with scroll */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
+            {TabHeader}
 
-          <SheetFooter className="mt-4">
-            {activeTab === 'image' ? ImageFooter : VideoFooter}
-          </SheetFooter>
+            {activeTab === 'image' ? ImageContent : VideoContent}
+
+            <div className="mt-4 pb-4 safe-area-bottom">
+              {activeTab === 'image' ? ImageFooter : VideoFooter}
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
     )

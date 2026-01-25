@@ -857,6 +857,11 @@ export function TabbedSidebar({
   const scrollPositionRef = useRef(0)
   const [isMobile, setIsMobile] = useState(false)
 
+  // Settings sheet draggable height state (for mobile)
+  const [sheetHeight, setSheetHeight] = useState(60) // percentage
+  const sheetDragStartY = useRef<number | null>(null)
+  const sheetDragStartHeight = useRef<number>(60)
+
   const backgroundType = whatsappSettings?.backgroundType || 'doodle'
 
   // Check if mobile on mount and resize
@@ -1808,13 +1813,13 @@ export function TabbedSidebar({
     if (activeTab === 'editor') {
       return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-          <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none border-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom safe-area-inset" hideCloseButton={true}>
+          <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none border-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom flex flex-col" hideCloseButton={true}>
             <DialogHeader className="sr-only">
               <DialogTitle>{t.common.editor}</DialogTitle>
             </DialogHeader>
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 bg-[#d4f5e2] safe-area-top">
+            {/* Header with safe area */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 bg-[#d4f5e2] flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
               <div className="flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-[#128C7E]" />
                 <span className="font-semibold text-[#128C7E]">{t.common.editor}</span>
@@ -1828,7 +1833,7 @@ export function TabbedSidebar({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 mobile-scroll safe-area-bottom">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 mobile-scroll min-h-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               {/* Chat Type Section - Only for WhatsApp */}
               {platform === 'whatsapp' && groupSettings && toggleGroupChat && (
                 <CollapsibleSection
@@ -2104,12 +2109,38 @@ export function TabbedSidebar({
       )
     }
 
-    // Settings - Bottom sheet (60% height for better mobile UX)
+    // Settings - Bottom sheet with draggable height
+    const handleSheetDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      sheetDragStartY.current = clientY
+      sheetDragStartHeight.current = sheetHeight
+    }
+
+    const handleSheetDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+      if (sheetDragStartY.current === null) return
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      const deltaY = sheetDragStartY.current - clientY
+      const deltaPercent = (deltaY / window.innerHeight) * 100
+      // Allow dragging down to 10% (so user can close by dragging to bottom)
+      const newHeight = Math.min(90, Math.max(10, sheetDragStartHeight.current + deltaPercent))
+      setSheetHeight(newHeight)
+    }
+
+    const handleSheetDragEnd = () => {
+      sheetDragStartY.current = null
+      // Snap to close if dragged below 30%
+      if (sheetHeight < 30) {
+        onClose?.()
+        setSheetHeight(60) // Reset for next open
+      }
+    }
+
     return (
-      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) { onClose?.(); setSheetHeight(60) } }}>
         <SheetContent
           side="bottom"
-          className="h-[60vh] px-0 pb-0 pt-0 rounded-t-3xl flex flex-col"
+          className="px-0 pb-0 pt-0 rounded-t-3xl flex flex-col transition-[height] duration-75"
+          style={{ height: `${sheetHeight}vh` }}
           hideOverlay={true}
           hideCloseButton={true}
         >
@@ -2117,23 +2148,34 @@ export function TabbedSidebar({
             <SheetTitle>{t.common.settings}</SheetTitle>
           </SheetHeader>
 
-          {/* Drag handle - larger touch target */}
-          <div className="flex justify-center py-3 flex-shrink-0 cursor-grab active:cursor-grabbing">
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-          </div>
-
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <FlaskConical className="w-5 h-5 text-[#128C7E]" />
-              <span className="font-semibold text-gray-800">{t.common.settings}</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2.5 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+          {/* Header with drag handle - same style as Editor */}
+          <div className="bg-[#d4f5e2] flex-shrink-0 rounded-t-3xl">
+            {/* Drag handle */}
+            <div
+              className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
+              onTouchStart={handleSheetDragStart}
+              onTouchMove={handleSheetDragMove}
+              onTouchEnd={handleSheetDragEnd}
+              onMouseDown={handleSheetDragStart}
+              onMouseMove={handleSheetDragMove}
+              onMouseUp={handleSheetDragEnd}
+              onMouseLeave={handleSheetDragEnd}
             >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
+              <div className="w-12 h-1.5 bg-[#128C7E]/30 rounded-full" />
+            </div>
+            {/* Title row */}
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="w-5 h-5 text-[#128C7E]" />
+                <span className="font-semibold text-[#128C7E]">{t.common.settings}</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2.5 hover:bg-[#c0e8d4] rounded-full transition-colors active:scale-95"
+              >
+                <X className="w-5 h-5 text-[#128C7E]" />
+              </button>
+            </div>
           </div>
 
           {/* Content with scroll */}
