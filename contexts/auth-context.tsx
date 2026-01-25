@@ -1,9 +1,10 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { UserRole, SubscriptionTier } from '@/types'
+import { isSignupEnabled } from '@/hooks/use-system-settings'
 
 interface Profile {
   id: string
@@ -13,6 +14,7 @@ interface Profile {
   subscription_tier: SubscriptionTier
   role: UserRole
   is_banned: boolean
+  ban_reason?: string | null
   created_at: string
   updated_at: string
 }
@@ -24,6 +26,8 @@ interface AuthContextType {
   isLoading: boolean
   isAdmin: boolean
   isSuperAdmin: boolean
+  banMessage: string | null
+  clearBanMessage: () => void
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>
@@ -39,7 +43,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [banMessage, setBanMessage] = useState<string | null>(null)
   const [supabase] = useState(() => createClient())
+  const banHandledRef = useRef<string | null>(null) // Track which user's ban we've handled
+
+  const clearBanMessage = useCallback(() => {
+    setBanMessage(null)
+  }, [])
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     console.log('[Auth] Fetching profile for userId:', userId)
@@ -132,7 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('[Auth] Setting profile in state:', profileData)
           setProfile(profileData)
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        // Ignore AbortError - happens when component unmounts during auth
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('[Auth] Session fetch aborted (component unmounted)')
+          return
+        }
         console.error('[Auth] Error getting session:', error)
       } finally {
         if (isMounted) {
@@ -151,18 +166,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log('[Auth] onAuthStateChange:', event, session?.user?.email)
 
-        setSession(session)
-        setUser(session?.user ?? null)
+        try {
+          if (session?.user) {
+            const profileData = await fetchProfile(session.user.id)
+            if (!isMounted) return
 
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id)
-          if (!isMounted) return
-          setProfile(profileData)
-        } else {
-          setProfile(null)
+            // Check if user is banned
+            if (profileData?.is_banned) {
+              // Prevent double handling for the same user
+              if (banHandledRef.current === session.user.id) {
+                console.log('[Auth] Ban already handled for this user, skipping')
+                return
+              }
+              banHandledRef.current = session.user.id
+
+              console.log('[Auth] User is banned, signing out')
+              await supabase.auth.signOut()
+              setSession(null)
+              setUser(null)
+              setProfile(null)
+              setIsLoading(false)
+              // Set ban message for dialog display
+              const reason = profileData.ban_reason ? `: ${profileData.ban_reason}` : ''
+              setBanMessage(`Your account has been suspended${reason}`)
+              return
+            }
+
+            // Clear ban handled ref for non-banned users
+            banHandledRef.current = null
+
+            setSession(session)
+            setUser(session.user)
+            setProfile(profileData)
+          } else {
+            setSession(null)
+            setUser(null)
+            setProfile(null)
+          }
+
+          setIsLoading(false)
+        } catch (error: unknown) {
+          // Ignore AbortError - happens when component unmounts during auth
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.log('[Auth] Auth state change aborted (component unmounted)')
+            return
+          }
+          console.error('[Auth] Error in auth state change:', error)
         }
-
-        setIsLoading(false)
       }
     )
 
@@ -193,15 +243,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    return { error: error as Error | null }
+    if (error) {
+      return { error: error as Error | null }
+    }
+
+    // Check if user is banned
+    if (data.user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_banned, ban_reason')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileData?.is_banned) {
+        // Sign out the banned user immediately
+        await supabase.auth.signOut()
+        const reason = profileData.ban_reason ? `: ${profileData.ban_reason}` : ''
+        return { error: new Error(`Your account has been suspended${reason}`) }
+      }
+    }
+
+    return { error: null }
   }
 
   const signUpWithEmail = async (email: string, password: string) => {
+    // Check if signup is enabled
+    const signupAllowed = await isSignupEnabled()
+    if (!signupAllowed) {
+      return { error: new Error('New registrations are currently disabled. Please try again later.') }
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -247,6 +323,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAdmin,
         isSuperAdmin,
+        banMessage,
+        clearBanMessage,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,

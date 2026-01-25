@@ -39,8 +39,9 @@ export function UserMenu() {
     }
   }
 
-  const displayName = profile?.username || user.email?.split('@')[0] || 'User'
-  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url
+  const displayName = profile?.username || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'
+  // Check multiple possible avatar sources: profile, user_metadata.avatar_url, user_metadata.picture (Google OAuth)
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (

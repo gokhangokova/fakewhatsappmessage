@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { useSystemSettings } from '@/hooks/use-system-settings'
 import {
   getUserChats,
   getChatById,
@@ -41,6 +42,7 @@ interface UseSavedChatsReturn {
 
 export function useSavedChats(): UseSavedChatsReturn {
   const { user, profile } = useAuth()
+  const { settings } = useSystemSettings()
 
   const [savedChats, setSavedChats] = useState<ChatRow[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
@@ -49,10 +51,10 @@ export function useSavedChats(): UseSavedChatsReturn {
   const [isSaving, setIsSaving] = useState(false)
   const [latestChatData, setLatestChatData] = useState<ChatData | null>(null)
 
-  // Calculate remaining chats for free tier
-  const FREE_TIER_LIMIT = 2
+  // Calculate remaining chats for free tier (using system settings)
+  const freeTierLimit = settings.free_tier_chat_limit.limit
   const remainingChats = profile?.subscription_tier === 'free'
-    ? Math.max(0, FREE_TIER_LIMIT - chatCount)
+    ? (freeTierLimit === 0 ? null : Math.max(0, freeTierLimit - chatCount)) // 0 means unlimited
     : null // null = unlimited for pro/business
 
   // Load all chats for the user

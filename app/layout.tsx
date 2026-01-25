@@ -20,6 +20,16 @@ const Header = dynamic(
   { ssr: false }
 )
 
+const SystemStatusWrapper = dynamic(
+  () => import('@/components/system/system-status-wrapper').then(mod => ({ default: mod.SystemStatusWrapper })),
+  { ssr: false }
+)
+
+const BanDialog = dynamic(
+  () => import('@/components/auth/ban-dialog').then(mod => ({ default: mod.BanDialog })),
+  { ssr: false }
+)
+
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
   variable: '--font-jakarta',
@@ -41,11 +51,14 @@ export default function RootLayout({
       <body className={`${jakarta.variable} font-sans antialiased min-h-screen`}>
         <AuthProvider>
           <ChatProvider>
-            <Header />
-            <main>
-              {children}
-            </main>
-            <Toaster />
+            <SystemStatusWrapper>
+              <Header />
+              <main>
+                {children}
+              </main>
+              <Toaster />
+              <BanDialog />
+            </SystemStatusWrapper>
           </ChatProvider>
         </AuthProvider>
       </body>

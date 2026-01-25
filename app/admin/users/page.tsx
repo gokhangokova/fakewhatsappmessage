@@ -44,6 +44,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  User,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -231,7 +232,12 @@ export default function UsersPage() {
           </Badge>
         )
       default:
-        return null
+        return (
+          <Badge variant="secondary">
+            <User className="mr-1 h-3 w-3" />
+            User
+          </Badge>
+        )
     }
   }
 
@@ -358,6 +364,7 @@ export default function UsersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Change Tier</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => handleTierChange(user.id, 'free')}>
+                            <User className="mr-2 h-4 w-4 text-gray-600" />
                             Free
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleTierChange(user.id, 'pro')}>
@@ -372,6 +379,7 @@ export default function UsersPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuLabel>Change Role</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'user')}>
+                            <User className="mr-2 h-4 w-4 text-gray-600" />
                             User
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'admin')}>

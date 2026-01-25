@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from './client'
+import { getFreeTierChatLimit } from '@/hooks/use-system-settings'
 import type {
   Message,
   User,
@@ -296,9 +297,14 @@ export async function canCreateChat(subscriptionTier: 'free' | 'pro' | 'business
     return true
   }
 
-  // Free tier: max 2 chats
-  const FREE_TIER_LIMIT = 2
-  const count = await getChatCount()
+  // Get limit from system settings (defaults to 2 if not configured)
+  const limit = await getFreeTierChatLimit()
 
-  return count < FREE_TIER_LIMIT
+  // If limit is 0, it means unlimited
+  if (limit === 0) {
+    return true
+  }
+
+  const count = await getChatCount()
+  return count < limit
 }
