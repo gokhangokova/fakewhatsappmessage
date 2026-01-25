@@ -84,13 +84,27 @@ git remote set-url --add --push all <url>
 - `hooks/use-saved-chats.ts` - Supabase chat CRUD operations + auto-load latest
 
 ### Auth & Database
-- `contexts/auth-context.tsx` - Authentication state ve fonksiyonları
+- `contexts/auth-context.tsx` - Authentication state ve fonksiyonları, ban kontrolü
 - `contexts/chat-context.tsx` - Chat state yönetimi, `resetToDefaults` boş mesajlarla başlar
 - `lib/supabase/client.ts` - Supabase browser client
 - `lib/supabase/server.ts` - Supabase server client
 - `lib/supabase/chats.ts` - Chat CRUD fonksiyonları
 - `components/auth/auth-modal.tsx` - Login/Signup modal
 - `components/auth/user-menu.tsx` - User profile dropdown
+- `components/auth/ban-dialog.tsx` - Ban notification dialog
+
+### Admin Panel
+- `app/admin/layout.tsx` - Admin layout (sidebar, header)
+- `app/admin/page.tsx` - Dashboard
+- `app/admin/users/page.tsx` - Kullanıcı yönetimi (tier, rol, ban)
+- `app/admin/settings/page.tsx` - Sistem ayarları (signup toggle, quotas)
+- `app/admin/features/page.tsx` - Feature flags
+- `app/admin/analytics/page.tsx` - İstatistikler
+- `app/admin/logs/page.tsx` - Admin aktivite logları
+- `app/admin/moderation/page.tsx` - İçerik denetimi
+- `components/admin/admin-header.tsx` - Admin sayfa başlığı
+- `components/admin/admin-sidebar.tsx` - Admin navigasyon menüsü
+- `hooks/use-system-settings.ts` - Sistem ayarları hook
 
 ### Types
 - `types/index.ts` - Tüm TypeScript tipleri (GROUP_AVATAR_ILLUSTRATIONS dahil)
@@ -702,6 +716,11 @@ chatBg: '#0B141A'
 11. **Chat List:** WhatsApp-style chat list phone preview frame içinde gösterilmeli
 12. **Auto-load:** Login sonrası `latestChatData` ile son chat otomatik yüklenmeli
 13. **New Chat:** Boş mesajlarla başlamalı, editor tab açık gelmeli
+14. **React Hooks Kuralları:** useState/useRef hook'ları conditional block içinde tanımlanmamalı, her zaman bileşenin en üstünde olmalı
+15. **Bottom Sheet Header:** Mobil bottom sheet'lerde drag handle header içinde olmalı ve yeşil tema kullanmalı
+16. **Preview Scale Origin:** `transform-origin: top center` kullanılmalı ki scale edildiğinde üst kısım sabit kalsın
+17. **Admin Erişimi:** `isAdmin` veya `isSuperAdmin` kontrolü ile korunmalı, rol kontrolü `auth-context.tsx`'te yapılır
+18. **Ban Sistemi:** `banHandledRef` ile double handling önlenmeli, ban dialog ayrı component olmalı
 
 ---
 
@@ -790,6 +809,57 @@ const isSent = message.userId === 'me'
 git remote set-url ob https://ob-gokhan:<PAT_TOKEN>@github.com/ob-gokhan/memesocialapp-wp.git
 ```
 
+### Sorun: "Rendered more hooks than during the previous render" hatası
+**Sebep:** useState veya useRef hook'ları conditional block içinde tanımlanmış
+**Çözüm:** Tüm hook'ları bileşenin en üstüne, koşulsuz olarak taşı:
+```tsx
+// YANLIŞ - conditional içinde
+if (condition) {
+  const [state, setState] = useState(0) // HATA!
+}
+
+// DOĞRU - en üstte
+const [state, setState] = useState(0)
+if (condition) {
+  // state'i burada kullan
+}
+```
+
+### Sorun: Bottom sheet drag handle ile header arasında boşluk var
+**Sebep:** Drag handle ve header ayrı div'lerde
+**Çözüm:** Drag handle'ı header div'inin içine taşı ve yeşil arka plan uygula:
+```tsx
+<div className="bg-[#d4f5e2] flex-shrink-0 rounded-t-3xl">
+  {/* Drag handle */}
+  <div className="flex justify-center pt-3 pb-1 ...">
+    <div className="w-12 h-1.5 bg-[#128C7E]/30 rounded-full" />
+  </div>
+  {/* Title row */}
+  <div className="flex items-center ...">...</div>
+</div>
+```
+
+### Sorun: Mobilde preview ekranı çok küçük
+**Sebep:** Sabit scale değeri kullanılıyor
+**Çözüm:** Ekran boyutuna göre dinamik scale hesapla (`app/page.tsx`'te `dynamicMobileScale` state)
+
+### Sorun: Preview scale edildiğinde ortadan büyüyor
+**Sebep:** `transform-origin` center olarak ayarlı
+**Çözüm:** `transform-origin: top center` kullan, böylece üst kısım sabit kalır
+
+### Sorun: Ban dialog iki kez gösteriliyor
+**Sebep:** Auth state change handler tekrar tetikleniyor
+**Çözüm:** `banHandledRef` ile hangi kullanıcının ban'ının işlendiğini takip et:
+```tsx
+const banHandledRef = useRef<string | null>(null)
+if (banHandledRef.current === session.user.id) return
+banHandledRef.current = session.user.id
+```
+
+### Sorun: Admin panelde "user" rolü boş görünüyor
+**Sebep:** Default case'de badge gösterilmiyor
+**Çözüm:** `getRoleBadge` fonksiyonunda default case için User badge ekle
+
 ---
 
 ## Supabase Entegrasyonu (Ocak 2025)
@@ -802,6 +872,10 @@ git remote set-url ob https://ob-gokhan:<PAT_TOKEN>@github.com/ob-gokhan/memesoc
 - `full_name` (TEXT)
 - `avatar_url` (TEXT)
 - `subscription_tier` ('free' | 'pro' | 'business')
+- `role` ('user' | 'admin' | 'super_admin') - Varsayılan 'user'
+- `is_banned` (BOOLEAN) - Varsayılan false
+- `banned_at` (TIMESTAMPTZ) - Ban tarihi
+- `ban_reason` (TEXT) - Ban sebebi
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **chats tablosu:**
@@ -830,6 +904,323 @@ Yeni kurulumda `supabase/migrations/001_create_profiles_trigger.sql` dosyasını
 ### UI Butonları (app/page.tsx)
 - **Save Button** - Mevcut chat'i kaydet (yeşil = kaydedilmiş, beyaz = yeni)
 - **MessageCircle Button** - WhatsApp-style chat listesini aç (login gerektirir)
+
+---
+
+## Admin Panel Sistemi (Ocak 2025)
+
+### Genel Bakış
+Admin paneli `/admin` route'unda bulunur. Sadece `admin` veya `super_admin` rolündeki kullanıcılar erişebilir.
+
+**Route Yapısı:**
+```
+/admin                    → Dashboard
+/admin/users              → Kullanıcı yönetimi
+/admin/features           → Feature flags
+/admin/analytics          → İstatistikler
+/admin/logs               → Admin aktivite logları
+/admin/moderation         → İçerik denetimi
+/admin/settings           → Sistem ayarları
+```
+
+### Veritabanı Değişiklikleri
+
+**profiles tablosuna eklenen kolonlar:**
+```sql
+ALTER TABLE profiles ADD COLUMN role TEXT DEFAULT 'user'
+  CHECK (role IN ('user', 'admin', 'super_admin'));
+ALTER TABLE profiles ADD COLUMN is_banned BOOLEAN DEFAULT false;
+ALTER TABLE profiles ADD COLUMN banned_at TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN ban_reason TEXT;
+```
+
+**system_settings tablosu:**
+```sql
+CREATE TABLE system_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL,
+  value JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**admin_logs tablosu:**
+```sql
+CREATE TABLE admin_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES profiles(id),
+  action TEXT NOT NULL,
+  target_user_id UUID REFERENCES profiles(id),
+  details JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Kullanıcı Ban Sistemi
+
+**Dosya:** `contexts/auth-context.tsx`
+
+Ban sistemi login sırasında kontrol edilir:
+```tsx
+// Auth state change'de ban kontrolü
+if (profileData?.is_banned) {
+  // Double handling prevention
+  if (banHandledRef.current === session.user.id) return
+  banHandledRef.current = session.user.id
+
+  await supabase.auth.signOut()
+  setSession(null)
+  setUser(null)
+  setProfile(null)
+  const reason = profileData.ban_reason ? `: ${profileData.ban_reason}` : ''
+  setBanMessage(`Your account has been suspended${reason}`)
+  return
+}
+```
+
+**Ban Dialog:** `components/auth/ban-dialog.tsx`
+- AlertDialog kullanarak ban mesajını gösterir
+- `banMessage` state ile kontrol edilir
+- `clearBanMessage` ile kapatılır
+
+**Ban fonksiyonları (admin/users/page.tsx):**
+```tsx
+const handleBanUser = async (userId: string) => {
+  await supabase
+    .from('profiles')
+    .update({
+      is_banned: true,
+      banned_at: new Date().toISOString(),
+      ban_reason: banReason || null,
+    })
+    .eq('id', userId)
+}
+
+const handleUnbanUser = async (userId: string) => {
+  await supabase
+    .from('profiles')
+    .update({
+      is_banned: false,
+      banned_at: null,
+      ban_reason: null,
+    })
+    .eq('id', userId)
+}
+```
+
+### Admin Settings Sayfası
+
+**Dosya:** `app/admin/settings/page.tsx`
+
+**Özellikler:**
+- Signup toggle (yeni kayıtları açma/kapama)
+- Export quota ayarları (free/pro/business tier'lar için)
+
+**System Settings Hook:** `hooks/use-system-settings.ts`
+```tsx
+// Signup enabled kontrolü
+export async function isSignupEnabled(): Promise<boolean> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('system_settings')
+    .select('value')
+    .eq('key', 'signup_enabled')
+    .single()
+  return data?.value?.enabled ?? true
+}
+```
+
+### Admin Bileşenleri
+
+**AdminHeader:** `components/admin/admin-header.tsx`
+- Sayfa başlığı ve açıklama
+- Breadcrumb navigasyon
+
+**AdminSidebar:** `components/admin/admin-sidebar.tsx`
+- Sol menü navigasyonu
+- Aktif sayfa vurgulama
+
+### Rol Badge'leri (Users Page)
+
+```tsx
+const getRoleBadge = (role: string) => {
+  switch (role) {
+    case 'super_admin':
+      return <Badge className="bg-purple-100 text-purple-700">Super Admin</Badge>
+    case 'admin':
+      return <Badge className="bg-blue-100 text-blue-700">Admin</Badge>
+    default:
+      return <Badge variant="secondary"><User className="mr-1 h-3 w-3" />User</Badge>
+  }
+}
+```
+
+---
+
+## Mobil Bottom Sheet Sistemi (Ocak 2025)
+
+### Draggable Bottom Sheets
+
+Editor, Settings ve Export için mobilde draggable bottom sheet sistemi uygulandı.
+
+**Ortak Özellikler:**
+- Yeşil header (`bg-[#d4f5e2]`) - Editor ile tutarlı
+- Drag handle header içinde (`bg-[#128C7E]/30`)
+- Sürüklenebilir yükseklik (%10-%90 arası)
+- Aşağı sürükleyerek kapatma (%30 altına sürükleyince kapanır)
+
+**Hook'lar (bileşen en üstünde tanımlanmalı - React kuralları):**
+```tsx
+// Draggable sheet height state
+const [sheetHeight, setSheetHeight] = useState(60) // percentage
+const sheetDragStartY = useRef<number | null>(null)
+const sheetDragStartHeight = useRef<number>(60)
+```
+
+**Drag Handler'lar:**
+```tsx
+const handleSheetDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+  const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+  sheetDragStartY.current = clientY
+  sheetDragStartHeight.current = sheetHeight
+}
+
+const handleSheetDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+  if (sheetDragStartY.current === null) return
+  const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+  const deltaY = sheetDragStartY.current - clientY
+  const deltaPercent = (deltaY / window.innerHeight) * 100
+  const newHeight = Math.min(90, Math.max(10, sheetDragStartHeight.current + deltaPercent))
+  setSheetHeight(newHeight)
+}
+
+const handleSheetDragEnd = () => {
+  sheetDragStartY.current = null
+  if (sheetHeight < 30) {
+    onClose?.()
+    setSheetHeight(60) // Reset for next open
+  }
+}
+```
+
+**Sheet Header Yapısı:**
+```tsx
+<div className="bg-[#d4f5e2] flex-shrink-0 rounded-t-3xl">
+  {/* Drag handle */}
+  <div
+    className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
+    onTouchStart={handleSheetDragStart}
+    onTouchMove={handleSheetDragMove}
+    onTouchEnd={handleSheetDragEnd}
+    onMouseDown={handleSheetDragStart}
+    onMouseMove={handleSheetDragMove}
+    onMouseUp={handleSheetDragEnd}
+    onMouseLeave={handleSheetDragEnd}
+  >
+    <div className="w-12 h-1.5 bg-[#128C7E]/30 rounded-full" />
+  </div>
+  {/* Title row */}
+  <div className="flex items-center justify-between px-4 py-2">
+    <div className="flex items-center gap-2">
+      <Icon className="w-5 h-5 text-[#128C7E]" />
+      <span className="font-semibold text-[#128C7E]">{title}</span>
+    </div>
+    <button onClick={onClose} className="p-2.5 hover:bg-[#c0e8d4] rounded-full">
+      <X className="w-5 h-5 text-[#128C7E]" />
+    </button>
+  </div>
+</div>
+```
+
+**Dosyalar:**
+- `components/editor/tabbed-sidebar.tsx` - Editor ve Settings sheets
+- `components/export/export-menu.tsx` - Export sheet
+
+---
+
+## Dinamik Mobil Preview Ölçekleme (Ocak 2025)
+
+### Sorun
+iPhone 12 Pro Max gibi büyük ekranlı telefonlarda preview çok küçük görünüyordu.
+
+### Çözüm
+Ekran boyutuna göre dinamik ölçekleme hesaplaması.
+
+**Dosya:** `app/page.tsx`
+
+```tsx
+// Dynamic mobile preview scale
+const [dynamicMobileScale, setDynamicMobileScale] = useState(1)
+
+// Calculate dynamic mobile scale based on screen size
+useEffect(() => {
+  const calculateScale = () => {
+    // Only apply on mobile (< 640px)
+    if (window.innerWidth >= 640) {
+      setDynamicMobileScale(1)
+      return
+    }
+
+    // Phone preview dimensions
+    const previewWidth = 375
+    const previewHeight = 812
+
+    // Available space calculations
+    const screenWidth = window.innerWidth
+    const screenHeight = window.innerHeight
+    const headerHeight = 70 // Header space
+    const bottomButtonsHeight = 120 // Bottom action buttons space
+
+    const availableWidth = screenWidth - 32 // 16px padding on each side
+    const availableHeight = screenHeight - headerHeight - bottomButtonsHeight - 20
+
+    // Calculate scale to fit both dimensions
+    const scaleByWidth = availableWidth / previewWidth
+    const scaleByHeight = availableHeight / previewHeight
+    const optimalScale = Math.min(scaleByWidth, scaleByHeight, 1)
+
+    setDynamicMobileScale(optimalScale)
+  }
+
+  calculateScale()
+  window.addEventListener('resize', calculateScale)
+  window.addEventListener('orientationchange', calculateScale)
+
+  return () => {
+    window.removeEventListener('resize', calculateScale)
+    window.removeEventListener('orientationchange', calculateScale)
+  }
+}, [])
+```
+
+**Preview Container:**
+```tsx
+<div
+  className={cn(
+    "transition-transform flex items-start justify-center",
+    "sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
+    "origin-top", // Scale from top
+    "mobile-phone-preview"
+  )}
+  style={{ '--mobile-preview-scale': dynamicMobileScale } as React.CSSProperties}
+>
+```
+
+**CSS (globals.css):**
+```css
+@media (max-width: 639px) {
+  .mobile-phone-preview {
+    transform: scale(var(--mobile-preview-scale, 0.85));
+    transform-origin: top center;
+  }
+}
+```
+
+**Header ile Preview Arası Boşluk:**
+```tsx
+<div className="... max-sm:pt-4"> {/* 16px top padding on mobile */}
+```
 
 ---
 
