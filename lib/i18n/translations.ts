@@ -8,6 +8,7 @@ export interface Translations {
     editor: string
     resetToDefaults: string
     save: string
+    chats: string
     cancel: string
     delete: string
     add: string
@@ -219,6 +220,7 @@ export const en: Translations = {
     editor: 'Editor',
     resetToDefaults: 'Reset to Defaults',
     save: 'Save',
+    chats: 'Chats',
     cancel: 'Cancel',
     delete: 'Delete',
     add: 'Add',
@@ -418,6 +420,7 @@ export const tr: Translations = {
     editor: 'Editör',
     resetToDefaults: 'Varsayılana Sıfırla',
     save: 'Kaydet',
+    chats: 'Sohbetler',
     cancel: 'İptal',
     delete: 'Sil',
     add: 'Ekle',

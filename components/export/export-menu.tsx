@@ -31,7 +31,6 @@ import {
   RotateCcw,
   CheckCircle2,
   Sparkles,
-  Share2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ExportFormat } from '@/hooks/use-export'
@@ -177,7 +176,7 @@ export function ExportMenu({
       {isExporting || isVideoWorking ? (
         <Loader2 className="w-6 h-6 sm:w-5 sm:h-5 animate-spin" />
       ) : (
-        <Share2 className="w-6 h-6 sm:w-5 sm:h-5" />
+        <Download className="w-6 h-6 sm:w-5 sm:h-5" />
       )}
       <span className="font-medium hidden sm:inline">{t.export.export}</span>
     </Button>

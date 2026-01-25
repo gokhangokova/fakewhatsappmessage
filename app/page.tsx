@@ -616,7 +616,7 @@ export default function Home() {
           {/* WhatsApp-style Chat List Button */}
           <Button
             size="default"
-            className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-14 bg-[#00A884] hover:bg-[#008f6f] text-white border-0 active:scale-95 transition-transform"
+            className="rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 bg-[#00A884] hover:bg-[#008f6f] text-white border-0 justify-center active:scale-95 transition-transform"
             onClick={() => {
               if (!user) {
                 setAuthModalOpen(true)
@@ -626,21 +626,23 @@ export default function Home() {
             }}
           >
             <MessageCircle className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
+            <span className="font-medium hidden sm:inline">{t.common.chats}</span>
           </Button>
 
           {/* Save Button */}
           <Button
             size="default"
             className={cn(
-              "rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-14 active:scale-95 transition-transform",
+              "rounded-full shadow-lg h-14 w-14 sm:h-14 sm:w-36 sm:px-0 gap-2 justify-center active:scale-95 transition-transform text-white border-0",
               user && currentChatId
-                ? "bg-green-600 hover:bg-green-700 text-white border-0"
-                : "bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300"
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-blue-500 hover:bg-blue-600"
             )}
             onClick={handleSaveChat}
             disabled={isSaving || (remainingChats !== null && remainingChats <= 0 && !currentChatId)}
           >
             <Save className="w-6 h-6 sm:w-5 sm:h-5" strokeWidth={2.5} />
+            <span className="font-medium hidden sm:inline">{t.common.save}</span>
           </Button>
 
           {/* Preview Animation Button */}

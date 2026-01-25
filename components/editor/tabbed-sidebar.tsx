@@ -1119,15 +1119,11 @@ export function TabbedSidebar({
 
       {/* Content */}
       <div ref={scrollContainerRef} className={cn(
-        "p-3 space-y-2 overflow-y-auto",
+        "p-3 space-y-2 overflow-y-auto flex-1 min-h-0",
         // Mobile: content scrolls within the full height sidebar (minus title ~50px and footer ~60px)
         isMobile && activeTab === 'settings' && onReset
           ? "max-h-[calc(100vh-110px)]"
-          : isMobile ? "max-h-[calc(100vh-50px)]" : "",
-        // Desktop: max height
-        !isMobile && activeTab === 'settings' && onReset
-          ? "lg:max-h-[calc(100vh-240px)]"
-          : !isMobile ? "lg:max-h-[calc(100vh-180px)]" : ""
+          : isMobile ? "max-h-[calc(100vh-50px)]" : ""
       )}>
           {/* Editor Tab Content */}
           {activeTab === 'editor' && (
@@ -2544,10 +2540,10 @@ export function TabbedSidebar({
     )
   }
 
-  // Desktop: Fixed sidebar - leaves space for legal links at bottom
+  // Desktop: Fixed sidebar - dynamic height based on content, max-height when expanded
   return (
-    <div className="fixed left-4 top-20 bottom-16 z-50 w-[352px]">
-      <div className="bg-white shadow-2xl border border-gray-200 overflow-hidden rounded-2xl h-full flex flex-col">
+    <div className="fixed left-4 top-20 z-50 w-[352px] max-h-[calc(100vh-9rem)]">
+      <div className="bg-white shadow-2xl border border-gray-200 overflow-hidden rounded-2xl flex flex-col max-h-[calc(100vh-9rem)]">
         {SidebarContent}
       </div>
     </div>
