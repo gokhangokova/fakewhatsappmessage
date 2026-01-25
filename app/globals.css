@@ -373,12 +373,12 @@
   }
 }
 
-/* Mobile phone preview - user-configurable scaling */
+/* Mobile phone preview - dynamic scaling based on screen size */
 @media (max-width: 639px) {
   .mobile-phone-preview {
-    /* --mobile-preview-scale: user-configurable scale (0.1 to 1.0), default 0.5 */
-    transform: scale(var(--mobile-preview-scale, 0.5));
-    transform-origin: center center;
+    /* --mobile-preview-scale: dynamically calculated scale to fit screen */
+    transform: scale(var(--mobile-preview-scale, 0.85));
+    transform-origin: top center;
   }
 }
 

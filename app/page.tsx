@@ -84,6 +84,9 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarTab, setSidebarTab] = useState<'editor' | 'settings'>('editor')
 
+  // Dynamic mobile preview scale
+  const [dynamicMobileScale, setDynamicMobileScale] = useState(1)
+
   // Auth and Save modals
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [chatListOpen, setChatListOpen] = useState(false)
@@ -205,6 +208,59 @@ export default function Home() {
       clearLatestChatData()
     }
   }, [latestChatData, applyChatData, clearLatestChatData])
+
+  // Calculate dynamic mobile scale based on screen size
+  useEffect(() => {
+    const calculateScale = () => {
+      // Only apply on mobile (< 640px)
+      if (window.innerWidth >= 640) {
+        setDynamicMobileScale(1)
+        return
+      }
+
+      // Phone preview dimensions
+      const previewWidth = 375
+      const previewHeight = 812
+
+      // Available space calculations
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+      const headerHeight = 70 // Header space
+      const bottomButtonsHeight = 120 // Bottom action buttons space
+      const safeAreaTop = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0') || 0
+      const safeAreaBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0') || 0
+
+      const availableWidth = screenWidth - 32 // 16px padding on each side
+      const availableHeight = screenHeight - headerHeight - bottomButtonsHeight - safeAreaTop - safeAreaBottom - 20 // 20px extra margin
+
+      // Calculate scale to fit both width and height
+      const scaleByWidth = availableWidth / previewWidth
+      const scaleByHeight = availableHeight / previewHeight
+
+      // Use the smaller scale to ensure it fits in both dimensions
+      const optimalScale = Math.min(scaleByWidth, scaleByHeight, 1) // Max scale of 1
+
+      setDynamicMobileScale(optimalScale)
+    }
+
+    // Set CSS variables for safe area insets
+    const setSafeAreaVars = () => {
+      const root = document.documentElement
+      root.style.setProperty('--sat', `${parseInt(getComputedStyle(root).getPropertyValue('env(safe-area-inset-top)') || '0')}`)
+      root.style.setProperty('--sab', `${parseInt(getComputedStyle(root).getPropertyValue('env(safe-area-inset-bottom)') || '0')}`)
+    }
+
+    setSafeAreaVars()
+    calculateScale()
+
+    window.addEventListener('resize', calculateScale)
+    window.addEventListener('orientationchange', calculateScale)
+
+    return () => {
+      window.removeEventListener('resize', calculateScale)
+      window.removeEventListener('orientationchange', calculateScale)
+    }
+  }, [])
 
   // Handle creating a new chat
   const handleNewChat = useCallback(() => {
@@ -527,10 +583,10 @@ export default function Home() {
             // Desktop scaling
             "sm:scale-[0.8] md:scale-[0.85] lg:scale-[0.9] xl:scale-100",
             "sm:origin-top",
-            // Mobile: dynamic scaling via CSS class (media query handles responsive)
+            // Mobile: use CSS custom property for dynamic scaling
             "mobile-phone-preview"
           )}
-          style={{ '--mobile-preview-scale': mobilePreviewScale / 100 } as React.CSSProperties}
+          style={{ '--mobile-preview-scale': dynamicMobileScale } as React.CSSProperties}
         >
           {chatListOpen ? (
             // WhatsApp-style Chat List (replaces preview when open)
