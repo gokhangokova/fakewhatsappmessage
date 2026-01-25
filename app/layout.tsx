@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
+import dynamic from 'next/dynamic'
 import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
-import { Header } from '@/components/layout/header'
 import { Toaster } from '@/components/ui/toaster'
 import { ChatProvider } from '@/contexts/chat-context'
 import { AuthProvider } from '@/contexts/auth-context'
+
+// Dynamic import Header to avoid SSG issues with usePathname
+const Header = dynamic(() => import('@/components/layout/header').then(mod => ({ default: mod.Header })), {
+  ssr: false,
+})
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
