@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
@@ -13,6 +13,7 @@ export default function AdminLayout({
 }) {
   const { user, profile, isAdmin, isLoading } = useAuth()
   const router = useRouter()
+  const hasVerifiedAdmin = useRef(false)
 
   // Debug log
   console.log('[AdminLayout] State:', {
@@ -20,28 +21,43 @@ export default function AdminLayout({
     hasUser: !!user,
     hasProfile: !!profile,
     profileRole: profile?.role,
-    isAdmin
+    isAdmin,
+    hasVerifiedAdmin: hasVerifiedAdmin.current
   })
 
   useEffect(() => {
     // Wait for auth to load
     if (isLoading) return
 
+    // Wait for profile to load if user exists
+    // This prevents redirect during profile fetch
+    if (user && !profile) {
+      console.log('[AdminLayout] Waiting for profile to load...')
+      return
+    }
+
     // Redirect if not logged in
     if (!user) {
+      console.log('[AdminLayout] No user, redirecting...')
       router.push('/')
       return
     }
 
-    // Redirect if not admin
-    if (!isAdmin) {
+    // Redirect if not admin (only if profile is loaded)
+    if (profile && !isAdmin) {
+      console.log('[AdminLayout] Not admin, redirecting...')
       router.push('/')
       return
     }
-  }, [user, isAdmin, isLoading, router])
 
-  // Show loading while checking auth
-  if (isLoading) {
+    // Mark as verified once we confirm admin access
+    if (isAdmin) {
+      hasVerifiedAdmin.current = true
+    }
+  }, [user, profile, isAdmin, isLoading, router])
+
+  // Show loading while checking auth or waiting for profile
+  if (isLoading || (user && !profile)) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -50,7 +66,8 @@ export default function AdminLayout({
   }
 
   // Don't render admin if not authorized
-  if (!user || !isAdmin) {
+  // But if we've already verified admin, don't show access denied during re-renders
+  if (!user || (!isAdmin && !hasVerifiedAdmin.current)) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="text-center">
